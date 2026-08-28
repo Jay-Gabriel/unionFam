@@ -1,0 +1,21 @@
+# Local secrets
+.env
+.env.local
+.env.*.local
+
+# Next.js / Node
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+
+# Local Supabase/runtime files
+.supabase/
+supabase/.temp/
+
+# Editor / OS
+.DS_Store
+*.log
+
