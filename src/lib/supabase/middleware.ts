@@ -41,13 +41,10 @@ export async function updateSession(request: NextRequest) {
     pathname === '/favicon.ico';
 
   if (!user && !isPublicPath) {
-    const hasDevCookie = request.cookies.has('lifelab_session');
-    if (!hasDevCookie) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/auth';
-      url.searchParams.set('returnUrl', pathname);
-      return NextResponse.redirect(url);
-    }
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth';
+    url.searchParams.set('returnUrl', pathname);
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

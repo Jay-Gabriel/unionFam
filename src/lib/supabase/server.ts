@@ -1,8 +1,10 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/database.generated';
+import { validateEnvironmentVariables } from '@/lib/env';
 
 export function createClient() {
+  validateEnvironmentVariables();
   const cookieStore = cookies();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

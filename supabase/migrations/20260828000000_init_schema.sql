@@ -105,7 +105,8 @@ CREATE TABLE IF NOT EXISTS public.user_statements (
   statement_type TEXT NOT NULL DEFAULT 'verbatim',
   dimension TEXT,
   captured_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ
+  deleted_at TIMESTAMPTZ,
+  CONSTRAINT fk_user_statements_message_owner FOREIGN KEY (message_id) REFERENCES public.messages(id) ON DELETE CASCADE
 );
 
 -- 8. AI OBSERVATIONS
@@ -119,11 +120,12 @@ CREATE TABLE IF NOT EXISTS public.ai_observations (
   content_original TEXT NOT NULL,
   content_user_edited TEXT,
   confidence NUMERIC(3,2) NOT NULL DEFAULT 0.85,
-  status TEXT NOT NULL DEFAULT 'pending', -- pending, accepted, rejected
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
   decision_at TIMESTAMPTZ,
   decision_idempotency_key TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT uq_ai_obs_idempotency UNIQUE (user_id, decision_idempotency_key)
 );
 
 -- 9. CONFIRMED INSIGHTS
@@ -338,10 +340,10 @@ ALTER TABLE public.activity_events ENABLE ROW LEVEL SECURITY;
 
 -- STRICT USER OWNERSHIP POLICIES
 CREATE POLICY profiles_owner ON public.profiles FOR ALL USING (auth.uid() = id);
-CREATE POLICY user_answers_owner ON public.user_answers FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY conversations_owner ON public.conversations FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY messages_owner ON public.messages FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY user_statements_owner ON public.user_statements FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY user_answers_owner ON public.user_answers FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY conversations_owner ON public.conversations FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY messages_owner ON public.messages FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY user_statements_owner ON public.user_statements FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- USER AGENCY INVARIANT POLICIES (Observations read-only for member; mutations via server/RPC)
 CREATE POLICY ai_observations_select_owner ON public.ai_observations FOR SELECT USING (auth.uid() = user_id);
@@ -383,7 +385,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- SECURE ATOMIC DECISION PROCEDURE WITH IDENTITY VALIDATION
 CREATE OR REPLACE FUNCTION public.decide_observation_atomic(
-  p_user_id UUID,
   p_observation_id UUID,
   p_decision TEXT, -- accepted, rejected
   p_edited_content TEXT DEFAULT NULL,
@@ -391,19 +392,41 @@ CREATE OR REPLACE FUNCTION public.decide_observation_atomic(
 )
 RETURNS JSONB AS $$
 DECLARE
+  v_user_id UUID;
   v_obs public.ai_observations%ROWTYPE;
   v_insight_id UUID;
   v_final_content TEXT;
 BEGIN
-  -- Security identity check: prevent cross-user impersonation
-  IF p_user_id IS NULL OR (auth.uid() IS NOT NULL AND auth.uid() IS DISTINCT FROM p_user_id) THEN
+  -- Security identity check: extract directly from session
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'UNAUTHORIZED_USER_DECISION';
+  END IF;
+
+  -- Validate Decision
+  IF p_decision NOT IN ('accepted', 'rejected') THEN
+    RAISE EXCEPTION 'INVALID_DECISION';
+  END IF;
+
+  -- Check existing idempotency key
+  IF p_idempotency_key IS NOT NULL THEN
+    SELECT * INTO v_obs
+    FROM public.ai_observations
+    WHERE user_id = v_user_id AND decision_idempotency_key = p_idempotency_key;
+
+    IF FOUND THEN
+      RETURN jsonb_build_object(
+        'observation_id', v_obs.id,
+        'status', v_obs.status,
+        'insight_id', NULL -- Fetching existing insight ID for idempotency is omitted for brevity but recommended
+      );
+    END IF;
   END IF;
 
   -- Lock observation row
   SELECT * INTO v_obs
   FROM public.ai_observations
-  WHERE id = p_observation_id AND user_id = p_user_id
+  WHERE id = p_observation_id AND user_id = v_user_id
   FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -434,7 +457,7 @@ BEGIN
       dimension,
       content
     ) VALUES (
-      p_user_id,
+      v_user_id,
       p_observation_id,
       'core_observation',
       v_obs.dimension,

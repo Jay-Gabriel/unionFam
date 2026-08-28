@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { getCurrentUserSession } from './session';
 
 export interface VerifiedUser {
   id: string;
@@ -15,14 +14,6 @@ export async function requireUser(): Promise<VerifiedUser> {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    const devSession = await getCurrentUserSession();
-    if (devSession) {
-      return {
-        id: devSession.userId,
-        email: devSession.email,
-        role: devSession.role,
-      };
-    }
     throw new Error('AUTH_REQUIRED');
   }
 

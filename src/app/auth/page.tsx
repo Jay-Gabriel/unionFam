@@ -41,16 +41,7 @@ function AuthForm() {
         if (error) throw error;
       }
 
-      // Also set dev session cookie fallback for local dev if Supabase local is offline
-      await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: isSignUp ? 'signup' : 'login',
-          email,
-          password,
-        }),
-      });
+      // Fallbacks removed per security requirements
 
       router.push(returnUrl);
       router.refresh();
@@ -71,16 +62,8 @@ function AuthForm() {
       });
       if (error) throw error;
     } catch (err: any) {
-      // Dev OAuth fallback
-      await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'login',
-          email: 'google-user@example.com',
-          password: 'oauth-token-auth',
-        }),
-      });
+      // Fallbacks removed per security requirements
+      setErrorMsg(err?.message || 'Đăng nhập Google thất bại');
       router.push(returnUrl);
       router.refresh();
     }

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { DefaultQuestionFlowFixture, validateAnswerPayload, calculateProgress } from '@/server/domain/questions';
-import { getCurrentUserSession } from '@/server/auth/session';
+import { requireUser } from '@/server/auth/current-user';
 
 // Memory persistence store for local dev
 const userAnswersStore: Record<string, Record<string, any>> = {};
 
 export async function GET() {
-  const session = await getCurrentUserSession();
-  const userId = session?.userId || 'guest-user';
+  const session = await requireUser();
+  const userId = session.id;
   const userAnswers = userAnswersStore[userId] || {};
 
   const answeredKeys = Object.keys(userAnswers);
@@ -26,8 +26,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getCurrentUserSession();
-    const userId = session?.userId || 'guest-user';
+    const session = await requireUser();
+    const userId = session.id;
     const body = await request.json();
     const { questionId, answer, idempotencyKey } = body;
 

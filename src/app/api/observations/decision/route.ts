@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
 import { processObservationDecision } from '@/server/domain/agency';
-import { getCurrentUserSession } from '@/server/auth/session';
+import { requireUser } from '@/server/auth/current-user';
 
 export async function POST(request: Request) {
   try {
-    const session = await getCurrentUserSession();
-    if (!session) {
-      return NextResponse.json({ error: 'AUTH_REQUIRED' }, { status: 401 });
-    }
+    const user = await requireUser();
 
     const body = await request.json();
     const { observationId, decision, editedContent, idempotencyKey } = body;
@@ -17,7 +14,7 @@ export async function POST(request: Request) {
     }
 
     const result = await processObservationDecision({
-      userId: session.userId,
+      userId: user.id,
       observationId,
       decision,
       editedContent,

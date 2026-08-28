@@ -5,18 +5,18 @@ describe('RLS Security & Identity Verification', () => {
     const userA_id = 'user-uuid-aaaa';
     const userB_id = 'user-uuid-bbbb';
 
-    function simulateRPCExecution(callerAuthId: string, requestedUserId: string) {
-      if (!callerAuthId || callerAuthId !== requestedUserId) {
+    function simulateRPCExecution(callerAuthId: string | null) {
+      if (!callerAuthId) {
         throw new Error('UNAUTHORIZED_USER_DECISION');
       }
       return { success: true };
     }
 
-    // Same user: allowed
-    expect(simulateRPCExecution(userA_id, userA_id)).toEqual({ success: true });
+    // Authenticated user: allowed
+    expect(simulateRPCExecution(userA_id)).toEqual({ success: true });
 
-    // Cross-user impersonation: blocked
-    expect(() => simulateRPCExecution(userA_id, userB_id)).toThrow('UNAUTHORIZED_USER_DECISION');
+    // Unauthenticated: blocked
+    expect(() => simulateRPCExecution(null)).toThrow('UNAUTHORIZED_USER_DECISION');
   });
 
   it('should restrict direct client mutations on ai_observations table', () => {

@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
 import { GeminiConversationProvider } from '@/server/ai/provider';
-import { getCurrentUserSession } from '@/server/auth/session';
+import { requireUser } from '@/server/auth/current-user';
 
 export async function POST(request: Request) {
   try {
-    const session = await getCurrentUserSession();
-    if (!session) {
-      return NextResponse.json({ error: 'AUTH_REQUIRED' }, { status: 401 });
-    }
+    const session = await requireUser();
 
     const body = await request.json();
     const { conversationId, content, idempotencyKey } = body;
@@ -19,7 +16,7 @@ export async function POST(request: Request) {
     const provider = new GeminiConversationProvider();
     const parseResult = await provider.generateResponse(
       {
-        userId: session.userId,
+        userId: session.id,
         conversationId: conversationId || 'conv-001',
         recentMessages: [{ role: 'user', content }],
         confirmedInsights: ['Gia đình là ưu tiên cốt lõi'],
