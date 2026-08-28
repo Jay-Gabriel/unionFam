@@ -15,6 +15,7 @@ Bộ tài liệu này chuyển brief ban đầu thành đặc tả đủ chi ti�
 9. [Requirements Traceability](docs/08_REQUIREMENTS_TRACEABILITY.md) — đối chiếu yêu cầu khách hàng với thiết kế, ticket và test nghiệm thu.
 10. [Customer Input & Gap Analysis](docs/09_CUSTOMER_INPUT_GAP_ANALYSIS.md) — những gì đã chốt từ ảnh khách gửi và phần còn thiếu được xử lý thế nào.
 11. [Week 1 Execution Plan](docs/10_WEEK_1_EXECUTION_PLAN.md) — kế hoạch chi tiết Ngày 1–5, acceptance gate và prompt giao AI theo từng lượt.
+12. [Week 1 Remediation & Supabase Plan](docs/11_WEEK_1_REMEDIATION_SUPABASE_PLAN.md) — kế hoạch sửa Auth/RLS/persistence thật, test security và gate trước khi đẩy migration lên Supabase.
 
 ## Nguồn và mức độ chắc chắn
 

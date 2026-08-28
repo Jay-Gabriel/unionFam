@@ -8,7 +8,7 @@ Prompt khởi động đề xuất:
 
 ```text
 Bạn là implementation agent cho UNIONFAM Life Lab MVP.
-Đọc toàn bộ README.md và docs/00 đến docs/10 trước khi sửa code.
+Đọc toàn bộ README.md và docs/00 đến docs/11 trước khi sửa code.
 Triển khai đúng P0; deploy/domain/VPS ngoài phạm vi.
 Trước mỗi milestone: kiểm tra repo hiện tại, nêu ticket IDs, dependency và acceptance criteria.
 Sau mỗi ticket: chạy test phù hợp, typecheck/lint/build; cung cấp evidence.

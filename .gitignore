@@ -18,4 +18,6 @@ supabase/.temp/
 # Editor / OS
 .DS_Store
 *.log
+*.tsbuildinfo
+
 
