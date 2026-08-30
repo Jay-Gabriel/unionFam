@@ -20,7 +20,13 @@ function AuthForm() {
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const supabase = createClient();
+  const routeError = searchParams?.get('error');
+  const configurationMessage =
+    routeError === 'config'
+      ? 'Hệ thống đăng nhập chưa được cấu hình trên máy chủ. Vui lòng thử lại sau.'
+      : routeError === 'service'
+        ? 'Dịch vụ đăng nhập đang tạm gián đoạn. Vui lòng thử lại sau.'
+        : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +34,8 @@ function AuthForm() {
     setIsLoading(true);
 
     try {
+      const supabase = createClient();
+
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
@@ -58,6 +66,8 @@ function AuthForm() {
   const handleGoogleAuth = async () => {
     setIsLoading(true);
     try {
+      const supabase = createClient();
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -83,10 +93,10 @@ function AuthForm() {
         <p className="text-xs text-slate-500">Understand → Choose → Become</p>
       </div>
 
-      {errorMsg && (
+      {(errorMsg || configurationMessage) && (
         <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-semibold text-rose-700 flex items-center gap-2">
           <ShieldAlert size={16} />
-          <span>{errorMsg}</span>
+          <span>{errorMsg || configurationMessage}</span>
         </div>
       )}
 

@@ -1,14 +1,18 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
-// We must provide these env vars to vitest, normally via .env.test or similar
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0a3JxcGtjYW5pZWhudXpnZmd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQ4MzQ1MzcsImV4cCI6MjAzNTU0NDEzN30.rA9xX049uM1UfP-5F4_Q0VvA3vV0B5R_eH_4Qx14b_Y'; 
-const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY || ''; // Usually provided by `supabase status`
+// Integration credentials are intentionally opt-in; unit/CI runs without them
+// must skip this suite before any Supabase client is constructed.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const hasIntegrationCredentials = Boolean(
+  SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_SERVICE_ROLE
+);
 
-const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+let serviceClient: ReturnType<typeof createClient>;
 
 // Helpers to get authenticated clients
 async function createTestUserAndClient(email: string) {
@@ -23,7 +27,7 @@ async function createTestUserAndClient(email: string) {
   const user = authData.user;
   
   // Create member client
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const client = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   
@@ -33,18 +37,17 @@ async function createTestUserAndClient(email: string) {
   return { user, client };
 }
 
-describe('PostgreSQL RLS Integration', () => {
+describe.skipIf(!hasIntegrationCredentials)('PostgreSQL RLS Integration', () => {
   let userA: any;
   let clientA: any;
   let userB: any;
   let clientB: any;
 
   beforeAll(async () => {
-    // Only run if service role is available (so we can provision users)
-    if (!SUPABASE_SERVICE_ROLE) {
-      console.warn('Skipping integration test: SUPABASE_SERVICE_ROLE_KEY not set');
-      return;
-    }
+    serviceClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
     const resA = await createTestUserAndClient(`test_user_a_${Date.now()}@example.com`);
     userA = resA.user;
     clientA = resA.client;
