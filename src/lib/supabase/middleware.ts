@@ -43,17 +43,28 @@ function authUnavailable(request: NextRequest, reason: 'config' | 'service') {
 
 export async function updateSession(request: NextRequest) {
   const authRequired = process.env.AUTH_REQUIRED === 'true';
+  const { pathname } = request.nextUrl;
   const isLocalUiPreview =
     process.env.NODE_ENV !== 'production' &&
     ['localhost', '127.0.0.1', '::1'].includes(request.nextUrl.hostname);
 
   // Authentication is opt-in while the MVP UI is being reviewed. API routes keep
   // their own user checks; set AUTH_REQUIRED=true when production auth is ready.
-  if (!authRequired || isLocalUiPreview) {
+  if (!authRequired) {
+    if (pathname === '/auth') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/app';
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
+
     return NextResponse.next({ request });
   }
 
-  const { pathname } = request.nextUrl;
+  if (isLocalUiPreview) {
+    return NextResponse.next({ request });
+  }
+
   const publicPath = isPublicPath(pathname);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
