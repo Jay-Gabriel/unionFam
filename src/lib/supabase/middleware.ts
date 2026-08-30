@@ -42,13 +42,14 @@ function authUnavailable(request: NextRequest, reason: 'config' | 'service') {
 }
 
 export async function updateSession(request: NextRequest) {
+  const authRequired = process.env.AUTH_REQUIRED === 'true';
   const isLocalUiPreview =
     process.env.NODE_ENV !== 'production' &&
     ['localhost', '127.0.0.1', '::1'].includes(request.nextUrl.hostname);
 
-  // UI preview is intentionally limited to the local development server.
-  // Production/domain/VPS requests always continue through verified Supabase Auth.
-  if (isLocalUiPreview) {
+  // Authentication is opt-in while the MVP UI is being reviewed. API routes keep
+  // their own user checks; set AUTH_REQUIRED=true when production auth is ready.
+  if (!authRequired || isLocalUiPreview) {
     return NextResponse.next({ request });
   }
 
