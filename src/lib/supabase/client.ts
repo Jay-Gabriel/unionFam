@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { Database } from '@/types/database.generated';
+import type { Database } from '@/lib/supabase/database.types';
 import { validateEnvironmentVariables } from '@/lib/env';
 
 export function createClient() {

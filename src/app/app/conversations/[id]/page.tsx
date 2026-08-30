@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import {
   CheckCircle2,
   Edit3,
@@ -33,29 +33,86 @@ interface Message {
 
 export default function ConversationPage() {
   const params = useParams();
-  const conversationId = (params?.id as string) || 'conv-001';
+  const router = useRouter();
+  const routeConversationId = (params?.id as string) || 'new';
+  const [conversationId, setConversationId] = useState(routeConversationId);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'm1',
-      role: 'assistant',
-      content:
-        'Chào bạn, hôm nay chúng ta cùng dành một khoảng lặng để nhìn rõ hơn điều bạn thật sự muốn nhé. Nếu hình dung ba năm nữa mình đang sống đúng nhịp mong muốn, một ngày bình thường của bạn sẽ diễn ra như thế nào?',
-      timestamp: '10:30',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(true);
+  const [conversationError, setConversationError] = useState('');
 
   const [inputContent, setInputContent] = useState('');
   const [editingObsId, setEditingObsId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sendError, setSendError] = useState('');
+  const [retryContent, setRetryContent] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadConversation() {
+      setIsLoadingConversation(true);
+      setConversationError('');
+      try {
+        let activeId = routeConversationId;
+        if (activeId === 'new') {
+          const createResponse = await fetch('/api/conversations', { method: 'POST' });
+          if (!createResponse.ok) throw new Error('Không thể tạo cuộc trò chuyện');
+          const created = await createResponse.json();
+          activeId = created.data.id;
+          if (!cancelled) {
+            setConversationId(activeId);
+            router.replace(`/app/conversations/${activeId}`);
+          }
+        }
+
+        const response = await fetch(`/api/conversations/${activeId}`);
+        if (!response.ok) throw new Error(response.status === 401 ? 'Phiên đăng nhập đã hết hạn' : 'Không thể tải cuộc trò chuyện');
+        const json = await response.json();
+        if (cancelled) return;
+
+        const observationsByMessage = new Map<string, Observation>();
+        (json.data.observations || []).forEach((observation: Record<string, unknown>) => {
+          observationsByMessage.set(String(observation.assistant_message_id), {
+            id: String(observation.id),
+            dimension: String(observation.dimension),
+            dimensionLabel: String(observation.dimension).replaceAll('_', ' ').toUpperCase(),
+            contentOriginal: String(observation.content_original),
+            contentEdited: typeof observation.content_user_edited === 'string' ? observation.content_user_edited : undefined,
+            status: observation.status as Observation['status'],
+          });
+        });
+
+        setConversationId(activeId);
+        setMessages((json.data.messages || []).filter((message: Record<string, unknown>) => message.role !== 'system_tool').map((message: Record<string, unknown>) => ({
+          id: String(message.id),
+          role: message.role as Message['role'],
+          content: String(message.content || ''),
+          timestamp: new Date(String(message.created_at)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          observation: observationsByMessage.get(String(message.id)),
+        })));
+      } catch (error) {
+        if (!cancelled) setConversationError(error instanceof Error ? error.message : 'Không thể tải cuộc trò chuyện');
+      } finally {
+        if (!cancelled) setIsLoadingConversation(false);
+      }
+    }
+
+    loadConversation();
+    return () => {
+      cancelled = true;
+    };
+  }, [routeConversationId, router]);
 
   const handleSendMessage = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!inputContent.trim() || isStreaming) return;
 
     const userText = inputContent;
+    setSendError('');
+    setRetryContent('');
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -82,26 +139,28 @@ export default function ConversationPage() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversationId,
-          content: userText,
-          idempotencyKey: `msg-${Date.now()}`,
-        }),
+          body: JSON.stringify({
+            conversationId,
+            content: userText,
+          idempotencyKey: `msg-${crypto.randomUUID()}`,
+          }),
       });
 
       if (!response.ok) {
-        setMessages((previous) =>
-          previous.map((message) =>
-            message.id === assistantMsgId
-              ? { ...message, content: 'Kết nối AI vừa bị gián đoạn. Bạn vui lòng gửi lại nhé.' }
-              : message
-          )
-        );
+        setMessages((previous) => previous.filter((message) => message.id !== assistantMsgId));
+        const json = await response.json().catch(() => ({}));
+        setSendError(typeof json.error === 'string' ? `Chưa thể nhận phản hồi (${json.error}).` : 'Chưa thể nhận phản hồi từ Life Lab.');
+        setRetryContent(userText);
         return;
       }
 
       const reader = response.body?.getReader();
-      if (!reader) return;
+      if (!reader) {
+        setMessages((previous) => previous.filter((message) => message.id !== assistantMsgId));
+        setSendError('Kết nối không trả về dữ liệu. Bạn có thể thử lại.');
+        setRetryContent(userText);
+        return;
+      }
 
       const decoder = new TextDecoder();
       let accumulatedText = '';
@@ -154,6 +213,8 @@ export default function ConversationPage() {
       }
     } catch (error) {
       console.error('Chat error', error);
+      setSendError('Kết nối vừa bị gián đoạn. Nội dung của bạn vẫn còn để thử lại.');
+      setRetryContent(userText);
       setMessages((previous) =>
         previous.map((message) =>
           message.id === assistantMsgId && !message.content
@@ -181,7 +242,7 @@ export default function ConversationPage() {
           observationId,
           decision,
           editedContent,
-          idempotencyKey: `dec-${observationId}-${Date.now()}`,
+          idempotencyKey: `dec-${observationId}-${crypto.randomUUID()}`,
         }),
       });
 
@@ -207,6 +268,34 @@ export default function ConversationPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoadingConversation) {
+    return (
+      <div className="grid min-h-[420px] place-items-center rounded-[34px] border border-white/10 bg-calm-deep-moss/35 text-calm-fog">
+        <div className="flex items-center gap-3 text-sm">
+          <Loader2 size={18} className="animate-spin text-calm-lichen" />
+          Đang mở khoảng lặng của bạn…
+        </div>
+      </div>
+    );
+  }
+
+  if (conversationError) {
+    return (
+      <div className="mx-auto grid min-h-[420px] max-w-2xl place-items-center rounded-[34px] border border-calm-danger-clay/30 bg-calm-deep-moss/35 p-8 text-center text-calm-paper-white">
+        <div className="space-y-4">
+          <p className="text-sm text-[#e7bbb5]">{conversationError}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-calm-warm-ivory transition hover:bg-white/15"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-12 text-calm-paper-white">
@@ -377,6 +466,8 @@ export default function ConversationPage() {
           ))}
         </div>
       </section>
+
+      {sendError && <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-calm-danger-clay/30 bg-calm-danger-clay/10 px-4 py-3 text-xs text-[#e7bbb5]" role="alert"><span>{sendError}</span><button type="button" onClick={() => { setInputContent(retryContent); setSendError(''); }} className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-calm-warm-ivory">Giữ lại để gửi lại</button></div>}
 
       <div className="sticky bottom-4 z-10 pt-1">
         <form

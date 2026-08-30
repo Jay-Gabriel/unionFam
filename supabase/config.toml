@@ -24,7 +24,4 @@ double_confirm_changes = false
 enable_confirmations = false
 
 [auth.external.google]
-enabled = true
-client_id = "mock-client-id"
-secret = "mock-client-secret"
-redirect_uri = "http://localhost:3000/auth/callback"
+enabled = false

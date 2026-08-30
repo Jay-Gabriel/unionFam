@@ -1,60 +1,16 @@
 'use client';
 
-import React from 'react';
-import { FolderArchive, Plus, User, Sparkles, Clock, Wrench } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { FolderArchive, Plus, Loader2, Trash2 } from 'lucide-react';
 
 export default function ResourcesPage() {
-  const resources = [
-    {
-      id: 'res-1',
-      name: 'Vốn kinh nghiệm 5 năm Quản lý Dự án',
-      type: 'skill',
-      typeLabel: 'Kỹ năng',
-      dimension: 'what_it_takes',
-      confidence: '100%',
-    },
-    {
-      id: 'res-2',
-      name: 'Mạng lưới đối tác kinh doanh cũ',
-      type: 'community',
-      typeLabel: 'Mối quan hệ',
-      dimension: 'what_it_takes',
-      confidence: '85%',
-    },
-  ];
-
-  return (
-    <div className="legacy-calm-page space-y-6 pb-12">
-      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-card flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <FolderArchive size={22} className="text-indigo-600" />
-            <h2 className="font-bold text-slate-900 text-xl">Resources (Nguồn lực hiện có)</h2>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Quản lý các nguồn lực cá nhân (kỹ năng, thời gian, tài chính, mối quan hệ) hỗ trợ hành trình.
-          </p>
-        </div>
-        <button className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-indigo-200 transition-all">
-          <Plus size={16} />
-          Thêm nguồn lực
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {resources.map((res) => (
-          <div key={res.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-card space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">
-                {res.typeLabel}
-              </span>
-              <span className="text-[10px] text-slate-400 font-semibold">Độ tin cậy: {res.confidence}</span>
-            </div>
-            <h3 className="font-bold text-slate-900 text-sm">{res.name}</h3>
-            <p className="text-xs text-slate-500">Dimension: {res.dimension}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  const [resources, setResources] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name: '', resourceType: 'skill', dimension: 'what_it_takes', description: '' });
+  const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState('');
+  const load = async () => { try { const response = await fetch('/api/resources'); const json = await response.json(); if (!response.ok) throw new Error(json.error || 'Không thể tải nguồn lực'); setResources(json.data || []); } catch (err) { setError(err instanceof Error ? err.message : 'Không thể tải nguồn lực'); } finally { setLoading(false); } };
+  useEffect(() => { load(); }, []);
+  const create = async (event: React.FormEvent) => { event.preventDefault(); setSaving(true); try { const response = await fetch('/api/resources', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) }); const json = await response.json(); if (!response.ok) throw new Error(json.error || 'Không thể tạo nguồn lực'); setResources((current) => [json.data, ...current]); setForm({ name: '', resourceType: 'skill', dimension: 'what_it_takes', description: '' }); setShowForm(false); } catch (err) { setError(err instanceof Error ? err.message : 'Không thể tạo nguồn lực'); } finally { setSaving(false); } };
+  const remove = async (id: string) => { const response = await fetch(`/api/resources/${id}`, { method: 'DELETE' }); if (response.ok) setResources((current) => current.filter((resource) => resource.id !== id)); };
+  return <div className="legacy-calm-page space-y-6 pb-12"><div className="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-card md:flex-row md:items-center"><div><div className="flex items-center gap-2"><FolderArchive size={22} className="text-indigo-600" /><h2 className="text-xl font-bold text-slate-900">Resources (Nguồn lực hiện có)</h2></div><p className="mt-1 text-xs text-slate-500">Những kỹ năng, thời gian, tiền bạc và mối quan hệ đang nâng đỡ bạn.</p></div><button onClick={() => setShowForm((value) => !value)} className="flex items-center gap-1.5 rounded-2xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white"><Plus size={16} /> Thêm nguồn lực</button></div>{error && <div className="rounded-2xl bg-rose-50 p-3 text-xs font-semibold text-rose-700">{error}</div>}{showForm && <form onSubmit={create} className="space-y-3 rounded-3xl border border-indigo-100 bg-indigo-50/60 p-5"><input required placeholder="Tên nguồn lực" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" /><div className="grid gap-3 md:grid-cols-2"><select value={form.resourceType} onChange={(event) => setForm({ ...form, resourceType: event.target.value })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"><option value="skill">Kỹ năng</option><option value="time">Thời gian</option><option value="money">Tài chính</option><option value="community">Mối quan hệ</option><option value="tool">Công cụ</option><option value="person">Con người</option><option value="other">Khác</option></select><input value={form.dimension} onChange={(event) => setForm({ ...form, dimension: event.target.value })} placeholder="Dimension" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" /></div><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Mô tả / bằng chứng" className="min-h-20 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" /><button disabled={saving} className="rounded-2xl bg-indigo-600 px-4 py-3 text-xs font-semibold text-white">{saving ? 'Đang lưu…' : 'Lưu nguồn lực'}</button></form>}{loading && <div className="grid min-h-48 place-items-center"><Loader2 className="animate-spin text-indigo-600" /></div>}{!loading && resources.length === 0 && <div className="rounded-3xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">Chưa có nguồn lực nào.</div>}<div className="grid grid-cols-1 gap-4 md:grid-cols-2">{resources.map((resource) => <article key={resource.id} className="space-y-2 rounded-3xl border border-slate-200 bg-white p-5 shadow-card"><div className="flex items-center justify-between"><span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">{resource.resource_type}</span><button onClick={() => remove(resource.id)} aria-label="Xóa nguồn lực" className="text-slate-400 hover:text-rose-600"><Trash2 size={15} /></button></div><h3 className="text-sm font-bold text-slate-900">{resource.name}</h3><p className="text-xs text-slate-500">{resource.description || 'Chưa có mô tả'} · {resource.dimension}</p></article>)}</div></div>;
 }

@@ -25,5 +25,9 @@ export function getDeviceQualityPolicy(): SceneQuality {
   const hasLimitedMemory = typeof device.deviceMemory === 'number' && device.deviceMemory <= 4;
   const isCompactScreen = window.innerWidth < 1024;
 
-  return isCompactScreen || hasLimitedCpu || hasLimitedMemory ? 'low' : 'high';
+  // Keep mobile/tablet on the poster path. The sanctuary is decorative and
+  // must never compete with the app's interaction budget or battery.
+  if (isCompactScreen) return 'static';
+  if (hasLimitedCpu || hasLimitedMemory) return 'low';
+  return 'high';
 }

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -21,6 +21,7 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
+import { SanctuaryCanvas } from '@/components/sanctuary-3d/sanctuary-canvas';
 
 type NavItem = {
   label: string;
@@ -129,15 +130,42 @@ function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: (
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+    router.push('/auth');
+    router.refresh();
+  };
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch('/api/onboarding')
+      .then((response) => response.ok ? response.json() : null)
+      .then((json) => {
+        if (!cancelled && typeof json?.data?.display_name === 'string') setDisplayName(json.data.display_name.trim());
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div
       className="app-calm-scope relative isolate min-h-screen bg-calm-deep-moss text-calm-paper-white"
       style={{ backgroundColor: '#263128' }}
     >
-      {/* Static 2.5D atmosphere: same sanctuary language without WebGL startup cost. */}
+      {/* Immediate 2.5D atmosphere plus a lazy WebGL progressive enhancement. */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-calm-deep-moss" aria-hidden="true">
+        {/* WebGL is a progressive enhancement: the poster/CSS layers paint
+            immediately, while SanctuaryCanvas idles in on capable desktop
+            devices and remains static on mobile, reduced-motion and save-data. */}
+        <SanctuaryCanvas
+          variant="app-morning"
+          fallbackSrc="/visuals/living-sanctuary/hero-poster.svg"
+          className="opacity-20 mix-blend-screen"
+        />
         <div
           className="absolute inset-0 opacity-80"
           style={{
@@ -245,9 +273,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 Local preview
               </span>
             )}
-            <div className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-sm font-semibold text-calm-paper-white shadow-sm">
-              U
-            </div>
+            <button type="button" onClick={() => void handleLogout()} className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-sm font-semibold text-calm-paper-white shadow-sm" title={displayName ? `${displayName} · Đăng xuất` : 'Đăng xuất'} aria-label="Đăng xuất">
+              {(displayName || 'U').slice(0, 1).toUpperCase()}
+            </button>
           </div>
         </header>
 

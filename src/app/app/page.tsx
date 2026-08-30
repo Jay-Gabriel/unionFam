@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -18,15 +19,16 @@ import {
   Sprout,
   SunMedium,
   Target,
+  Loader2,
 } from 'lucide-react';
 
 const mapItems = [
-  { index: '01', title: 'MY LIFE', detail: 'Cuộc đời tôi muốn sống', icon: Compass, tone: 'bg-white/10 text-calm-lichen' },
-  { index: '02', title: 'WHAT MATTERS', detail: 'Điều thực sự quan trọng', icon: Heart, tone: 'bg-white/10 text-calm-success-leaf' },
-  { index: '03', title: 'MY IDEAL DAY', detail: 'Một ngày lý tưởng', icon: SunMedium, tone: 'bg-white/10 text-calm-warning-earth' },
-  { index: '04', title: 'WHAT IT TAKES', detail: 'Điều cần để sống như vậy', icon: Target, tone: 'bg-white/10 text-calm-pollen' },
-  { index: '05', title: 'MY TRADE-OFFS', detail: 'Điều tôi chọn và từ bỏ', icon: Scale, tone: 'bg-white/10 text-calm-danger-clay' },
-  { index: '06', title: 'THE QUESTION', detail: 'Câu hỏi để đi sâu hơn', icon: Lightbulb, tone: 'bg-white/10 text-calm-lichen' },
+  { key: 'my_life', index: '01', title: 'MY LIFE', detail: 'Cuộc đời tôi muốn sống', icon: Compass, tone: 'bg-white/10 text-calm-lichen' },
+  { key: 'what_matters', index: '02', title: 'WHAT MATTERS', detail: 'Điều thực sự quan trọng', icon: Heart, tone: 'bg-white/10 text-calm-success-leaf' },
+  { key: 'my_ideal_day', index: '03', title: 'MY IDEAL DAY', detail: 'Một ngày lý tưởng', icon: SunMedium, tone: 'bg-white/10 text-calm-warning-earth' },
+  { key: 'what_it_takes', index: '04', title: 'WHAT IT TAKES', detail: 'Điều cần để sống như vậy', icon: Target, tone: 'bg-white/10 text-calm-pollen' },
+  { key: 'my_trade_offs', index: '05', title: 'MY TRADE-OFFS', detail: 'Điều tôi chọn và từ bỏ', icon: Scale, tone: 'bg-white/10 text-calm-danger-clay' },
+  { key: 'the_question', index: '06', title: 'THE QUESTION', detail: 'Câu hỏi để đi sâu hơn', icon: Lightbulb, tone: 'bg-white/10 text-calm-lichen' },
 ];
 
 const loopSteps = [
@@ -43,7 +45,59 @@ const reveal = {
   show: { opacity: 1, y: 0 },
 };
 
+type DashboardState = {
+  profile: { snapshot?: { dimensions?: Record<string, { summary?: string }> }; insights?: Array<{ id: string }> } | null;
+  experiments: Array<{ id: string; title: string; status: string; progress_percent: number; target_date: string; observation_focus?: unknown }>;
+  conversations: Array<{ id: string; title: string; status: string; current_stage: string; last_message_at: string }>;
+  progress: { streak: number; questionnaireProgress: number; answers: number; conversations: number; experiments: number };
+};
+
 export default function DashboardOverviewPage() {
+  const [dashboard, setDashboard] = useState<DashboardState | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [profileResponse, experimentResponse, conversationResponse, progressResponse] = await Promise.all([
+          fetch('/api/life-profile'),
+          fetch('/api/experiments'),
+          fetch('/api/conversations'),
+          fetch('/api/progress'),
+        ]);
+        const [profile, experiments, conversations, progress] = await Promise.all([
+          profileResponse.ok ? profileResponse.json() : { data: null },
+          experimentResponse.ok ? experimentResponse.json() : { data: [] },
+          conversationResponse.ok ? conversationResponse.json() : { data: [] },
+          progressResponse.ok ? progressResponse.json() : { data: {} },
+        ]);
+        if (!cancelled) {
+          setDashboard({
+            profile: profile.data || null,
+            experiments: experiments.data || [],
+            conversations: conversations.data || [],
+            progress: {
+              streak: progress.data?.streak || 0,
+              questionnaireProgress: progress.data?.questionnaireProgress || 0,
+              answers: progress.data?.answers || 0,
+              conversations: progress.data?.conversations || 0,
+              experiments: progress.data?.experiments || 0,
+            },
+          });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const activeExperiment = dashboard?.experiments.find((experiment) => experiment.status === 'active') || dashboard?.experiments[0];
+  const latestConversation = dashboard?.conversations[0];
+  const snapshot = dashboard?.profile?.snapshot;
+
   return (
     <motion.div
       initial={false}
@@ -94,25 +148,21 @@ export default function DashboardOverviewPage() {
           </div>
 
           <div className="space-y-5 px-5 py-6 sm:px-7">
-            <div className="flex max-w-[88%] items-start gap-3">
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-calm-lichen border border-white/5">
-                <Sprout className="h-4 w-4" />
+            {loading && <div className="flex min-h-32 items-center justify-center text-calm-fog"><Loader2 className="h-5 w-5 animate-spin" /></div>}
+            {!loading && latestConversation && (
+              <div className="flex items-start gap-3">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-calm-lichen border border-white/5"><Sprout className="h-4 w-4" /></div>
+                <div className="rounded-[22px] rounded-tl-md bg-white/10 border border-white/5 px-4 py-3 text-[13px] leading-6 text-calm-paper-white">
+                  <p className="font-semibold">{latestConversation.title}</p>
+                  <p className="mt-1 text-calm-fog/80">Phiên đang ở bước {latestConversation.current_stage}. Mở lại để tiếp tục mạch phản chiếu của bạn.</p>
+                </div>
               </div>
-              <div className="rounded-[22px] rounded-tl-md bg-white/10 border border-white/5 px-4 py-3 text-[13px] leading-6 text-calm-paper-white">
-                Nếu được tự chọn nhịp sống của mình, bạn muốn dành thời gian và năng lượng cho điều gì?
+            )}
+            {!loading && !latestConversation && (
+              <div className="rounded-[22px] border border-dashed border-white/15 bg-white/5 px-4 py-6 text-center text-[13px] leading-6 text-calm-fog">
+                Chưa có cuộc trò chuyện nào. Bạn có thể bắt đầu bằng một câu hỏi thật lòng.
               </div>
-            </div>
-            <div className="ml-auto max-w-[82%] rounded-[22px] rounded-tr-md border border-calm-lichen/30 bg-calm-lichen/10 px-4 py-3 text-[13px] leading-6 text-calm-warm-ivory">
-              Mình muốn có thời gian cho gia đình và tự do hơn với những lựa chọn của mình.
-            </div>
-            <div className="flex max-w-[88%] items-start gap-3">
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-calm-lichen border border-white/5">
-                <Sprout className="h-4 w-4" />
-              </div>
-              <div className="rounded-[22px] rounded-tl-md bg-white/10 border border-white/5 px-4 py-3 text-[13px] leading-6 text-calm-paper-white">
-                Điều nhỏ nhất bạn có thể thay đổi trong tuần này để tiến gần hơn tới nhịp sống đó là gì?
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="px-5 pb-5 sm:px-7 sm:pb-7">
@@ -159,7 +209,7 @@ export default function DashboardOverviewPage() {
                       </span>
                     </div>
                     <p className="mt-2 text-[9px] font-bold tracking-[0.08em] text-calm-warm-ivory">{item.title}</p>
-                    <p className="mt-1 text-[11px] leading-4 text-calm-fog/90">{item.detail}</p>
+                      <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-calm-fog/90">{snapshot?.dimensions?.[item.key]?.summary || item.detail}</p>
                   </Link>
                 );
               })}
@@ -178,23 +228,12 @@ export default function DashboardOverviewPage() {
                 </span>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-calm-fog/70">Thử nghiệm hiện tại</p>
-                  <h3 className="mt-1 text-[15px] font-semibold leading-5 text-calm-paper-white">Làm việc 4 ngày/tuần trong 1 tháng</h3>
+                  <h3 className="mt-1 text-[15px] font-semibold leading-5 text-calm-paper-white">{activeExperiment?.title || 'Chưa có thử nghiệm đang chạy'}</h3>
                 </div>
               </div>
-              <span className="rounded-full bg-calm-success-leaf/20 border border-calm-success-leaf/20 px-2.5 py-1 text-[9px] font-semibold text-calm-success-leaf">Đang diễn ra</span>
+              {activeExperiment && <span className="rounded-full bg-calm-success-leaf/20 border border-calm-success-leaf/20 px-2.5 py-1 text-[9px] font-semibold text-calm-success-leaf">{activeExperiment.status === 'active' ? 'Đang diễn ra' : activeExperiment.status}</span>}
             </div>
-            <div className="mt-5 space-y-3">
-              <div className="flex items-center justify-between text-[11px] text-calm-fog">
-                <span>Ngày 18 / 30</span><span className="font-semibold text-calm-warm-ivory">60%</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-calm-success-leaf to-calm-lichen" />
-              </div>
-              <div className="flex items-start gap-2 text-[11px] leading-5 text-calm-fog/90">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-calm-success-leaf" />
-                Quan sát năng lượng, thời gian cho gia đình và cảm giác trong công việc.
-              </div>
-            </div>
+            {activeExperiment ? <div className="mt-5 space-y-3"><div className="flex items-center justify-between text-[11px] text-calm-fog"><span>Hạn {activeExperiment.target_date}</span><span className="font-semibold text-calm-warm-ivory">{activeExperiment.progress_percent}%</span></div><div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-calm-success-leaf to-calm-lichen" style={{ width: `${activeExperiment.progress_percent}%` }} /></div><div className="flex items-start gap-2 text-[11px] leading-5 text-calm-fog/90"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-calm-success-leaf" />Dữ liệu tiến độ lấy từ thử nghiệm của bạn, không phải chỉ số suy đoán.</div></div> : <Link href="/app/experiments" className="mt-5 inline-flex text-[12px] font-semibold text-calm-lichen">Tạo thử nghiệm đầu tiên <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>}
           </motion.section>
         </div>
       </div>

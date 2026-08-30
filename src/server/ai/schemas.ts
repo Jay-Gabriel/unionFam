@@ -7,9 +7,22 @@ export const DimensionEnum = z.enum([
   'what_it_takes',
   'my_trade_offs',
   'the_question',
+  'financial_life',
+  'other',
 ]);
 
+// Keep the original MVP stage names as aliases while accepting the canonical
+// stage names from the product specification.
 export const StageEnum = z.enum([
+  'onboarding',
+  'discovery',
+  'clarify',
+  'permission',
+  'synthesis',
+  'design',
+  'experiment',
+  'reflection',
+  'completed',
   'initial_exploration',
   'ideal_day_exploration',
   'trade_offs_evaluation',
@@ -18,25 +31,26 @@ export const StageEnum = z.enum([
 
 export const ObservationProposalSchema = z.object({
   dimension: DimensionEnum,
-  observationType: z.string().default('insight_candidate'),
-  contentOriginal: z.string().min(5),
+  observationType: z.string().min(1).max(64).default('insight_candidate'),
+  contentOriginal: z.string().min(5).max(1200),
   confidence: z.number().min(0).max(1).default(0.85),
-  evidenceMessageIds: z.array(z.string()).optional(),
+  evidenceMessageIds: z.array(z.string().uuid()).max(10).optional(),
 });
 
 export const SafetySchema = z.object({
   isSafe: z.boolean().default(true),
-  safetyFlag: z.string().optional(),
+  safetyFlag: z.string().max(64).optional(),
+  userMessage: z.string().max(2000).optional(),
 });
 
 export const AIStructuredOutputSchema = z.object({
-  responseText: z.string().min(1),
-  nextStage: StageEnum.default('initial_exploration'),
+  responseText: z.string().min(1).max(6000),
+  nextStage: StageEnum.default('discovery'),
   requiresPermission: z.boolean().default(false),
   safety: SafetySchema.default({ isSafe: true }),
-  nextQuestionId: z.string().optional(),
+  nextQuestionId: z.string().min(1).max(128).optional(),
   observationProposal: ObservationProposalSchema.optional(),
-  errorMetadata: z.string().optional(),
+  errorMetadata: z.string().max(2000).optional(),
 });
 
 export type AIStructuredOutput = z.infer<typeof AIStructuredOutputSchema>;
@@ -44,8 +58,37 @@ export type AIStructuredOutput = z.infer<typeof AIStructuredOutputSchema>;
 export interface SchemaParseResult {
   success: boolean;
   data?: AIStructuredOutput;
-  errorCode?: 'AI_SCHEMA_INVALID';
+  errorCode?: 'AI_SCHEMA_INVALID' | 'AI_PROVIDER_TIMEOUT' | 'AI_PROVIDER_UNAVAILABLE';
   errorMessage?: string;
+}
+
+function normalizeProviderPayload(raw: unknown) {
+  if (!raw || typeof raw !== 'object') return raw;
+  const value = raw as Record<string, unknown>;
+  const observation = (value.observation || value.observationProposal) as Record<string, unknown> | undefined;
+  const safety = (value.safety || {}) as Record<string, unknown>;
+
+  return {
+    responseText: value.responseText ?? value.assistant_message,
+    nextStage: value.nextStage ?? value.next_stage,
+    requiresPermission: value.requiresPermission ?? value.requires_permission,
+    nextQuestionId: value.nextQuestionId ?? value.next_question_id,
+    observationProposal: observation
+      ? {
+          dimension: observation.dimension,
+          observationType: observation.observationType ?? observation.type ?? 'insight_candidate',
+          contentOriginal: observation.contentOriginal ?? observation.content,
+          confidence: observation.confidence,
+          evidenceMessageIds: observation.evidenceMessageIds ?? observation.evidence_message_ids,
+        }
+      : undefined,
+    safety: {
+      isSafe: safety.isSafe ?? !Boolean(safety.triggered),
+      safetyFlag: safety.safetyFlag ?? safety.category,
+      userMessage: safety.userMessage,
+    },
+    errorMetadata: value.errorMetadata,
+  };
 }
 
 export function parseStrictAIOutput(
@@ -53,12 +96,13 @@ export function parseStrictAIOutput(
   allowedQuestionIds: string[] = []
 ): SchemaParseResult {
   try {
-    const parsed = JSON.parse(rawJSON);
+    const parsed = normalizeProviderPayload(JSON.parse(rawJSON));
     const validated = AIStructuredOutputSchema.parse(parsed);
 
-    // Validate nextQuestionId against server allowlist
-    if (validated.nextQuestionId && allowedQuestionIds.length > 0) {
-      if (!allowedQuestionIds.includes(validated.nextQuestionId)) {
+    // A model-provided question is only accepted when the server supplied an
+    // explicit allowlist for this turn. Never trust an arbitrary model ID.
+    if (validated.nextQuestionId) {
+      if (allowedQuestionIds.length === 0 || !allowedQuestionIds.includes(validated.nextQuestionId)) {
         return {
           success: false,
           errorCode: 'AI_SCHEMA_INVALID',
@@ -67,10 +111,15 @@ export function parseStrictAIOutput(
       }
     }
 
-    return {
-      success: true,
-      data: validated,
-    };
+    if (validated.requiresPermission && !validated.observationProposal && validated.nextStage !== 'permission') {
+      return {
+        success: false,
+        errorCode: 'AI_SCHEMA_INVALID',
+        errorMessage: 'Permission requests must include an observation or use permission stage',
+      };
+    }
+
+    return { success: true, data: validated };
   } catch (err) {
     return {
       success: false,

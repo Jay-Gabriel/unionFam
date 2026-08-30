@@ -16,6 +16,7 @@ Bộ tài liệu này chuyển brief ban đầu thành đặc tả đủ chi ti�
 10. [Customer Input & Gap Analysis](docs/09_CUSTOMER_INPUT_GAP_ANALYSIS.md) — những gì đã chốt từ ảnh khách gửi và phần còn thiếu được xử lý thế nào.
 11. [Week 1 Execution Plan](docs/10_WEEK_1_EXECUTION_PLAN.md) — kế hoạch chi tiết Ngày 1–5, acceptance gate và prompt giao AI theo từng lượt.
 12. [Week 1 Remediation & Supabase Plan](docs/11_WEEK_1_REMEDIATION_SUPABASE_PLAN.md) — kế hoạch sửa Auth/RLS/persistence thật, test security và gate trước khi đẩy migration lên Supabase.
+13. [Technical RC Status](docs/12_TECHNICAL_RC_STATUS.md) — những gì đã chạy thật, kết quả kiểm chứng và các gate `PENDING_PO`.
 
 ## Nguồn và mức độ chắc chắn
 
@@ -38,3 +39,22 @@ Input mới đã chốt Google Auth, Question Engine, Life Profile Engine, dashb
 - Admin xem user/session/answer/error theo quyền, có audit và không lộ prompt/secrets.
 - Migration, seed dữ liệu phi nhạy cảm, test tự động, tài liệu setup và UAT evidence.
 - Không đưa methodology/prompt bí mật, service-role key hoặc dữ liệu người dùng vào repository/log.
+
+## Chạy local
+
+```bash
+npm install
+cp .env.example .env.local
+# điền URL + publishable/anon key; service-role/Gemini chỉ ở server
+npm run dev
+```
+
+Nếu dùng Supabase local, khởi động CLI rồi chạy migration/seed:
+
+```bash
+npx supabase start
+npx supabase migration up --local --yes
+npm run typecheck && npm run lint && npm test
+```
+
+`AUTH_REQUIRED=false` chỉ dành cho preview UI local. Trước production phải cấu hình Auth/provider và đặt `AUTH_REQUIRED=true`. Xem [Technical RC Status](docs/12_TECHNICAL_RC_STATUS.md) để biết các credential/input còn chờ khách.

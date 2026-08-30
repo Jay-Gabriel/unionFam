@@ -21,6 +21,7 @@ export async function requireUser(): Promise<VerifiedUser> {
     .from('user_roles')
     .select('role')
     .eq('user_id', user.id)
+    .eq('role', 'admin')
     .maybeSingle();
 
   const role = (roleRow as { role: string } | null)?.role === 'admin' ? 'admin' : 'member';

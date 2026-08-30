@@ -122,14 +122,26 @@ function SceneContent({
 export function SanctuaryCanvas({ variant, fallbackSrc, className = '' }: SanctuaryCanvasProps) {
   const [quality, setQuality] = useState<SceneQuality>('static');
   const [isVisible, setIsVisible] = useState(true);
+  const [canvasReady, setCanvasReady] = useState(false);
   const preset = scenePresets[variant];
 
   useEffect(() => {
-    setQuality(getDeviceQualityPolicy());
+    let cancelled = false;
+    const enable = () => {
+      if (!cancelled) setQuality(getDeviceQualityPolicy());
+    };
+    const idleCallback = (window as Window & { requestIdleCallback?: (callback: () => void) => number }).requestIdleCallback;
+    const idle = idleCallback
+      ? window.setTimeout(() => idleCallback(enable), 250)
+      : window.setTimeout(enable, 650);
 
     const handleVisibility = () => setIsVisible(!document.hidden);
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(idle);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const fallbackNode = fallbackSrc ? (
@@ -144,20 +156,23 @@ export function SanctuaryCanvas({ variant, fallbackSrc, className = '' }: Sanctu
 
   return (
     <div
-      className={`absolute inset-0 z-0 ${className}`}
+      className={`absolute inset-0 z-0 overflow-hidden ${className}`}
       aria-hidden="true"
       style={{ pointerEvents: 'none' }}
     >
+      <div className="absolute inset-0">{fallbackNode}</div>
       <ErrorBoundary fallback={fallbackNode}>
         <Canvas
           frameloop="demand"
-          dpr={quality === 'low' ? 1 : [1, 1.25]}
+          dpr={1}
           gl={{
             alpha: true,
             antialias: false,
             powerPreference: quality === 'low' ? 'low-power' : 'high-performance',
           }}
           camera={{ fov: 40, near: 0.1, far: 80, position: [0, 0, preset.cameraZ] }}
+          style={{ opacity: canvasReady ? 1 : 0, transition: 'opacity 180ms ease-out' }}
+          onCreated={() => setCanvasReady(true)}
         >
           <Suspense fallback={null}>
             <SceneContent variant={variant} quality={quality} isVisible={isVisible} />

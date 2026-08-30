@@ -37,7 +37,7 @@ function AuthForm() {
       const supabase = createClient();
 
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -45,6 +45,11 @@ function AuthForm() {
           },
         });
         if (error) throw error;
+        if (!data.session) {
+          setErrorMsg('Tài khoản đã tạo. Hãy kiểm tra email để xác nhận rồi đăng nhập.');
+          setIsLoading(false);
+          return;
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,

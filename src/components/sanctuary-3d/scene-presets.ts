@@ -19,7 +19,7 @@ export const scenePresets: Record<SanctuaryVariant, PresetConfig> = {
     fogFar: 30,
     lightIntensity: 1.5,
     lightColor: '#D9CB8F', // pollen
-    particleCount: 48,
+    particleCount: 28,
     cameraZ: 10,
   },
   'app-morning': {
@@ -29,7 +29,7 @@ export const scenePresets: Record<SanctuaryVariant, PresetConfig> = {
     fogFar: 35,
     lightIntensity: 1.2,
     lightColor: '#B9C6A5',
-    particleCount: 24,
+    particleCount: 16,
     cameraZ: 12,
   },
   'conversation': {
@@ -39,7 +39,7 @@ export const scenePresets: Record<SanctuaryVariant, PresetConfig> = {
     fogFar: 20,
     lightIntensity: 1.0,
     lightColor: '#EEF1EA',
-    particleCount: 10,
+    particleCount: 8,
     cameraZ: 14,
   },
   'questions': {
@@ -49,7 +49,7 @@ export const scenePresets: Record<SanctuaryVariant, PresetConfig> = {
     fogFar: 25,
     lightIntensity: 1.5,
     lightColor: '#D9CB8F',
-    particleCount: 16,
+    particleCount: 10,
     cameraZ: 14,
   },
   'life-map': {
@@ -59,7 +59,7 @@ export const scenePresets: Record<SanctuaryVariant, PresetConfig> = {
     fogFar: 60,
     lightIntensity: 2.0,
     lightColor: '#B9C6A5',
-    particleCount: 32,
+    particleCount: 18,
     cameraZ: 22,
   }
 };
