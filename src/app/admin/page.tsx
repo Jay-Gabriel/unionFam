@@ -16,7 +16,7 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6 space-y-6">
+    <div className="legacy-calm-page min-h-screen bg-calm-deep-moss p-6 space-y-6">
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-card flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold">

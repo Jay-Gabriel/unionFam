@@ -3,255 +3,277 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  LayoutDashboard,
-  MessageSquareHeart,
+  BookOpen,
+  ChevronRight,
   Compass,
   FlaskConical,
-  BookOpen,
+  FolderArchive,
   GraduationCap,
   History,
-  Wallet,
-  TrendingUp,
-  FolderArchive,
-  Search,
-  Bell,
+  Home,
+  Leaf,
   Menu,
+  MessageCircleHeart,
+  Sprout,
+  TrendingUp,
+  Wallet,
   X,
-  ChevronRight,
-  ChevronDown,
-  Sparkles,
-  RefreshCw
 } from 'lucide-react';
 
-interface SidebarItem {
-  name: string;
+type NavItem = {
+  label: string;
   href: string;
   icon: React.ElementType;
+};
+
+const navigation: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: 'Hôm nay',
+    items: [
+      { label: 'Tổng quan', href: '/app', icon: Home },
+      { label: 'Trò chuyện cùng AI', href: '/app/conversations/new', icon: MessageCircleHeart },
+    ],
+  },
+  {
+    label: 'Thiết kế cuộc sống',
+    items: [
+      { label: 'Life Design Map', href: '/app/life-map', icon: Compass },
+      { label: 'Financial Life', href: '/app/financial-life', icon: Wallet },
+    ],
+  },
+  {
+    label: 'Thực hành',
+    items: [
+      { label: 'Experiments', href: '/app/experiments', icon: FlaskConical },
+      { label: 'Reflections', href: '/app/reflections', icon: BookOpen },
+      { label: 'Learnings', href: '/app/learnings', icon: GraduationCap },
+    ],
+  },
+  {
+    label: 'Nhìn lại',
+    items: [
+      { label: 'Progress', href: '/app/progress', icon: TrendingUp },
+      { label: 'Resources', href: '/app/resources', icon: FolderArchive },
+      { label: 'Lịch sử Life Map', href: '/app/life-map/history', icon: History },
+    ],
+  },
+];
+
+const mobileNavigation = [
+  { label: 'Hôm nay', href: '/app', icon: Home },
+  { label: 'Trò chuyện', href: '/app/conversations/new', icon: MessageCircleHeart },
+  { label: 'Life Map', href: '/app/life-map', icon: Compass },
+  { label: 'Thử nghiệm', href: '/app/experiments', icon: FlaskConical },
+];
+
+function isRouteActive(pathname: string, href: string) {
+  return pathname === href || (href !== '/app' && pathname.startsWith(href));
 }
 
-const sidebarItems: SidebarItem[] = [
-  { name: 'Tổng quan', href: '/app', icon: LayoutDashboard },
-  { name: 'AI Conversation', href: '/app/conversations/new', icon: MessageSquareHeart },
-  { name: 'Life Design Map', href: '/app/life-map', icon: Compass },
-  { name: 'Experiments', href: '/app/experiments', icon: FlaskConical },
-  { name: 'Reflections', href: '/app/reflections', icon: BookOpen },
-  { name: 'Learnings', href: '/app/learnings', icon: GraduationCap },
-  { name: 'Life Map (Lịch sử)', href: '/app/life-map/history', icon: History },
-  { name: 'Financial Life', href: '/app/financial-life', icon: Wallet },
-  { name: 'Progress', href: '/app/progress', icon: TrendingUp },
-  { name: 'Resources', href: '/app/resources', icon: FolderArchive },
-];
+function Brand() {
+  return (
+    <Link href="/app" className="group flex items-center gap-3">
+      <div className="relative grid h-11 w-11 place-items-center rounded-[17px] bg-white/10 text-calm-warm-ivory shadow-[0_10px_28px_rgba(0,0,0,0.18)] border border-white/10">
+        <Leaf className="h-5 w-5 -rotate-12 transition-transform duration-500 group-hover:rotate-6 text-calm-lichen" />
+        <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-calm-forest-dusk bg-calm-pollen" />
+      </div>
+      <div>
+        <div className="text-[17px] font-semibold tracking-[-0.025em] text-calm-paper-white">Life Lab</div>
+        <div className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.17em] text-calm-fog/70">
+          Understand · Choose · Become
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  return (
+    <nav className="space-y-5" aria-label="Điều hướng chính">
+      {navigation.map((group) => (
+        <div key={group.label}>
+          <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-calm-fog/50">
+            {group.label}
+          </p>
+          <div className="space-y-1">
+            {group.items.map((item) => {
+              const active = isRouteActive(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`group flex items-center justify-between rounded-2xl px-3 py-2.5 text-[13px] transition-all duration-300 ${
+                    active
+                      ? 'bg-white/10 font-medium text-calm-warm-ivory shadow-glass border border-white/5'
+                      : 'text-calm-fog hover:bg-white/5 hover:text-calm-paper-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon className={`h-[17px] w-[17px] ${active ? 'text-calm-lichen' : 'text-calm-fern/80'}`} />
+                    {item.label}
+                  </span>
+                  {active && <ChevronRight className="h-3.5 w-3.5 text-calm-lichen/80" />}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#f4f6fc] text-slate-800 flex flex-col md:flex-row">
-      {/* Mobile Navigation Bar */}
-      <div className="md:hidden flex items-center justify-between bg-white/90 backdrop-blur-md px-4 py-3 border-b border-slate-200 sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-            L
-          </div>
-          <div>
-            <h1 className="font-bold text-slate-900 leading-tight">Life Lab</h1>
-            <p className="text-[10px] text-slate-500">Understand → Choose → Become</p>
-          </div>
-        </div>
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-          aria-label="Toggle Navigation"
-        >
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+    <div
+      className="app-calm-scope relative isolate min-h-screen bg-calm-deep-moss text-calm-paper-white"
+      style={{ backgroundColor: '#263128' }}
+    >
+      {/* Static 2.5D atmosphere: same sanctuary language without WebGL startup cost. */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-calm-deep-moss" aria-hidden="true">
+        <div
+          className="absolute inset-0 opacity-80"
+          style={{
+            background:
+              'radial-gradient(circle at 82% 12%, rgba(185,198,165,0.12), transparent 30%), radial-gradient(circle at 18% 70%, rgba(89,106,85,0.18), transparent 38%), linear-gradient(180deg, #263128 0%, #1d2820 68%, #111b15 100%)',
+          }}
+        />
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-[0.055]"
+          style={{ backgroundImage: "url('/visuals/living-sanctuary/root-back.svg')" }}
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-[42%] bg-cover bg-bottom opacity-[0.07]"
+          style={{ backgroundImage: "url('/visuals/living-sanctuary/moss-front.svg')" }}
+        />
       </div>
 
-      {/* Mobile Drawer Backdrop */}
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/5 bg-calm-deep-moss/95 px-4 py-3 md:hidden">
+        <Brand />
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-paper-white"
+          aria-label="Mở menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      </header>
+
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 md:hidden"
-            onClick={() => setMobileOpen(false)}
-          />
+          <>
+            <motion.button
+              type="button"
+              aria-label="Đóng menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileOpen(false)}
+              className="fixed inset-0 z-40 bg-calm-deep-moss/80 md:hidden"
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 360, damping: 34 }}
+              className="fixed inset-y-0 left-0 z-50 w-[286px] overflow-y-auto border-r border-white/10 bg-calm-deep-moss px-5 py-5 md:hidden"
+            >
+              <div className="mb-7 flex items-center justify-between">
+                <Brand />
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-calm-paper-white"
+                  aria-label="Đóng menu"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <Navigation pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
 
-      {/* Left Sidebar */}
-      <aside
-        className={`fixed md:sticky top-0 left-0 z-50 h-screen w-[265px] bg-[#fcfdff] border-r border-slate-200/70 flex flex-col justify-between transition-transform duration-300 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
-      >
-        <div className="p-5 flex flex-col h-full overflow-y-auto">
-          {/* Logo Header */}
-          <Link href="/app" className="group flex items-center gap-3 px-2 mb-6">
-            <motion.div
-              whileHover={{ rotate: 15, scale: 1.08 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-              className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-700 via-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200"
-            >
-              <Sparkles size={20} />
-            </motion.div>
-            <div>
-              <h2 className="font-bold text-lg text-slate-900 tracking-tight leading-none group-hover:text-indigo-600 transition-colors">
-                Life Lab
-              </h2>
-              <p className="text-[11px] text-slate-400 font-medium mt-1">Understand → Choose → Become</p>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[272px] border-r border-white/5 bg-calm-deep-moss/92 md:flex md:flex-col">
+        <div className="px-6 pb-5 pt-6">
+          <Brand />
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 pb-5">
+          <Navigation pathname={pathname} />
+        </div>
+        <div className="p-4 pt-0">
+          <Link
+            href="/app/life-map"
+            className="group block overflow-hidden rounded-[26px] border border-white/10 bg-white/5 p-4 shadow-glass"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-calm-warm-ivory shadow-sm border border-white/5">
+                <Sprout className="h-4 w-4" />
+              </span>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-calm-fog">Life Lab Loop</span>
             </div>
+            <p className="text-[12px] font-medium leading-relaxed text-calm-fog/90">
+              Mỗi câu trả lời là một hạt giống để bạn hiểu mình rõ hơn.
+            </p>
+            <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-calm-warm-ivory">
+              Mở bản đồ <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+            </span>
           </Link>
-
-          {/* Navigation Links with Framer Motion hover & active spring indicator */}
-          <nav className="space-y-1 flex-1">
-            {sidebarItems.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/app' && pathname?.startsWith(item.href));
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="relative block"
-                >
-                  <motion.div
-                    whileHover={{ x: 3 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13.5px] font-medium transition-all ${
-                      isActive
-                        ? 'bg-[#1b2559] text-white shadow-md shadow-indigo-950/15 font-semibold'
-                        : 'text-slate-600 hover:bg-slate-100/90 hover:text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 z-10">
-                      <Icon size={17} className={isActive ? 'text-white' : 'text-slate-500'} />
-                      <span>{item.name}</span>
-                    </div>
-
-                    {isActive ? (
-                      <motion.div
-                        layoutId="activeChevron"
-                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      >
-                        <ChevronRight size={14} className="text-indigo-200" />
-                      </motion.div>
-                    ) : null}
-                  </motion.div>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Bottom Widget: Life Lab Loop */}
-          <div className="mt-6 pt-4 border-t border-slate-100">
-            <motion.div
-              whileHover={{ y: -2 }}
-              className="bg-gradient-to-b from-indigo-50/50 via-slate-50 to-violet-50/40 p-4 rounded-2xl border border-indigo-100/80 text-center shadow-sm"
-            >
-              <p className="text-[11px] font-bold text-indigo-900 tracking-wide uppercase mb-2">
-                Life Lab Loop
-              </p>
-              
-              {/* Loop Graphic Animation */}
-              <div className="relative w-28 h-28 mx-auto my-2 flex items-center justify-center">
-                <div className="absolute inset-0 rounded-full border-2 border-dashed border-indigo-300 animate-spin" style={{ animationDuration: '18s' }} />
-                <div className="flex flex-col items-center z-10">
-                  <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">Explore</span>
-                  <div className="flex items-center gap-1 text-[8px] text-slate-500 my-0.5">
-                    <span>Learning</span>
-                    <RefreshCw size={10} className="text-indigo-500 animate-spin" style={{ animationDuration: '6s' }} />
-                    <span>Choose</span>
-                  </div>
-                  <span className="text-[9px] font-bold text-violet-600 uppercase tracking-wider">Experience</span>
-                </div>
-              </div>
-
-              {/* Quote */}
-              <p className="text-[11px] text-slate-600 italic leading-snug mt-2 font-medium">
-                &ldquo;Bạn là nhà khoa học của chính cuộc đời mình.&rdquo;
-              </p>
-              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">— Life Lab</p>
-              
-              <Link
-                href="/app/life-map"
-                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 mt-2.5 inline-flex items-center gap-1 group"
-              >
-                <span>Triết lý Life Lab</span>
-                <span className="group-hover:translate-x-1 transition-transform">→</span>
-              </Link>
-            </motion.div>
-          </div>
         </div>
       </aside>
 
-      {/* Main Content View */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <header className="bg-white/85 backdrop-blur-md sticky top-0 z-30 px-6 py-4 border-b border-slate-200/70 flex items-center justify-between gap-4">
+      <div className="relative md:pl-[272px] z-20">
+        <header className="sticky top-0 z-20 hidden h-[86px] items-center justify-between border-b border-white/5 bg-calm-deep-moss/92 px-7 md:flex lg:px-10">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              Chào Minh Anh! 👋
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-calm-fog/70">Không gian của bạn</p>
+            <h1 className="mt-1 text-[19px] font-medium tracking-[-0.02em] text-calm-paper-white">
+              Hôm nay, bạn muốn lắng nghe điều gì?
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Hôm nay bạn muốn khám phá điều gì về cuộc đời mình?
-            </p>
           </div>
-
           <div className="flex items-center gap-3">
-            {/* Search Bar */}
-            <div className="relative hidden sm:block w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-              <input
-                type="text"
-                placeholder="Tìm kiếm (⌘K)"
-                className="w-full bg-slate-100/90 border border-slate-200/80 rounded-full pl-9 pr-4 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all shadow-inner"
-              />
-            </div>
-
-            {/* Notification Bell */}
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.95 }}
-              className="relative p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-            >
-              <Bell size={18} />
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white animate-pulse">
-                3
+            {process.env.NODE_ENV !== 'production' && (
+              <span className="rounded-full border border-calm-pollen/30 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-calm-pollen">
+                Local preview
               </span>
-            </motion.button>
-
-            {/* Profile Badge */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="flex items-center gap-2.5 pl-2 border-l border-slate-200 cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-indigo-200 bg-slate-200 flex-shrink-0 shadow-sm">
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120"
-                  alt="Minh Anh"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="hidden lg:block text-left">
-                <div className="text-xs font-semibold text-slate-900 leading-tight">Minh Anh</div>
-                <div className="text-[10px] text-slate-500 font-medium">Explorer</div>
-              </div>
-              <ChevronDown size={14} className="text-slate-400 hidden sm:block" />
-            </motion.div>
+            )}
+            <div className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-sm font-semibold text-calm-paper-white shadow-sm">
+              U
+            </div>
           </div>
         </header>
 
-        {/* Dynamic Main Body */}
-        <main className="flex-1 p-4 md:p-6 max-w-[1500px] w-full mx-auto">
+        <main className="relative mx-auto min-h-[calc(100vh-86px)] w-full max-w-[1480px] px-4 pb-28 pt-5 sm:px-6 md:pb-10 md:pt-7 lg:px-10">
           {children}
         </main>
       </div>
+
+      <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-[24px] border border-white/10 bg-calm-deep-moss/95 p-1.5 shadow-glass md:hidden">
+        {mobileNavigation.map((item) => {
+          const active = isRouteActive(pathname, item.href);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-[18px] text-[9px] font-medium ${
+                active ? 'bg-white/15 text-calm-warm-ivory' : 'text-calm-fog/70'
+              }`}
+            >
+              <Icon className={`h-[18px] w-[18px] ${active ? 'text-calm-warm-ivory' : 'text-calm-fog/70'}`} />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

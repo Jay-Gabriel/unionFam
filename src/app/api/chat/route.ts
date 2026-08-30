@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GeminiConversationProvider } from '@/server/ai/provider';
 import { requireUser } from '@/server/auth/current-user';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
     }
 
-    const supabase = createServerClient();
+    const supabase = createClient();
     let actualConvId = conversationId;
 
     if (!actualConvId) {
@@ -49,7 +49,11 @@ export async function POST(request: Request) {
       .order('sequence_no', { ascending: true })
       .limit(10);
 
-    const recentMessages = prevMessages?.map(m => ({ role: m.role as any, content: m.content })) || [];
+    const recentMessages =
+      prevMessages?.map((message: { role: string; content: string }) => ({
+        role: message.role,
+        content: message.content,
+      })) || [];
     recentMessages.push({ role: 'user', content });
 
     // Determine sequence_no

@@ -32,7 +32,7 @@ export default function ExperimentsPage() {
   ];
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="legacy-calm-page space-y-6 pb-12">
       {/* Header */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-card flex items-center justify-between">
         <div>

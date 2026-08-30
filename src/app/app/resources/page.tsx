@@ -24,7 +24,7 @@ export default function ResourcesPage() {
   ];
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="legacy-calm-page space-y-6 pb-12">
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-card flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">

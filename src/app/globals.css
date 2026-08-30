@@ -2,94 +2,219 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
-
 :root {
-  --background: #f6f8fc;
-  --foreground: #0f172a;
-  --font-sans: 'Inter', sans-serif;
-  --font-heading: 'Outfit', sans-serif;
+  --background: #EEF1EA;
+  --foreground: #222A23;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-}
-
 /* Glassmorphism & Premium Card Styles */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(247, 245, 238, 0.7); /* warm-ivory semi-transparent */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(52, 65, 53, 0.1);
 }
 
-.glass-card-hover {
-  background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.05);
+.calm-card-hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glass-card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px -4px rgba(99, 102, 241, 0.12);
-  border-color: rgba(165, 180, 252, 0.6);
+.calm-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -4px rgba(52, 65, 53, 0.12);
 }
 
-/* Custom Gradients */
-.bg-banner-gradient {
-  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 30%, #f5f3ff 70%, #faf5ff 100%);
+/*
+ * Dark sanctuary migration layer for product pages that still use the
+ * original slate/indigo utility vocabulary. Keeping this opt-in prevents the
+ * admin and public/auth surfaces from being recolored by broad overrides.
+ */
+.legacy-calm-page {
+  color: #FCFBF7;
 }
 
-.bg-glow-indigo {
-  box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.25);
+.legacy-calm-page .bg-white,
+.legacy-calm-page .bg-white\/90 {
+  background-color: rgba(38, 49, 40, 0.82) !important;
 }
 
-.bg-glow-amber {
-  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.25);
+.legacy-calm-page .bg-slate-50,
+.legacy-calm-page .bg-slate-100,
+.legacy-calm-page .bg-slate-200 {
+  background-color: rgba(185, 198, 165, 0.09) !important;
 }
 
-.bg-glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25);
+.legacy-calm-page .bg-indigo-50,
+.legacy-calm-page .bg-indigo-50\/60,
+.legacy-calm-page .bg-indigo-50\/70,
+.legacy-calm-page .bg-indigo-100,
+.legacy-calm-page .bg-purple-50\/50 {
+  background-color: rgba(185, 198, 165, 0.13) !important;
+}
+
+.legacy-calm-page .bg-indigo-600,
+.legacy-calm-page .hover\:bg-indigo-700:hover {
+  background-color: #B9C6A5 !important;
+  color: #263128 !important;
+}
+
+.legacy-calm-page .bg-emerald-50,
+.legacy-calm-page .bg-emerald-100 {
+  background-color: rgba(86, 129, 102, 0.18) !important;
+}
+
+.legacy-calm-page .bg-orange-50,
+.legacy-calm-page .bg-amber-50 {
+  background-color: rgba(160, 120, 82, 0.17) !important;
+}
+
+.legacy-calm-page .border-slate-100,
+.legacy-calm-page .border-slate-200,
+.legacy-calm-page .border-slate-300 {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+.legacy-calm-page .border-indigo-100,
+.legacy-calm-page .border-indigo-200,
+.legacy-calm-page .border-indigo-300 {
+  border-color: rgba(185, 198, 165, 0.22) !important;
+}
+
+.legacy-calm-page .border-emerald-200,
+.legacy-calm-page .border-orange-100,
+.legacy-calm-page .border-amber-100 {
+  border-color: rgba(217, 203, 143, 0.20) !important;
+}
+
+.legacy-calm-page .text-slate-900,
+.legacy-calm-page .text-slate-800 {
+  color: #FCFBF7 !important;
+}
+
+.legacy-calm-page .text-slate-700,
+.legacy-calm-page .text-slate-600 {
+  color: rgba(238, 241, 234, 0.86) !important;
+}
+
+.legacy-calm-page .text-slate-500 {
+  color: rgba(221, 226, 216, 0.72) !important;
+}
+
+.legacy-calm-page .text-slate-400,
+.legacy-calm-page .text-slate-300 {
+  color: rgba(221, 226, 216, 0.52) !important;
+}
+
+.legacy-calm-page .text-indigo-950,
+.legacy-calm-page .text-indigo-900,
+.legacy-calm-page .text-indigo-700,
+.legacy-calm-page .text-indigo-600,
+.legacy-calm-page .text-indigo-500 {
+  color: #B9C6A5 !important;
+}
+
+.legacy-calm-page .text-emerald-700,
+.legacy-calm-page .text-emerald-600,
+.legacy-calm-page .text-emerald-500 {
+  color: #9FC5A7 !important;
+}
+
+.legacy-calm-page .text-amber-700,
+.legacy-calm-page .text-amber-600,
+.legacy-calm-page .text-orange-700,
+.legacy-calm-page .text-orange-500 {
+  color: #D9CB8F !important;
+}
+
+.legacy-calm-page .bg-indigo-600.text-white,
+.legacy-calm-page .bg-indigo-600 .text-white {
+  color: #263128 !important;
+}
+
+.legacy-calm-page .from-indigo-500,
+.legacy-calm-page .from-indigo-600 {
+  --tw-gradient-from: #7C8B70 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(124, 139, 112, 0) var(--tw-gradient-to-position) !important;
+}
+
+.legacy-calm-page .to-indigo-600,
+.legacy-calm-page .to-indigo-700,
+.legacy-calm-page .to-violet-600 {
+  --tw-gradient-to: #B9C6A5 var(--tw-gradient-to-position) !important;
+}
+
+.legacy-calm-page .shadow-indigo-200,
+.legacy-calm-page .shadow-indigo-950\/15 {
+  --tw-shadow-color: rgba(15, 26, 18, 0.18) !important;
+}
+
+.legacy-calm-page .shadow-card {
+  box-shadow: 0 18px 48px rgba(10, 18, 12, 0.14) !important;
+}
+
+.legacy-calm-page input,
+.legacy-calm-page textarea,
+.legacy-calm-page select {
+  color: #FCFBF7;
+  caret-color: #B9C6A5;
+}
+
+.legacy-calm-page input::placeholder,
+.legacy-calm-page textarea::placeholder {
+  color: rgba(221, 226, 216, 0.48);
 }
 
 /* Custom Animations */
 @keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(1deg); }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
 }
 
 @keyframes pulseGlow {
   0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
+  50% { opacity: 1; transform: scale(1.02); }
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+@keyframes flyButterfly {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(15px, -10px) rotate(-5deg); }
+  50% { transform: translate(30px, 5px) rotate(5deg); }
+  75% { transform: translate(15px, 15px) rotate(0deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes ambientParticles {
+  0% { opacity: 0; transform: translateY(0px) translateX(0px); }
+  20% { opacity: 0.8; }
+  80% { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(-40px) translateX(20px); }
 }
 
 .animate-float {
-  animation: float 4s ease-in-out infinite;
+  animation: float 6s ease-in-out infinite;
 }
 
-.animate-pulse-glow {
-  animation: pulseGlow 3s ease-in-out infinite;
-}
-
-.animate-shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 2.5s infinite;
+.animate-butterfly {
+  animation: flyButterfly 15s ease-in-out infinite;
 }
 
 /* Custom Scrollbar */
@@ -103,10 +228,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #B9C6A5; /* lichen */
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #818cf8;
+  background: #7C8B70; /* fern */
 }

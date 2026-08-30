@@ -3,14 +3,15 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  Sparkles,
-  Send,
-  Paperclip,
   CheckCircle2,
   Edit3,
-  XCircle,
+  Loader2,
+  Paperclip,
+  Send,
   ShieldCheck,
-  Loader2
+  Sprout,
+  UserRound,
+  XCircle,
 } from 'lucide-react';
 
 interface Observation {
@@ -38,7 +39,8 @@ export default function ConversationPage() {
     {
       id: 'm1',
       role: 'assistant',
-      content: 'Chào Minh Anh, hôm nay chúng ta cùng phản chiếu sâu hơn về mong muốn kinh doanh và tự do thời gian của bạn nhé. Khi hình dung 3 năm nữa bạn đã hoàn toàn tự do tài chính, ngày thường của bạn diễn ra như thế nào?',
+      content:
+        'Chào bạn, hôm nay chúng ta cùng dành một khoảng lặng để nhìn rõ hơn điều bạn thật sự muốn nhé. Nếu hình dung ba năm nữa mình đang sống đúng nhịp mong muốn, một ngày bình thường của bạn sẽ diễn ra như thế nào?',
       timestamp: '10:30',
     },
   ]);
@@ -49,8 +51,8 @@ export default function ConversationPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!inputContent.trim() || isStreaming) return;
 
     const userText = inputContent;
@@ -61,22 +63,23 @@ export default function ConversationPage() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((previous) => [...previous, userMsg]);
     setInputContent('');
     setIsStreaming(true);
 
     const assistantMsgId = `ai-${Date.now()}`;
-    const initialAssistantMsg: Message = {
-      id: assistantMsgId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, initialAssistantMsg]);
+    setMessages((previous) => [
+      ...previous,
+      {
+        id: assistantMsgId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
 
     try {
-      const res = await fetch('/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -86,102 +89,119 @@ export default function ConversationPage() {
         }),
       });
 
-      if (!res.ok) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsgId
-              ? { ...m, content: 'Lỗi gián đoạn AI. Vui lòng gửi lại tin nhắn.' }
-              : m
+      if (!response.ok) {
+        setMessages((previous) =>
+          previous.map((message) =>
+            message.id === assistantMsgId
+              ? { ...message, content: 'Kết nối AI vừa bị gián đoạn. Bạn vui lòng gửi lại nhé.' }
+              : message
           )
         );
-        setIsStreaming(false);
         return;
       }
 
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
+      const reader = response.body?.getReader();
       if (!reader) return;
 
+      const decoder = new TextDecoder();
       let accumulatedText = '';
-      let pendingObs: Observation | undefined;
+      let eventBuffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const textChunk = decoder.decode(value);
-        const lines = textChunk.split('\n');
+        eventBuffer += decoder.decode(value, { stream: true });
+        const events = eventBuffer.split('\n\n');
+        eventBuffer = events.pop() || '';
 
-        let eventType = '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.replace('event: ', '').trim();
-          } else if (line.startsWith('data: ')) {
-            const dataStr = line.replace('data: ', '').trim();
-            try {
-              const data = JSON.parse(dataStr);
-              if (eventType === 'message.delta' && data.text) {
-                accumulatedText += data.text;
-                setMessages((prev) =>
-                  prev.map((m) => (m.id === assistantMsgId ? { ...m, content: accumulatedText } : m))
-                );
-              } else if (eventType === 'observation.created') {
-                pendingObs = data;
-                setMessages((prev) =>
-                  prev.map((m) => (m.id === assistantMsgId ? { ...m, observation: pendingObs } : m))
-                );
-              }
-            } catch (err) {
-              // Ignore partial JSON chunks
+        for (const eventBlock of events) {
+          let eventType = '';
+          let dataString = '';
+
+          for (const line of eventBlock.split('\n')) {
+            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+            if (line.startsWith('data: ')) dataString += line.slice(6).trim();
+          }
+
+          if (!dataString) continue;
+
+          try {
+            const data = JSON.parse(dataString);
+            if (eventType === 'message.delta' && data.text) {
+              accumulatedText += data.text;
+              setMessages((previous) =>
+                previous.map((message) =>
+                  message.id === assistantMsgId
+                    ? { ...message, content: accumulatedText }
+                    : message
+                )
+              );
             }
+            if (eventType === 'observation.created') {
+              setMessages((previous) =>
+                previous.map((message) =>
+                  message.id === assistantMsgId
+                    ? { ...message, observation: data as Observation }
+                    : message
+                )
+              );
+            }
+          } catch {
+            // Malformed provider events are ignored without breaking the current conversation.
           }
         }
       }
-    } catch (err) {
-      console.error('Chat error', err);
+    } catch (error) {
+      console.error('Chat error', error);
+      setMessages((previous) =>
+        previous.map((message) =>
+          message.id === assistantMsgId && !message.content
+            ? { ...message, content: 'Kết nối vừa bị gián đoạn. Bạn vui lòng thử lại nhé.' }
+            : message
+        )
+      );
     } finally {
       setIsStreaming(false);
     }
   };
 
   const handleDecision = async (
-    msgId: string,
-    obsId: string,
+    messageId: string,
+    observationId: string,
     decision: 'accepted' | 'rejected',
     editedContent?: string
   ) => {
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/observations/decision', {
+      const response = await fetch('/api/observations/decision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          observationId: obsId,
+          observationId,
           decision,
           editedContent,
-          idempotencyKey: `dec-${obsId}-${Date.now()}`,
+          idempotencyKey: `dec-${observationId}-${Date.now()}`,
         }),
       });
 
-      if (res.ok) {
-        setMessages((prev) =>
-          prev.map((m) => {
-            if (m.id === msgId && m.observation) {
-              return {
-                ...m,
-                observation: {
-                  ...m.observation,
-                  status: decision,
-                  contentEdited: editedContent,
-                },
-              };
-            }
-            return m;
+      if (response.ok) {
+        setMessages((previous) =>
+          previous.map((message) => {
+            if (message.id !== messageId || !message.observation) return message;
+            return {
+              ...message,
+              observation: {
+                ...message.observation,
+                status: decision,
+                contentEdited: editedContent,
+              },
+            };
           })
         );
       }
-    } catch (err) {
-      console.error('Failed decision', err);
+    } catch (error) {
+      console.error('Failed decision', error);
     } finally {
       setEditingObsId(null);
       setIsSubmitting(false);
@@ -189,192 +209,206 @@ export default function ConversationPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
-      {/* Header */}
-      <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-card flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <h2 className="font-bold text-slate-900 text-lg">AI Conversation & User Agency Gate</h2>
+    <div className="mx-auto max-w-5xl space-y-6 pb-12 text-calm-paper-white">
+      <section className="flex flex-col gap-4 rounded-[30px] border border-white/10 bg-calm-deep-moss/80 px-5 py-5 shadow-[0_20px_60px_rgba(10,18,12,0.14)] sm:flex-row sm:items-center sm:justify-between sm:px-7">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-full border border-calm-lichen/25 bg-calm-lichen/10 text-calm-lichen">
+            <Sprout size={19} />
+          </span>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-calm-lichen/80">
+              Một khoảng lặng của riêng bạn
+            </p>
+            <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-calm-paper-white sm:text-xl">
+              Trò chuyện cùng Life Lab
+            </h2>
+            <p className="mt-1 text-[11px] text-calm-fog/60">Phiên: {conversationId}</p>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">Session ID: {conversationId}</p>
         </div>
-        <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
-          Stage: Ideal Day Exploration
-        </span>
-      </div>
+        <div className="flex items-center gap-2 self-start rounded-full border border-calm-lichen/20 bg-calm-lichen/10 px-3.5 py-2 text-[11px] font-medium text-calm-lichen sm:self-auto">
+          <ShieldCheck size={14} />
+          Bạn giữ quyền quyết định
+        </div>
+      </section>
 
-      {/* Messages Timeline */}
-      <div className="space-y-6">
-        {messages.map((msg) => (
-          <div key={msg.id} className="space-y-3">
-            {/* User Message */}
-            {msg.role === 'user' ? (
-              <div className="flex items-start justify-end gap-3 ml-auto max-w-[85%]">
-                <div className="space-y-1 text-right">
-                  <div className="bg-indigo-600 text-white text-xs md:text-sm p-4 rounded-3xl rounded-tr-sm leading-relaxed shadow-sm">
-                    {msg.content}
+      <section className="min-h-[380px] rounded-[34px] border border-white/10 bg-calm-deep-moss/35 px-4 py-6 sm:px-7 sm:py-8">
+        <div className="space-y-7" aria-live="polite">
+          {messages.map((message) => (
+            <div key={message.id} className="space-y-3">
+              {message.role === 'user' ? (
+                <div className="ml-auto flex max-w-[88%] items-start justify-end gap-3 sm:max-w-[78%]">
+                  <div className="space-y-1 text-right">
+                    <div className="rounded-[24px] rounded-tr-md border border-calm-lichen/25 bg-calm-lichen/20 px-4 py-3.5 text-left text-sm leading-6 text-calm-paper-white shadow-[0_12px_30px_rgba(15,26,18,0.12)] sm:px-5 sm:text-[15px]">
+                      {message.content}
+                    </div>
+                    <span className="block px-2 text-[10px] text-calm-fog/55">{message.timestamp}</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 block px-2">{msg.timestamp}</span>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-slate-200 border border-slate-300 overflow-hidden flex-shrink-0">
-                  <img
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120"
-                    alt="User"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            ) : (
-              /* Assistant Message */
-              <div className="flex items-start gap-3 max-w-[90%]">
-                <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0 mt-1">
-                  L
-                </div>
-                <div className="space-y-3 flex-1">
-                  <div className="bg-white border border-slate-200/80 text-slate-800 text-xs md:text-sm p-4 rounded-3xl rounded-tl-sm leading-relaxed shadow-card">
-                    {msg.content || (isStreaming && <Loader2 size={16} className="animate-spin text-indigo-600" />)}
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-calm-forest-dusk text-calm-lichen">
+                    <UserRound size={16} />
                   </div>
-                  <span className="text-[10px] text-slate-400 block px-2">{msg.timestamp}</span>
+                </div>
+              ) : (
+                <div className="flex max-w-[92%] items-start gap-3 sm:max-w-[82%]">
+                  <div className="mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-calm-lichen/20 bg-calm-lichen/10 text-calm-lichen">
+                    <Sprout size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="rounded-[24px] rounded-tl-md border border-white/10 bg-calm-forest-dusk/90 px-4 py-3.5 text-sm leading-6 text-calm-paper-white shadow-[0_12px_30px_rgba(15,26,18,0.12)] sm:px-5 sm:text-[15px]">
+                      {message.content ||
+                        (isStreaming && <Loader2 size={17} className="animate-spin text-calm-lichen" />)}
+                    </div>
+                    <span className="block px-2 text-[10px] text-calm-fog/55">{message.timestamp}</span>
 
-                  {/* Pending Observation Card */}
-                  {msg.observation && (
-                    <div className="bg-gradient-to-br from-indigo-50/70 via-purple-50/50 to-white border border-indigo-200/80 rounded-3xl p-5 shadow-sm space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <ShieldCheck size={16} className="text-indigo-600" />
-                          <span className="text-xs font-bold text-indigo-950">
-                            {msg.observation.dimensionLabel}
+                    {message.observation && (
+                      <div className="space-y-4 rounded-[28px] border border-calm-lichen/25 bg-calm-moss/60 p-4 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck size={16} className="text-calm-lichen" />
+                            <span className="text-xs font-semibold text-calm-paper-white">
+                              {message.observation.dimensionLabel}
+                            </span>
+                          </div>
+                          <span className="rounded-full border border-calm-lichen/20 bg-calm-deep-moss/35 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen">
+                            Gợi ý từ AI
                           </span>
                         </div>
-                        <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
-                          AI Observation Proposal
-                        </span>
+
+                        {editingObsId === message.observation.id ? (
+                          <div className="space-y-3">
+                            <textarea
+                              value={editText}
+                              onChange={(event) => setEditText(event.target.value)}
+                              rows={3}
+                              className="w-full resize-none rounded-2xl border border-calm-lichen/25 bg-calm-deep-moss/65 p-3 text-sm leading-6 text-calm-paper-white outline-none focus:border-calm-lichen/55 focus:ring-2 focus:ring-calm-lichen/15"
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditingObsId(null)}
+                                className="rounded-full border border-white/10 bg-calm-deep-moss/30 px-3.5 py-2 text-xs font-medium text-calm-fog transition hover:bg-calm-deep-moss/50"
+                              >
+                                Hủy
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDecision(message.id, message.observation!.id, 'accepted', editText)
+                                }
+                                disabled={isSubmitting}
+                                className="rounded-full bg-calm-lichen px-4 py-2 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
+                              >
+                                Xác nhận bản sửa
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="rounded-2xl border border-white/10 bg-calm-deep-moss/45 p-4 text-sm font-medium leading-6 text-calm-paper-white">
+                            {message.observation.status === 'accepted' &&
+                            message.observation.contentEdited
+                              ? message.observation.contentEdited
+                              : message.observation.contentOriginal}
+                          </div>
+                        )}
+
+                        {message.observation.status === 'pending' &&
+                          editingObsId !== message.observation.id && (
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                              <p className="text-[11px] font-medium leading-5 text-calm-fog/75">
+                                Chỉ lưu vào Life Design Map khi điều này đúng với bạn.
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDecision(message.id, message.observation!.id, 'rejected')
+                                  }
+                                  disabled={isSubmitting}
+                                  className="flex items-center gap-1.5 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3.5 py-2 text-xs font-medium text-calm-fog transition hover:border-calm-danger-clay/35 hover:text-[#e7bbb5] disabled:opacity-50"
+                                >
+                                  <XCircle size={14} /> Chưa đúng
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingObsId(message.observation!.id);
+                                    setEditText(message.observation!.contentOriginal);
+                                  }}
+                                  className="flex items-center gap-1.5 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3.5 py-2 text-xs font-medium text-calm-fog transition hover:border-calm-lichen/30 hover:text-calm-paper-white"
+                                >
+                                  <Edit3 size={14} /> Sửa lại
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDecision(message.id, message.observation!.id, 'accepted')
+                                  }
+                                  disabled={isSubmitting}
+                                  className="flex items-center gap-1.5 rounded-full bg-calm-lichen px-4 py-2 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
+                                >
+                                  <CheckCircle2 size={14} /> Đúng với mình
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                        {message.observation.status === 'accepted' && (
+                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2.5 text-xs font-semibold text-[#c9e2cf]">
+                            <span className="flex items-center gap-1.5">
+                              <CheckCircle2 size={16} /> Đã xác nhận và thêm vào Life Design Map
+                            </span>
+                            <span className="text-[9px] uppercase tracking-[0.12em]">Đã lưu</span>
+                          </div>
+                        )}
+
+                        {message.observation.status === 'rejected' && (
+                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-calm-deep-moss/25 px-3.5 py-2.5 text-xs font-medium text-calm-fog/75">
+                            <span className="flex items-center gap-1.5">
+                              <XCircle size={16} /> Đã từ chối đề xuất này
+                            </span>
+                            <span className="text-[9px] uppercase tracking-[0.12em]">Không lưu</span>
+                          </div>
+                        )}
                       </div>
-
-                      {editingObsId === msg.observation.id ? (
-                        <div className="space-y-2">
-                          <textarea
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            rows={3}
-                            className="w-full text-xs md:text-sm p-3 bg-white border border-indigo-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800"
-                          />
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => setEditingObsId(null)}
-                              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700"
-                            >
-                              Hủy
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleDecision(msg.id, msg.observation!.id, 'accepted', editText)
-                              }
-                              disabled={isSubmitting}
-                              className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
-                            >
-                              Xác nhận bản sửa
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="bg-white/90 p-3.5 rounded-2xl border border-indigo-100 text-xs md:text-sm text-slate-800 font-medium leading-relaxed">
-                          {msg.observation.status === 'accepted' && msg.observation.contentEdited
-                            ? msg.observation.contentEdited
-                            : msg.observation.contentOriginal}
-                        </div>
-                      )}
-
-                      {msg.observation.status === 'pending' && editingObsId !== msg.observation.id && (
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                          <p className="text-[11px] text-slate-500 font-medium">
-                            Hãy xác nhận để đưa insight này vào Life Design Map của bạn:
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleDecision(msg.id, msg.observation!.id, 'rejected')}
-                              disabled={isSubmitting}
-                              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-600 text-xs font-semibold flex items-center gap-1 transition-colors"
-                            >
-                              <XCircle size={14} />
-                              Từ chối
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingObsId(msg.observation!.id);
-                                setEditText(msg.observation!.contentOriginal);
-                              }}
-                              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 text-xs font-semibold flex items-center gap-1 transition-colors"
-                            >
-                              <Edit3 size={14} />
-                              Sửa & Đồng ý
-                            </button>
-                            <button
-                              onClick={() => handleDecision(msg.id, msg.observation!.id, 'accepted')}
-                              disabled={isSubmitting}
-                              className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1 shadow-sm transition-all"
-                            >
-                              <CheckCircle2 size={14} />
-                              Đồng ý
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {msg.observation.status === 'accepted' && (
-                        <div className="flex items-center justify-between text-xs font-semibold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-2xl border border-emerald-200">
-                          <div className="flex items-center gap-1.5">
-                            <CheckCircle2 size={16} />
-                            <span>Đã xác nhận & thêm vào Life Design Map</span>
-                          </div>
-                          <span className="text-[10px] text-emerald-600 font-bold uppercase">Confirmed Insight</span>
-                        </div>
-                      )}
-
-                      {msg.observation.status === 'rejected' && (
-                        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 bg-slate-100 px-3.5 py-2 rounded-2xl border border-slate-200">
-                          <div className="flex items-center gap-1.5">
-                            <XCircle size={16} />
-                            <span>Đã từ chối đề xuất này</span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase">Rejected</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
-      {/* Input Form */}
-      <div className="sticky bottom-4 pt-2">
+      <div className="sticky bottom-4 z-10 pt-1">
         <form
           onSubmit={handleSendMessage}
-          className="bg-white/90 backdrop-blur-md rounded-3xl p-3 border border-slate-200 shadow-lg flex items-center gap-2"
+          className="flex items-center gap-2 rounded-[28px] border border-white/15 bg-calm-deep-moss p-2.5 shadow-[0_18px_55px_rgba(10,18,12,0.28)]"
         >
-          <button type="button" className="p-2 text-slate-400 hover:text-slate-600 rounded-xl transition-colors">
+          <button
+            type="button"
+            className="rounded-full p-2.5 text-calm-fog/55 transition hover:bg-white/5 hover:text-calm-lichen"
+            aria-label="Đính kèm tệp"
+          >
             <Paperclip size={18} />
           </button>
           <input
             type="text"
             placeholder="Trả lời Life Lab..."
             value={inputContent}
-            onChange={(e) => setInputContent(e.target.value)}
-            className="flex-1 bg-transparent text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:outline-none px-2"
+            onChange={(event) => setInputContent(event.target.value)}
+            className="min-w-0 flex-1 bg-transparent px-2 text-sm text-calm-paper-white outline-none placeholder:text-calm-fog/45 sm:text-[15px]"
           />
           <button
             type="submit"
-            disabled={isStreaming}
-            className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-200 transition-all disabled:opacity-50"
+            disabled={isStreaming || !inputContent.trim()}
+            className="flex items-center gap-1.5 rounded-full bg-calm-lichen px-5 py-2.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <span>{isStreaming ? 'Đang stream...' : 'Gửi'}</span>
+            <span>{isStreaming ? 'Đang trả lời…' : 'Gửi'}</span>
             <Send size={14} />
           </button>
         </form>
+        <p className="mt-2 text-center text-[10px] text-calm-fog/45">
+          Life Lab không phán xét. Bạn có thể sửa hoặc không lưu bất kỳ gợi ý nào.
+        </p>
       </div>
     </div>
   );

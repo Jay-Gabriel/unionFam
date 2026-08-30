@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { DefaultQuestionFlowFixture, validateAnswerPayload, calculateProgress } from '@/server/domain/questions';
 import { requireUser } from '@/server/auth/current-user';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET() {
   const session = await requireUser();
   const userId = session.id;
-  const supabase = createServerClient();
+  const supabase = createClient();
 
   // Fetch the pinned/published flow version (using dev-placeholder for Week 1)
   const { data: flowVer, error: flowErr } = await supabase
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'INVALID_ANSWER_PAYLOAD' }, { status: 422 });
     }
 
-    const supabase = createServerClient();
+    const supabase = createClient();
 
     // In a real app we'd fetch this from DB, but we know we're using dev-placeholder
     const flowVersionId = '11111111-1111-1111-1111-111111111111';

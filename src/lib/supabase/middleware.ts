@@ -2,6 +2,16 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
+  const isLocalUiPreview =
+    process.env.NODE_ENV !== 'production' &&
+    ['localhost', '127.0.0.1', '::1'].includes(request.nextUrl.hostname);
+
+  // UI preview is intentionally limited to the local development server.
+  // Production/domain/VPS requests always continue through verified Supabase Auth.
+  if (isLocalUiPreview) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });

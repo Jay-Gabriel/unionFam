@@ -81,7 +81,7 @@ export default function QuestionsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-slate-500">
+      <div className="legacy-calm-page flex flex-col items-center justify-center min-h-[400px] gap-3 text-slate-500">
         <Loader2 size={32} className="animate-spin text-indigo-600" />
         <span className="text-xs font-semibold">Đang tải Question Flow versioned...</span>
       </div>
@@ -91,7 +91,7 @@ export default function QuestionsPage() {
   if (!currentQ) return null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 py-6">
+    <div className="legacy-calm-page max-w-2xl mx-auto space-y-6 py-6">
       {/* Progress Bar */}
       <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-card space-y-3">
         <div className="flex items-center justify-between text-xs font-semibold text-slate-700">

@@ -5,7 +5,7 @@ import { Wallet, TrendingUp, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
 export default function FinancialLifePage() {
   return (
-    <div className="space-y-6 pb-12">
+    <div className="legacy-calm-page space-y-6 pb-12">
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-card">
         <div className="flex items-center gap-2">
           <Wallet size={22} className="text-indigo-600" />

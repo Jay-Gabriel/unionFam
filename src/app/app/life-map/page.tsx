@@ -86,7 +86,7 @@ export default function LifeMapPage() {
   ];
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="legacy-calm-page space-y-6 pb-12">
       {/* Header */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

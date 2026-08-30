@@ -11,43 +11,40 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        brand: {
-          50: "#f0f4ff",
-          100: "#e0e9fe",
-          200: "#c7d7fe",
-          300: "#a4bcfd",
-          400: "#7c98fb",
-          500: "#586bf6",
-          600: "#3d46ec",
-          700: "#3135d7",
-          800: "#2a2cb0",
-          900: "#272a8c",
-          950: "#181852",
+        calm: {
+          'forest-dusk': '#3D4138',
+          'deep-moss': '#263128',
+          'moss': '#596A55',
+          'fern': '#7C8B70',
+          'lichen': '#B9C6A5',
+          'pollen': '#D9CB8F',
+          'fog': '#DDE2D8',
+          'morning-mist': '#EEF1EA',
+          'warm-ivory': '#F7F5EE',
+          'paper-white': '#FCFBF7',
+          'ink': '#222A23',
+          'muted-ink': '#667066',
+          'ai-lavender': '#8E88A8',
+          'success-leaf': '#568166',
+          'warning-earth': '#A07852',
+          'danger-clay': '#A95F56',
         },
-        sidebar: {
-          bg: "#fafaff",
-          activeBg: "#1e2474",
-          activeText: "#ffffff",
-          hoverBg: "#f0f2fe",
-          text: "#475569",
-        },
-        card: {
-          bg: "#ffffff",
-          border: "#eef2ff",
-        }
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "Inter", "sans-serif"],
+        sans: ["var(--font-sans)", "sans-serif"],
       },
       boxShadow: {
-        soft: "0 4px 20px -2px rgba(99, 102, 241, 0.08)",
-        glass: "0 8px 32px 0 rgba(31, 38, 135, 0.07)",
-        card: "0 2px 10px 0 rgba(0, 0, 0, 0.03)",
+        soft: "0 4px 24px -4px rgba(52, 65, 53, 0.08)",
+        glass: "0 8px 32px 0 rgba(52, 65, 53, 0.05)",
+        card: "0 2px 10px 0 rgba(52, 65, 53, 0.03)",
+        'calm-hover': "0 12px 30px -4px rgba(52, 65, 53, 0.12)",
       },
       borderRadius: {
         xl: "1rem",
         '2xl': "1.25rem",
-        '3xl': "1.5rem",
+        '3xl': "1.75rem", // 28px
+        '4xl': "2.25rem", // 36px
+        'full': "9999px",
       }
     },
   },
