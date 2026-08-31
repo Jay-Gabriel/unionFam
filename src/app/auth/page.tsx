@@ -136,7 +136,7 @@ function AuthForm() {
         </button>
       )}
 
-      {!EMAIL_AUTH_ENABLED && (
+      {!EMAIL_AUTH_ENABLED && !GOOGLE_AUTH_ENABLED && (
         <p className="rounded-2xl bg-slate-50 px-4 py-3 text-center text-xs leading-relaxed text-slate-500">
           Đăng nhập bằng email đang tạm tắt. Google sẽ xuất hiện sau khi được cấu hình.
         </p>

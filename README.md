@@ -62,3 +62,19 @@ npm run typecheck && npm run lint && npm test
 ## Chạy bản thử không có Supabase
 
 Nếu Vercel chưa có Supabase nhưng đã có `GEMINI_API_KEY`, thêm biến `DEMO_MODE=true` cho **Production** (và **Preview** nếu cần), sau đó tạo deployment mới. Middleware sẽ bỏ qua Auth/Supabase; Gemini vẫn trả lời trong cuộc trò chuyện và lịch sử được lưu trong `localStorage` của trình duyệt. Life Map, onboarding cloud và các dữ liệu người dùng không được lưu trên máy chủ ở chế độ này. Khi triển khai bản thật, xóa `DEMO_MODE` hoặc đặt `DEMO_MODE=false`, cấu hình lại Supabase và bật `AUTH_REQUIRED=true`.
+
+## Bật đăng nhập Google với Supabase
+
+Luồng OAuth đã có sẵn trong `/auth` và `/auth/callback`. Khi dùng bản thật, cấu hình các biến Vercel sau rồi tạo deployment mới:
+
+```env
+DEMO_MODE=false
+AUTH_REQUIRED=true
+NEXT_PUBLIC_ENABLE_GOOGLE_AUTH=true
+NEXT_PUBLIC_ENABLE_EMAIL_AUTH=false
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable-or-anon-key>
+APP_BASE_URL=https://union-fam.vercel.app
+```
+
+Trong Supabase **Authentication → Providers → Google**, bật provider và dán Google OAuth Client ID/Secret. Trong **Authentication → URL Configuration**, đặt Site URL là `https://union-fam.vercel.app` và thêm `https://union-fam.vercel.app/auth/callback**` cùng callback local `http://localhost:3000/auth/callback**`. Trong Google Cloud, tạo OAuth client loại **Web application**, thêm origin của app (`https://union-fam.vercel.app`, và `http://localhost:3000` khi phát triển), rồi thêm đúng callback URL Supabase hiển thị trong trang Google provider (thường là `https://<project-ref>.supabase.co/auth/v1/callback`). Không đưa Client Secret hoặc service-role key vào mã nguồn hay chat.
