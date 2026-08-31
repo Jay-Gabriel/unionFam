@@ -135,6 +135,7 @@ export default function ConversationPage() {
     let cancelled = false;
 
     async function loadConversation() {
+      let redirectingToConversationIndex = false;
       setIsLoadingConversation(true);
       setConversationError('');
       try {
@@ -164,7 +165,10 @@ export default function ConversationPage() {
 
         const loadData = async () => {
           const response = await fetch(`/api/conversations/${activeId}`);
-          if (!response.ok) throw new Error(response.status === 401 ? 'Phiên đăng nhập đã hết hạn' : 'Không thể tải cuộc trò chuyện');
+          if (!response.ok) {
+            if (response.status === 404) throw new Error('CONVERSATION_NOT_FOUND');
+            throw new Error(response.status === 401 ? 'Phiên đăng nhập đã hết hạn' : 'Không thể tải cuộc trò chuyện');
+          }
           const json = await response.json();
           return json.data as Record<string, unknown>;
         };
@@ -192,9 +196,17 @@ export default function ConversationPage() {
         const mappedMessages = mapConversationMessages(data);
         setMessages(mappedMessages);
       } catch (error) {
+        if (!cancelled && error instanceof Error && error.message === 'CONVERSATION_NOT_FOUND' && routeConversationId !== 'new') {
+          // A bookmarked/deleted session should never strand the user on a
+          // dead conversation URL. The index route resolves the latest live
+          // session, or starts a new one when none exists.
+          redirectingToConversationIndex = true;
+          router.replace('/app/conversations');
+          return;
+        }
         if (!cancelled) setConversationError(error instanceof Error ? error.message : 'Không thể tải cuộc trò chuyện');
       } finally {
-        if (!cancelled) setIsLoadingConversation(false);
+        if (!cancelled && !redirectingToConversationIndex) setIsLoadingConversation(false);
       }
     }
 
