@@ -58,3 +58,7 @@ npm run typecheck && npm run lint && npm test
 ```
 
 `AUTH_REQUIRED=false` dành cho local preview. Khi `DEV_PREVIEW_AUTH=true` (mặc định trong `.env.example`), server tự tạo một tài khoản preview nội bộ và cấp session cookie để các API conversation/onboarding/question chạy end-to-end mà không cần bật provider email/Google. Đây chỉ là tiện ích phát triển; trước production phải cấu hình Auth/provider và đặt `AUTH_REQUIRED=true`. Xem [Technical RC Status](docs/12_TECHNICAL_RC_STATUS.md) để biết các credential/input còn chờ khách.
+
+## Chạy bản thử không có Supabase
+
+Nếu Vercel chưa có Supabase nhưng đã có `GEMINI_API_KEY`, thêm biến `DEMO_MODE=true` cho **Production** (và **Preview** nếu cần), sau đó tạo deployment mới. Middleware sẽ bỏ qua Auth/Supabase; Gemini vẫn trả lời trong cuộc trò chuyện và lịch sử được lưu trong `localStorage` của trình duyệt. Life Map, onboarding cloud và các dữ liệu người dùng không được lưu trên máy chủ ở chế độ này. Khi triển khai bản thật, xóa `DEMO_MODE` hoặc đặt `DEMO_MODE=false`, cấu hình lại Supabase và bật `AUTH_REQUIRED=true`.

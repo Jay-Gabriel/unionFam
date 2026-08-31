@@ -61,7 +61,119 @@ function mapConversationMessages(data: Record<string, unknown>): Message[] {
     }));
 }
 
-async function requestOpeningTurn(id: string) {
+const DEMO_STORAGE_PREFIX = 'lifelab:demo:conversation:';
+
+function readDemoMessages(id: string): Message[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(`${DEMO_STORAGE_PREFIX}${id}`);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((value): value is Record<string, unknown> => Boolean(value && typeof value === 'object'))
+      .filter((message) => (message.role === 'user' || message.role === 'assistant') && typeof message.content === 'string')
+      .slice(-100)
+      .map((message) => ({
+        id: String(message.id || `${message.role}-${crypto.randomUUID()}`),
+        role: message.role as Message['role'],
+        content: String(message.content).slice(0, 6000),
+        timestamp: typeof message.timestamp === 'string' ? message.timestamp : new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function writeDemoMessages(id: string, messages: Message[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(`${DEMO_STORAGE_PREFIX}${id}`, JSON.stringify(messages.slice(-100)));
+  } catch {
+    // Storage can be unavailable in private browsing or when quota is full.
+  }
+}
+
+interface StreamSummary {
+  responseText: string;
+  assistantMessageId: string;
+  nextStage: string;
+  requiresPermission: boolean;
+  observation?: Observation;
+}
+
+async function consumeMessageStream(
+  response: Response,
+  onDelta?: (text: string) => void
+): Promise<StreamSummary> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Kết nối không trả về dữ liệu.');
+
+  const decoder = new TextDecoder();
+  let eventBuffer = '';
+  let responseText = '';
+  let assistantMessageId = '';
+  let nextStage = 'discovery';
+  let requiresPermission = false;
+  let observation: Observation | undefined;
+
+  const processEvent = (eventBlock: string) => {
+    let eventType = '';
+    let dataString = '';
+    for (const line of eventBlock.split(/\r?\n/)) {
+      if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+      if (line.startsWith('data: ')) dataString += line.slice(6).trim();
+    }
+    if (!dataString) return;
+
+    try {
+      const data = JSON.parse(dataString) as Record<string, unknown>;
+      if (eventType === 'message.started' && typeof data.assistantMessageId === 'string') {
+        assistantMessageId = data.assistantMessageId;
+      }
+      if (eventType === 'message.delta' && typeof data.text === 'string') {
+        responseText += data.text;
+        onDelta?.(responseText);
+      }
+      if (eventType === 'message.completed') {
+        if (typeof data.nextStage === 'string') nextStage = data.nextStage;
+        requiresPermission = data.requiresPermission === true;
+      }
+      if (eventType === 'observation.created' && typeof data.dimension === 'string' && typeof data.contentOriginal === 'string') {
+        const status = data.status === 'accepted' || data.status === 'rejected' ? data.status : 'pending';
+        observation = {
+          id: String(data.id || crypto.randomUUID()),
+          dimension: data.dimension,
+          dimensionLabel: typeof data.dimensionLabel === 'string' ? data.dimensionLabel : labelDimension(data.dimension),
+          contentOriginal: data.contentOriginal,
+          status,
+        };
+      }
+    } catch {
+      // Ignore malformed individual events while preserving the rest of the turn.
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    eventBuffer += decoder.decode(value, { stream: true });
+    const events = eventBuffer.split(/\r?\n\r?\n/);
+    eventBuffer = events.pop() || '';
+    events.forEach(processEvent);
+  }
+  eventBuffer += decoder.decode();
+  if (eventBuffer.trim()) processEvent(eventBuffer);
+
+  return {
+    responseText,
+    assistantMessageId: assistantMessageId || `ai-${Date.now()}`,
+    nextStage,
+    requiresPermission,
+    observation,
+  };
+}
+
+async function requestOpeningTurn(id: string): Promise<StreamSummary> {
   const idempotencyKey = `opening:${id}`;
   let lastError: Error | null = null;
 
@@ -95,13 +207,7 @@ async function requestOpeningTurn(id: string) {
         retryableFailure = response.status >= 500 || response.status === 429;
         if (!retryableFailure) throw error;
       } else {
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error('Kết nối mở lời chào không trả về dữ liệu.');
-        while (true) {
-          const { done } = await reader.read();
-          if (done) break;
-        }
-        return;
+        return await consumeMessageStream(response);
       }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Không thể kết nối với Life Lab.');
@@ -123,6 +229,7 @@ export default function ConversationPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingConversation, setIsLoadingConversation] = useState(true);
   const [conversationError, setConversationError] = useState('');
+  const [isDemoConversation, setIsDemoConversation] = useState(false);
 
   const [inputContent, setInputContent] = useState('');
   const [editingObsId, setEditingObsId] = useState<string | null>(null);
@@ -134,7 +241,7 @@ export default function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLElement>(null);
   const openingStartedRef = useRef<string | null>(null);
-  const openingPromiseRef = useRef<{ id: string; promise: Promise<void> } | null>(null);
+  const openingPromiseRef = useRef<{ id: string; promise: Promise<StreamSummary> } | null>(null);
   const newConversationPromiseRef = useRef<Promise<string> | null>(null);
   useEffect(() => {
     if (isLoadingConversation) return;
@@ -192,38 +299,63 @@ export default function ConversationPage() {
           }
         }
 
-        const loadData = async () => {
+        const loadData = async (): Promise<Record<string, unknown>> => {
           const response = await fetch(`/api/conversations/${activeId}`);
           if (!response.ok) {
             if (response.status === 404) throw new Error('CONVERSATION_NOT_FOUND');
             throw new Error(response.status === 401 ? 'Phiên đăng nhập đã hết hạn' : 'Không thể tải cuộc trò chuyện');
           }
           const json = await response.json();
-          return json.data as Record<string, unknown>;
+          const data = (json.data && typeof json.data === 'object' ? json.data : {}) as Record<string, unknown>;
+          return {
+            ...data,
+            demoMode: json.demoMode === true,
+          };
         };
 
         let data = await loadData();
-        const loadedMessages = Array.isArray(data.messages) ? data.messages : [];
+        const demoMode = data.demoMode === true;
+        const demoMessages = demoMode ? readDemoMessages(activeId) : [];
+        const loadedMessages = demoMode
+          ? demoMessages
+          : (Array.isArray(data.messages) ? data.messages : []);
         const shouldOpen = createdNewConversation || loadedMessages.length === 0;
+        let openingResult: StreamSummary | null = null;
         if (shouldOpen) {
           if (openingStartedRef.current !== activeId) {
             openingStartedRef.current = activeId;
             const openingPromise = requestOpeningTurn(activeId);
             openingPromiseRef.current = { id: activeId, promise: openingPromise };
-            await openingPromise;
+            openingResult = await openingPromise;
           } else if (openingPromiseRef.current?.id === activeId) {
             // A route.replace can re-run this effect while the first opening
             // request is still streaming. Wait for that same request instead
             // of briefly rendering an empty conversation.
-            await openingPromiseRef.current.promise;
+            openingResult = await openingPromiseRef.current.promise;
           }
-          data = await loadData();
+          if (!demoMode) data = await loadData();
         }
         if (cancelled) return;
 
         setConversationId(activeId);
-        const mappedMessages = mapConversationMessages(data);
-        setMessages(mappedMessages);
+        setIsDemoConversation(demoMode);
+        if (demoMode) {
+          const nextMessages = openingResult
+            ? [
+                ...demoMessages,
+                {
+                  id: openingResult.assistantMessageId,
+                  role: 'assistant' as const,
+                  content: openingResult.responseText,
+                  timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+                },
+              ]
+            : demoMessages;
+          setMessages(nextMessages);
+          writeDemoMessages(activeId, nextMessages);
+        } else {
+          setMessages(mapConversationMessages(data));
+        }
       } catch (error) {
         if (!cancelled && error instanceof Error && error.message === 'CONVERSATION_NOT_FOUND' && routeConversationId !== 'new') {
           // A bookmarked/deleted session should never strand the user on a
@@ -244,6 +376,11 @@ export default function ConversationPage() {
       cancelled = true;
     };
   }, [routeConversationId, router]);
+
+  useEffect(() => {
+    if (!isDemoConversation || isLoadingConversation || conversationId === 'new') return;
+    writeDemoMessages(conversationId, messages);
+  }, [conversationId, isDemoConversation, isLoadingConversation, messages]);
 
   const handleSendMessage = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -278,11 +415,15 @@ export default function ConversationPage() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            conversationId,
-            content: userText,
+        body: JSON.stringify({
+          conversationId,
+          content: userText,
+          recentMessages: [...messages, userMsg]
+            .filter((message) => message.content.trim().length > 0)
+            .slice(-8)
+            .map((message) => ({ role: message.role, content: message.content })),
           idempotencyKey: `msg-${crypto.randomUUID()}`,
-          }),
+        }),
       });
 
       if (!response.ok) {
@@ -293,68 +434,23 @@ export default function ConversationPage() {
         return;
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        setMessages((previous) => previous.filter((message) => message.id !== assistantMsgId));
-        setSendError('Kết nối không trả về dữ liệu. Bạn có thể thử lại.');
-        setRetryContent(userText);
-        return;
-      }
-
-      const decoder = new TextDecoder();
-      let accumulatedText = '';
-      let eventBuffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        eventBuffer += decoder.decode(value, { stream: true });
-        const events = eventBuffer.split('\n\n');
-        eventBuffer = events.pop() || '';
-
-        for (const eventBlock of events) {
-          let eventType = '';
-          let dataString = '';
-
-          for (const line of eventBlock.split('\n')) {
-            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
-            if (line.startsWith('data: ')) dataString += line.slice(6).trim();
-          }
-
-          if (!dataString) continue;
-
-          try {
-            const data = JSON.parse(dataString);
-            if (eventType === 'message.delta' && data.text) {
-              accumulatedText += data.text;
-              setMessages((previous) =>
-                previous.map((message) =>
-                  message.id === assistantMsgId
-                    ? { ...message, content: accumulatedText }
-                    : message
-                )
-              );
-            }
-            if (eventType === 'observation.created') {
-              setMessages((previous) =>
-                previous.map((message) =>
-                  message.id === assistantMsgId
-                    ? {
-                        ...message,
-                        observation: {
-                          ...(data as Observation),
-                          dimensionLabel: labelDimension(String(data.dimension)),
-                        },
-                      }
-                    : message
-                )
-              );
-            }
-          } catch {
-            // Malformed provider events are ignored without breaking the current conversation.
-          }
-        }
+      const stream = await consumeMessageStream(response, (text) => {
+        setMessages((previous) =>
+          previous.map((message) =>
+            message.id === assistantMsgId
+              ? { ...message, content: text }
+              : message
+          )
+        );
+      });
+      if (stream.observation) {
+        setMessages((previous) =>
+          previous.map((message) =>
+            message.id === assistantMsgId
+              ? { ...message, observation: stream.observation }
+              : message
+          )
+        );
       }
     } catch (error) {
       console.error('Chat error', error);
@@ -459,9 +555,16 @@ export default function ConversationPage() {
             <p className="mt-1 text-[11px] text-calm-fog/60">Phiên: {conversationId}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 self-start rounded-full border border-calm-lichen/20 bg-calm-lichen/10 px-3.5 py-2 text-[11px] font-medium text-calm-lichen sm:self-auto">
-          <ShieldCheck size={14} />
-          Bạn giữ quyền quyết định
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto sm:justify-end">
+          {isDemoConversation && (
+            <div className="rounded-full border border-calm-pollen/25 bg-calm-pollen/10 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-calm-pollen">
+              Bản thử · lưu trên thiết bị
+            </div>
+          )}
+          <div className="flex items-center gap-2 rounded-full border border-calm-lichen/20 bg-calm-lichen/10 px-3.5 py-2 text-[11px] font-medium text-calm-lichen">
+            <ShieldCheck size={14} />
+            Bạn giữ quyền quyết định
+          </div>
         </div>
       </section>
 

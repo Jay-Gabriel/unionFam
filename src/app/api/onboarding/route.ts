@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,20 @@ function fail(error: unknown, fallback: string) {
 }
 
 export async function GET() {
+  if (isDemoMode()) {
+    return NextResponse.json({
+      data: {
+        id: 'demo-user',
+        display_name: '',
+        locale: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        onboarding_status: 'completed',
+        consented_at: new Date().toISOString(),
+      },
+      demoMode: true,
+    });
+  }
+
   try {
     const user = await requireUser();
     const { data, error } = await createClient()
@@ -26,6 +41,22 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (isDemoMode()) {
+    const body = await request.json().catch(() => ({}));
+    if (body?.consented !== true) return NextResponse.json({ error: 'CONSENT_REQUIRED' }, { status: 422 });
+    return NextResponse.json({
+      data: {
+        id: 'demo-user',
+        display_name: typeof body?.displayName === 'string' ? body.displayName.trim().slice(0, 120) : '',
+        locale: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        onboarding_status: 'completed',
+        consented_at: new Date().toISOString(),
+      },
+      demoMode: true,
+    });
+  }
+
   try {
     const user = await requireUser();
     const body = await request.json();

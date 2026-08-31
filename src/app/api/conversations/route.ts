@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,8 @@ function failure(error: unknown, fallback: string) {
 }
 
 export async function GET() {
+  if (isDemoMode()) return NextResponse.json({ data: [], demoMode: true });
+
   try {
     const user = await requireUser();
     const supabase = createClient();
@@ -30,6 +33,24 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (isDemoMode()) {
+    const now = new Date().toISOString();
+    return NextResponse.json({
+      data: {
+        id: crypto.randomUUID(),
+        title: 'Cuộc trò chuyện mới',
+        status: 'active',
+        current_stage: 'onboarding',
+        prompt_version: 'demo',
+        question_flow_version_id: null,
+        last_message_at: null,
+        created_at: now,
+        updated_at: now,
+      },
+      demoMode: true,
+    }, { status: 201 });
+  }
+
   try {
     const user = await requireUser();
     const body = await request.json().catch(() => ({}));

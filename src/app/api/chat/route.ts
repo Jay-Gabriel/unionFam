@@ -7,6 +7,7 @@ import { resolveNextStage } from '@/server/domain/conversation';
 import { consumeRateLimit } from '@/server/security/rate-limit';
 import { recordAiRunLog, recordApplicationError } from '@/server/observability/log';
 import { labelDimension } from '@/lib/i18n';
+import { DEMO_USER_ID, isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,9 +102,92 @@ function toMessageEvents(params: {
   return events;
 }
 
+function demoRecentMessages(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is { role: string; content: string } => {
+      if (!item || typeof item !== 'object') return false;
+      const candidate = item as Record<string, unknown>;
+      return (candidate.role === 'user' || candidate.role === 'assistant') && typeof candidate.content === 'string';
+    })
+    .slice(-8)
+    .map((item) => ({ role: item.role, content: item.content.slice(0, 2000) }));
+}
+
+async function handleDemoChat(body: unknown, requestId: string) {
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'INVALID_REQUEST', requestId }, { status: 400, headers: { 'X-Request-Id': requestId } });
+  }
+
+  const payload = body as Record<string, unknown>;
+  const opening = payload.opening === true;
+  const content = typeof payload.content === 'string' ? payload.content.trim() : '';
+  const conversationId = typeof payload.conversationId === 'string' ? payload.conversationId.trim() : '';
+  const providedIdempotencyKey = typeof payload.idempotencyKey === 'string' ? payload.idempotencyKey.trim() : '';
+  const idempotencyKey = opening
+    ? providedIdempotencyKey || (conversationId ? `opening:${conversationId}` : '')
+    : providedIdempotencyKey;
+
+  if ((!opening && !content) || content.length > 4000 || idempotencyKey.length > 128) {
+    return NextResponse.json({ error: 'INVALID_MESSAGE', requestId }, { status: 422, headers: { 'X-Request-Id': requestId } });
+  }
+  if (!conversationId || conversationId === 'new') {
+    return NextResponse.json({ error: 'CONVERSATION_ID_REQUIRED', requestId }, { status: 422, headers: { 'X-Request-Id': requestId } });
+  }
+
+  const rate = consumeRateLimit(`demo:${conversationId}`, 20, 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: 'RATE_LIMITED', requestId },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds), 'X-Request-Id': requestId } }
+    );
+  }
+
+  const provider = new GeminiConversationProvider();
+  const result = await provider.generateResponse(
+    {
+      userId: DEMO_USER_ID,
+      conversationId,
+      currentStage: 'discovery',
+      methodologyVersion: 'demo',
+      recentMessages: demoRecentMessages(payload.recentMessages),
+      confirmedInsights: [],
+      userAnswersSummary: '',
+    },
+    opening
+      ? 'Hãy mở đầu cuộc trò chuyện bằng một lời chào ấm áp và chỉ một câu hỏi phản chiếu mở, ngắn gọn. Đây là lượt đầu tiên nên không đưa ra insight, không tạo đề xuất quan sát và không yêu cầu người dùng xác nhận điều gì.'
+      : content,
+    [],
+    opening ? 'opening' : 'message'
+  );
+
+  if (!result.success || !result.data) {
+    return NextResponse.json(
+      { error: result.errorCode || 'AI_PROVIDER_UNAVAILABLE', requestId },
+      { status: 502, headers: { 'X-Request-Id': requestId } }
+    );
+  }
+
+  return streamEvents(
+    toMessageEvents({
+      conversationId,
+      assistantMessageId: `demo-ai-${crypto.randomUUID()}`,
+      responseText: result.data.responseText,
+      nextStage: result.data.nextStage || 'discovery',
+      // Demo mode has no cloud-backed Life Map, so never render a proposal
+      // that would invite the user to persist it through a disabled API.
+      requiresPermission: false,
+      idempotencyKey: idempotencyKey || null,
+    })
+  );
+}
+
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   try {
+    const body = await request.json().catch(() => null);
+    if (isDemoMode()) return await handleDemoChat(body, requestId);
+
     const user = await requireUser();
     const rate = consumeRateLimit(`chat:${user.id}`, 20, 60_000);
     if (!rate.allowed) {
@@ -112,7 +196,6 @@ export async function POST(request: Request) {
         { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
       );
     }
-    const body = await request.json().catch(() => null);
     if (!body || typeof body !== 'object') {
       return NextResponse.json({ error: 'INVALID_REQUEST', requestId }, { status: 400, headers: { 'X-Request-Id': requestId } });
     }

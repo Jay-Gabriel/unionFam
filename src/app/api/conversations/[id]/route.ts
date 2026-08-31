@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,31 @@ export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
+  if (isDemoMode()) {
+    if (!params.id || params.id === 'new') {
+      return NextResponse.json({ error: 'CONVERSATION_ID_REQUIRED' }, { status: 400 });
+    }
+    const now = new Date().toISOString();
+    return NextResponse.json({
+      data: {
+        conversation: {
+          id: params.id,
+          title: 'Cuộc trò chuyện mới',
+          status: 'active',
+          current_stage: 'discovery',
+          prompt_version: 'demo',
+          question_flow_version_id: null,
+          last_message_at: null,
+          created_at: now,
+          updated_at: now,
+        },
+        messages: [],
+        observations: [],
+      },
+      demoMode: true,
+    });
+  }
+
   try {
     const user = await requireUser();
     if (!params.id || params.id === 'new') {
@@ -64,6 +90,18 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  if (isDemoMode()) {
+    const body = await request.json().catch(() => ({}));
+    return NextResponse.json({
+      data: {
+        id: params.id,
+        ...(typeof body?.title === 'string' ? { title: body.title.trim() } : {}),
+        ...(typeof body?.status === 'string' ? { status: body.status } : {}),
+      },
+      demoMode: true,
+    });
+  }
+
   try {
     const user = await requireUser();
     const body = await request.json();
@@ -106,6 +144,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
+  if (isDemoMode()) return new Response(null, { status: 204 });
+
   try {
     const user = await requireUser();
     const supabase = createClient();

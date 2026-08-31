@@ -42,6 +42,19 @@ function authUnavailable(request: NextRequest, reason: 'config' | 'service') {
 }
 
 export async function updateSession(request: NextRequest) {
+  // Demo mode is an explicit, non-persistent preview path for deployments
+  // that intentionally do not configure Supabase. It must be opted into via
+  // DEMO_MODE=true; never infer it from missing credentials.
+  if (process.env.DEMO_MODE === 'true') {
+    if (request.nextUrl.pathname === '/auth') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/app';
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next({ request });
+  }
+
   const authRequired = process.env.AUTH_REQUIRED === 'true';
   const { pathname } = request.nextUrl;
   const isLocalUiPreview =

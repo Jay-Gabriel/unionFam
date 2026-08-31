@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,8 @@ export const dynamic = 'force-dynamic';
  * `/app/conversations/new` remains the explicit action for starting a new one.
  */
 export default async function ConversationsEntryPage() {
+  if (isDemoMode()) redirect('/app/conversations/new');
+
   let user;
   try {
     user = await requireUser();
