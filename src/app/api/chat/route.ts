@@ -34,7 +34,6 @@ function streamEvents(events: ChatEvent[]) {
     async start(controller) {
       for (const item of events) {
         controller.enqueue(encoder.encode(`event: ${item.event}\ndata: ${JSON.stringify(item.data)}\n\n`));
-        if (item.event === 'message.delta') await new Promise((resolve) => setTimeout(resolve, 25));
       }
       controller.close();
     },
@@ -370,106 +369,133 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'CONVERSATION_NOT_ACTIVE' }, { status: 409 });
     }
 
-    const [previousResult, insightResult, answerResult, rejectedResult, questionResult, profileResult, resourceResult, gapResult, experimentResult, reflectionResult] = await Promise.all([
-      supabase
-        .from('messages')
-        .select('role, content, sequence_no')
-        .eq('conversation_id', conversationId)
-        .eq('user_id', user.id)
-        .order('sequence_no', { ascending: false })
-        .limit(8),
-      supabase
-        .from('confirmed_insights')
-        .select('dimension, content')
-        .eq('user_id', user.id)
-        .is('deleted_at', null)
-        .order('confirmed_at', { ascending: false })
-        .limit(20),
-      supabase
-        .from('user_answers')
-        .select('question_id, answer')
-        .eq('user_id', user.id)
-        .eq('flow_version_id', conversation.question_flow_version_id || '')
-        .is('deleted_at', null),
-      supabase
-        .from('ai_observations')
-        .select('content_original')
-        .eq('user_id', user.id)
-        .eq('status', 'rejected')
-        .order('created_at', { ascending: false })
-        .limit(8),
-      conversation.question_flow_version_id
-        ? supabase
-            .from('questions')
-            .select('id, question_key, branch_rules, ordinal')
-            .eq('flow_version_id', conversation.question_flow_version_id)
-            .order('ordinal', { ascending: true })
-        : Promise.resolve({ data: [] as unknown[], error: null }),
-      supabase
-        .from('life_profile_versions')
-        .select('snapshot, version_no')
-        .eq('user_id', user.id)
-        .eq('is_current', true)
-        .maybeSingle(),
-      supabase
-        .from('resources')
-        .select('dimension, resource_type, name, description')
-        .eq('user_id', user.id)
-        .is('deleted_at', null)
-        .order('updated_at', { ascending: false })
-        .limit(10),
-      supabase
-        .from('gaps')
-        .select('dimension, title, current_state, desired_state, priority, status')
-        .eq('user_id', user.id)
-        .is('deleted_at', null)
-        .in('status', ['open', 'in_progress'])
-        .order('priority', { ascending: true })
-        .limit(10),
-      supabase
-        .from('experiments')
-        .select('title, hypothesis, smallest_step, success_signal, progress_percent, status, target_date')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .is('deleted_at', null)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from('reflections')
-        .select('result, learning_candidate, feeling, next_action, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
+    type PreviousMessage = { role: string; content: string; sequence_no: number };
+    type InsightRow = { dimension: string; content: string };
+    type AnswerRow = { question_id: string; answer: unknown };
+    type RejectedRow = { content_original: string };
+    type QuestionRow = { id: string; question_key: string; branch_rules: unknown; ordinal: number };
+    type ProfileRow = { snapshot: unknown; version_no: number };
+    type ResourceRow = { dimension: string; resource_type: string; name: string; description: string | null };
+    type GapRow = { dimension: string; title: string; current_state: string; desired_state: string; priority: number; status: string };
+    type ExperimentRow = { title: string; hypothesis: string; smallest_step: string; success_signal: string; progress_percent: number; status: string; target_date: string | null };
+    type ReflectionRow = { result: string | null; learning_candidate: string | null; feeling: string | null; next_action: string | null; created_at: string };
 
-    const readError = [
-      previousResult.error,
-      insightResult.error,
-      answerResult.error,
-      rejectedResult.error,
-      questionResult.error,
-      profileResult.error,
-      resourceResult.error,
-      gapResult.error,
-      experimentResult.error,
-      reflectionResult.error,
-    ].find(Boolean);
-    if (readError) throw readError;
+    // The opening turn only needs the conversation record and a short greeting.
+    // Loading the full profile/context here added ten database round trips before
+    // Gemini could even start. Defer that context work to regular user turns.
+    let previousMessages: PreviousMessage[] = [];
+    let insightRows: InsightRow[] = [];
+    let answerRows: AnswerRow[] = [];
+    let rejectedRows: RejectedRow[] = [];
+    let questionRows: QuestionRow[] = [];
+    let profileRow: ProfileRow | null = null;
+    let resourceRows: ResourceRow[] = [];
+    let gapRows: GapRow[] = [];
+    let experimentRow: ExperimentRow | null = null;
+    let reflectionRow: ReflectionRow | null = null;
 
-    const previousMessages = previousResult.data;
-    const insightRows = insightResult.data;
-    const answerRows = answerResult.data;
-    const rejectedRows = rejectedResult.data;
-    const questionRows = questionResult.data;
-    const profileRow = profileResult.data;
-    const resourceRows = resourceResult.data;
-    const gapRows = gapResult.data;
-    const experimentRow = experimentResult.data;
-    const reflectionRow = reflectionResult.data;
+    if (!opening) {
+      const [previousResult, insightResult, answerResult, rejectedResult, questionResult, profileResult, resourceResult, gapResult, experimentResult, reflectionResult] = await Promise.all([
+        supabase
+          .from('messages')
+          .select('role, content, sequence_no')
+          .eq('conversation_id', conversationId)
+          .eq('user_id', user.id)
+          .order('sequence_no', { ascending: false })
+          .limit(8),
+        supabase
+          .from('confirmed_insights')
+          .select('dimension, content')
+          .eq('user_id', user.id)
+          .is('deleted_at', null)
+          .order('confirmed_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('user_answers')
+          .select('question_id, answer')
+          .eq('user_id', user.id)
+          .eq('flow_version_id', conversation.question_flow_version_id || '')
+          .is('deleted_at', null),
+        supabase
+          .from('ai_observations')
+          .select('content_original')
+          .eq('user_id', user.id)
+          .eq('status', 'rejected')
+          .order('created_at', { ascending: false })
+          .limit(8),
+        conversation.question_flow_version_id
+          ? supabase
+              .from('questions')
+              .select('id, question_key, branch_rules, ordinal')
+              .eq('flow_version_id', conversation.question_flow_version_id)
+              .order('ordinal', { ascending: true })
+          : Promise.resolve({ data: [] as unknown[], error: null }),
+        supabase
+          .from('life_profile_versions')
+          .select('snapshot, version_no')
+          .eq('user_id', user.id)
+          .eq('is_current', true)
+          .maybeSingle(),
+        supabase
+          .from('resources')
+          .select('dimension, resource_type, name, description')
+          .eq('user_id', user.id)
+          .is('deleted_at', null)
+          .order('updated_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('gaps')
+          .select('dimension, title, current_state, desired_state, priority, status')
+          .eq('user_id', user.id)
+          .is('deleted_at', null)
+          .in('status', ['open', 'in_progress'])
+          .order('priority', { ascending: true })
+          .limit(10),
+        supabase
+          .from('experiments')
+          .select('title, hypothesis, smallest_step, success_signal, progress_percent, status, target_date')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .is('deleted_at', null)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('reflections')
+          .select('result, learning_candidate, feeling, next_action, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
-    const questionData = (questionRows || []) as Array<{ id: string; question_key: string; branch_rules: unknown; ordinal: number }>;
+      const readError = [
+        previousResult.error,
+        insightResult.error,
+        answerResult.error,
+        rejectedResult.error,
+        questionResult.error,
+        profileResult.error,
+        resourceResult.error,
+        gapResult.error,
+        experimentResult.error,
+        reflectionResult.error,
+      ].find(Boolean);
+      if (readError) throw readError;
+
+      previousMessages = (previousResult.data || []) as PreviousMessage[];
+      insightRows = (insightResult.data || []) as InsightRow[];
+      answerRows = (answerResult.data || []) as AnswerRow[];
+      rejectedRows = (rejectedResult.data || []) as RejectedRow[];
+      questionRows = (questionResult.data || []) as QuestionRow[];
+      profileRow = (profileResult.data || null) as ProfileRow | null;
+      resourceRows = (resourceResult.data || []) as ResourceRow[];
+      gapRows = (gapResult.data || []) as GapRow[];
+      experimentRow = (experimentResult.data || null) as ExperimentRow | null;
+      reflectionRow = (reflectionResult.data || null) as ReflectionRow | null;
+    }
+
+    const questionData = questionRows;
     const answersByKey: Record<string, unknown> = {};
     const questionKeyById = new Map(questionData.map((question) => [question.id, question.question_key]));
     (answerRows || []).forEach((answer: { question_id: string; answer: unknown }) => {
@@ -663,16 +689,18 @@ export async function POST(request: Request) {
       }
     }
 
-    await supabase
-      .from('conversations')
-      .update({ current_stage: nextStage, last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq('id', conversationId)
-      .eq('user_id', user.id);
-    await supabase.from('activity_events').insert({
-      user_id: user.id,
-      event_type: 'conversation_message_completed',
-      metadata: { conversation_id: conversationId, stage: nextStage },
-    });
+    await Promise.all([
+      supabase
+        .from('conversations')
+        .update({ current_stage: nextStage, last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', conversationId)
+        .eq('user_id', user.id),
+      supabase.from('activity_events').insert({
+        user_id: user.id,
+        event_type: 'conversation_message_completed',
+        metadata: { conversation_id: conversationId, stage: nextStage },
+      }),
+    ]);
 
     return streamEvents(
       toMessageEvents({

@@ -50,37 +50,51 @@ export async function GET(
     }
 
     const supabase = createClient();
-    const { data: conversation, error: conversationError } = await supabase
+
+    // Every read is scoped to the authenticated user. Start them together so
+    // opening an existing session does not wait for an authorization query,
+    // then a messages query, then an observations query in sequence.
+    const conversationQuery = supabase
       .from('conversations')
       .select('id, title, status, current_stage, prompt_version, question_flow_version_id, last_message_at, created_at, updated_at')
       .eq('id', params.id)
       .eq('user_id', user.id)
       .is('deleted_at', null)
       .maybeSingle();
-
-    if (conversationError) throw conversationError;
-    if (!conversation) return NextResponse.json({ error: 'CONVERSATION_NOT_FOUND' }, { status: 404 });
-
-    const { data: messages, error: messagesError } = await supabase
+    const messagesQuery = supabase
       .from('messages')
       .select('id, role, content, status, sequence_no, created_at, updated_at')
       .eq('conversation_id', params.id)
       .eq('user_id', user.id)
       .order('sequence_no', { ascending: true })
       .limit(100);
-
-    if (messagesError) throw messagesError;
-
-    const { data: observations, error: observationsError } = await supabase
+    const observationsQuery = supabase
       .from('ai_observations')
       .select('id, assistant_message_id, dimension, content_original, content_user_edited, status, confidence')
       .eq('conversation_id', params.id)
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
-    if (observationsError) throw observationsError;
+    const [conversationResult, messagesResult, observationsResult] = await Promise.all([
+      conversationQuery,
+      messagesQuery,
+      observationsQuery,
+    ]);
+    const { data: conversation, error: conversationError } = conversationResult;
 
-    return NextResponse.json({ data: { conversation, messages: messages || [], observations: observations || [] } });
+    if (conversationError) throw conversationError;
+    if (!conversation) return NextResponse.json({ error: 'CONVERSATION_NOT_FOUND' }, { status: 404 });
+
+    if (messagesResult.error) throw messagesResult.error;
+    if (observationsResult.error) throw observationsResult.error;
+
+    return NextResponse.json({
+      data: {
+        conversation,
+        messages: messagesResult.data || [],
+        observations: observationsResult.data || [],
+      },
+    });
   } catch (error) {
     return routeError(error, 'CONVERSATION_UNAVAILABLE');
   }

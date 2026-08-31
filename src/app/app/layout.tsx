@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -21,7 +22,14 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
-import { SanctuaryCanvas } from '@/components/sanctuary-3d/sanctuary-canvas';
+
+// Keep the decorative WebGL scene out of the critical app shell bundle. It is
+// a progressive enhancement, so the CSS/poster layers can paint immediately
+// while Three.js loads in a separate client chunk after navigation.
+const SanctuaryCanvas = dynamic(
+  () => import('@/components/sanctuary-3d/sanctuary-canvas').then((module) => module.SanctuaryCanvas),
+  { ssr: false, loading: () => null },
+);
 
 type NavItem = {
   label: string;

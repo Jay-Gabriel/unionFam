@@ -173,7 +173,7 @@ async function consumeMessageStream(
   };
 }
 
-async function requestOpeningTurn(id: string): Promise<StreamSummary> {
+async function requestOpeningTurn(id: string, onDelta?: (text: string) => void): Promise<StreamSummary> {
   const idempotencyKey = `opening:${id}`;
   let lastError: Error | null = null;
 
@@ -207,7 +207,7 @@ async function requestOpeningTurn(id: string): Promise<StreamSummary> {
         retryableFailure = response.status >= 500 || response.status === 429;
         if (!retryableFailure) throw error;
       } else {
-        return await consumeMessageStream(response);
+        return await consumeMessageStream(response, onDelta);
       }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Không thể kết nối với Life Lab.');
@@ -242,7 +242,11 @@ export default function ConversationPage() {
   const messagesScrollRef = useRef<HTMLElement>(null);
   const openingStartedRef = useRef<string | null>(null);
   const openingPromiseRef = useRef<{ id: string; promise: Promise<StreamSummary> } | null>(null);
-  const newConversationPromiseRef = useRef<Promise<string> | null>(null);
+  const newConversationPromiseRef = useRef<Promise<{
+    id: string;
+    data: Record<string, unknown>;
+    demoMode: boolean;
+  }> | null>(null);
   useEffect(() => {
     if (isLoadingConversation) return;
 
@@ -273,6 +277,7 @@ export default function ConversationPage() {
     async function loadConversation() {
       let redirectingToConversationIndex = false;
       setIsLoadingConversation(true);
+      setIsStreaming(false);
       setConversationError('');
       try {
         // React Strict Mode can run this effect twice in development. Share
@@ -281,6 +286,7 @@ export default function ConversationPage() {
         if (routeConversationId !== 'new') newConversationPromiseRef.current = null;
         let activeId = routeConversationId;
         let createdNewConversation = false;
+        let createdConversationData: Record<string, unknown> | null = null;
         if (activeId === 'new') {
           if (!newConversationPromiseRef.current) {
             newConversationPromiseRef.current = (async () => {
@@ -288,10 +294,21 @@ export default function ConversationPage() {
               if (!createResponse.ok) throw new Error('Không thể tạo cuộc trò chuyện');
               const created = await createResponse.json();
               if (typeof created?.data?.id !== 'string') throw new Error('Phản hồi tạo cuộc trò chuyện không hợp lệ');
-              return created.data.id as string;
+              return {
+                id: created.data.id as string,
+                data: created.data as Record<string, unknown>,
+                demoMode: created.demoMode === true,
+              };
             })();
           }
-          activeId = await newConversationPromiseRef.current;
+          const created = await newConversationPromiseRef.current;
+          activeId = created.id;
+          createdConversationData = {
+            conversation: created.data,
+            messages: [],
+            observations: [],
+            demoMode: created.demoMode,
+          };
           createdNewConversation = true;
           if (!cancelled) {
             setConversationId(activeId);
@@ -313,18 +330,54 @@ export default function ConversationPage() {
           };
         };
 
-        let data = await loadData();
+        // The create endpoint already returned the canonical conversation row.
+        // Reusing it avoids an extra authenticated GET before the opening turn
+        // for every new session; existing routes still perform the authoritative
+        // read above.
+        let data = createdConversationData || await loadData();
         const demoMode = data.demoMode === true;
         const demoMessages = demoMode ? readDemoMessages(activeId) : [];
         const loadedMessages = demoMode
           ? demoMessages
           : (Array.isArray(data.messages) ? data.messages : []);
         const shouldOpen = createdNewConversation || loadedMessages.length === 0;
+
+        // Paint the conversation shell as soon as its persisted data arrives.
+        // A new session can then show a live opening placeholder while Gemini
+        // is still warming up instead of keeping the whole page behind a
+        // loading card for several seconds.
+        if (!cancelled) {
+          setConversationId(activeId);
+          setIsDemoConversation(demoMode);
+          setMessages(demoMode ? demoMessages : mapConversationMessages(data));
+          setIsLoadingConversation(false);
+        }
+
         let openingResult: StreamSummary | null = null;
         if (shouldOpen) {
+          const openingPlaceholderId = `opening-${activeId}`;
+          if (!cancelled) {
+            setIsStreaming(true);
+            setMessages((previous) => previous.some((message) => message.id === openingPlaceholderId)
+              ? previous
+              : [
+                  ...previous,
+                  {
+                    id: openingPlaceholderId,
+                    role: 'assistant' as const,
+                    content: '',
+                    timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+                  },
+                ]);
+          }
           if (openingStartedRef.current !== activeId) {
             openingStartedRef.current = activeId;
-            const openingPromise = requestOpeningTurn(activeId);
+            const openingPromise = requestOpeningTurn(activeId, (text) => {
+              if (cancelled) return;
+              setMessages((previous) => previous.map((message) =>
+                message.id === openingPlaceholderId ? { ...message, content: text } : message
+              ));
+            });
             openingPromiseRef.current = { id: activeId, promise: openingPromise };
             openingResult = await openingPromise;
           } else if (openingPromiseRef.current?.id === activeId) {
@@ -333,7 +386,13 @@ export default function ConversationPage() {
             // of briefly rendering an empty conversation.
             openingResult = await openingPromiseRef.current.promise;
           }
-          if (!demoMode) data = await loadData();
+          // The opening stream is already the canonical assistant response.
+          // Do not immediately issue a second GET just to read the row we
+          // have received over SSE; this removes an avoidable network/DB wait
+          // on every brand-new conversation. If another effect is waiting on
+          // a promise that disappeared, fall back to one authoritative read.
+          if (!demoMode && !openingResult) data = await loadData();
+          if (!cancelled) setIsStreaming(false);
         }
         if (cancelled) return;
 
@@ -354,7 +413,17 @@ export default function ConversationPage() {
           setMessages(nextMessages);
           writeDemoMessages(activeId, nextMessages);
         } else {
-          setMessages(mapConversationMessages(data));
+          const nextMessages = mapConversationMessages(data);
+          if (openingResult && !nextMessages.some((message) => message.id === openingResult?.assistantMessageId)) {
+            nextMessages.push({
+              id: openingResult.assistantMessageId,
+              role: 'assistant',
+              content: openingResult.responseText,
+              timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+              observation: openingResult.observation,
+            });
+          }
+          setMessages(nextMessages);
         }
       } catch (error) {
         if (!cancelled && error instanceof Error && error.message === 'CONVERSATION_NOT_FOUND' && routeConversationId !== 'new') {
