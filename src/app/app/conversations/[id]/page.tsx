@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   CheckCircle2,
@@ -104,14 +104,71 @@ export default function ConversationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendError, setSendError] = useState('');
   const [retryContent, setRetryContent] = useState('');
+  const [autoRead, setAutoRead] = useState(true);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const openingStartedRef = useRef<string | null>(null);
   const openingPromiseRef = useRef<{ id: string; promise: Promise<void> } | null>(null);
+  const newConversationPromiseRef = useRef<Promise<string> | null>(null);
+  const autoReadRef = useRef(true);
+  const speakingMessageIdRef = useRef<string | null>(null);
+  const speechGenerationRef = useRef(0);
+  const spokenMessageIdsRef = useRef(new Set<string>());
+
+  const stopSpeech = useCallback(() => {
+    speechGenerationRef.current += 1;
+    window.speechSynthesis?.cancel();
+    speakingMessageIdRef.current = null;
+    setSpeakingMessageId(null);
+  }, []);
+
+  const speakText = useCallback((text: string, messageId: string, reportError: boolean) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+      if (reportError) setSendError('Thiết bị này chưa hỗ trợ đọc giọng nói.');
+      return false;
+    }
+
+    const synthesis = window.speechSynthesis;
+    stopSpeech();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const vietnameseVoice = synthesis.getVoices().find((voice) => voice.lang.toLowerCase().startsWith('vi'));
+    utterance.lang = 'vi-VN';
+    if (vietnameseVoice) utterance.voice = vietnameseVoice;
+    // A slightly slower pace and a soft pitch make reflective copy easier to
+    // listen to. The actual voice timbre still comes from the user's device.
+    utterance.rate = 0.9;
+    utterance.pitch = 1.04;
+    utterance.volume = 1;
+    const generation = speechGenerationRef.current;
+    utterance.onend = () => {
+      if (speechGenerationRef.current === generation) {
+        speakingMessageIdRef.current = null;
+        setSpeakingMessageId(null);
+      }
+    };
+    utterance.onerror = () => {
+      if (speechGenerationRef.current === generation) {
+        speakingMessageIdRef.current = null;
+        setSpeakingMessageId(null);
+        if (reportError) setSendError('Không thể phát giọng đọc trên thiết bị này.');
+      }
+    };
+    speakingMessageIdRef.current = messageId;
+    setSpeakingMessageId(messageId);
+    if (reportError) setSendError('');
+    synthesis.speak(utterance);
+    return true;
+  }, [stopSpeech]);
+
+  const queueAutoRead = useCallback((message: Message) => {
+    if (!autoReadRef.current || !message.content || spokenMessageIdsRef.current.has(message.id)) return;
+    spokenMessageIdsRef.current.add(message.id);
+    speakText(message.content, message.id, false);
+  }, [speakText]);
 
   useEffect(() => () => {
-    window.speechSynthesis?.cancel();
-  }, []);
+    stopSpeech();
+  }, [stopSpeech]);
 
   useEffect(() => {
     if (isLoadingConversation) return;
@@ -136,13 +193,23 @@ export default function ConversationPage() {
       setIsLoadingConversation(true);
       setConversationError('');
       try {
+        // React Strict Mode can run this effect twice in development. Share
+        // the creation request so `/new` never leaves duplicate conversations
+        // behind before the router replacement settles.
+        if (routeConversationId !== 'new') newConversationPromiseRef.current = null;
         let activeId = routeConversationId;
         let createdNewConversation = false;
         if (activeId === 'new') {
-          const createResponse = await fetch('/api/conversations', { method: 'POST' });
-          if (!createResponse.ok) throw new Error('Không thể tạo cuộc trò chuyện');
-          const created = await createResponse.json();
-          activeId = created.data.id;
+          if (!newConversationPromiseRef.current) {
+            newConversationPromiseRef.current = (async () => {
+              const createResponse = await fetch('/api/conversations', { method: 'POST' });
+              if (!createResponse.ok) throw new Error('Không thể tạo cuộc trò chuyện');
+              const created = await createResponse.json();
+              if (typeof created?.data?.id !== 'string') throw new Error('Phản hồi tạo cuộc trò chuyện không hợp lệ');
+              return created.data.id as string;
+            })();
+          }
+          activeId = await newConversationPromiseRef.current;
           createdNewConversation = true;
           if (!cancelled) {
             setConversationId(activeId);
@@ -177,7 +244,12 @@ export default function ConversationPage() {
         if (cancelled) return;
 
         setConversationId(activeId);
-        setMessages(mapConversationMessages(data));
+        const mappedMessages = mapConversationMessages(data);
+        setMessages(mappedMessages);
+        if (shouldOpen) {
+          const openingMessage = mappedMessages.find((message) => message.role === 'assistant' && message.content);
+          if (openingMessage) queueAutoRead(openingMessage);
+        }
       } catch (error) {
         if (!cancelled) setConversationError(error instanceof Error ? error.message : 'Không thể tải cuộc trò chuyện');
       } finally {
@@ -189,43 +261,20 @@ export default function ConversationPage() {
     return () => {
       cancelled = true;
     };
-  }, [routeConversationId, router]);
+  }, [queueAutoRead, routeConversationId, router]);
 
   const handleSpeakMessage = (message: Message) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      setSendError('Thiết bị này chưa hỗ trợ đọc giọng nói.');
+    if (speakingMessageIdRef.current === message.id) {
+      stopSpeech();
       return;
     }
+    speakText(message.content, message.id, true);
+  };
 
-    const synthesis = window.speechSynthesis;
-    if (speakingMessageId === message.id) {
-      synthesis.cancel();
-      setSpeakingMessageId(null);
-      return;
-    }
-
-    synthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(message.content);
-    const voices = synthesis.getVoices();
-    const vietnameseVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith('vi'));
-    // Keep the language Vietnamese even when the browser has not finished
-    // loading its voice list yet; assigning an English voice would make the
-    // Vietnamese reflection difficult to understand.
-    utterance.lang = 'vi-VN';
-    if (vietnameseVoice) utterance.voice = vietnameseVoice;
-    // A slightly slower pace and a soft pitch make reflective copy easier to
-    // listen to. The actual voice timbre still comes from the user's device.
-    utterance.rate = 0.9;
-    utterance.pitch = 1.04;
-    utterance.volume = 1;
-    utterance.onend = () => setSpeakingMessageId(null);
-    utterance.onerror = () => {
-      setSpeakingMessageId(null);
-      setSendError('Không thể phát giọng đọc trên thiết bị này.');
-    };
-    setSendError('');
-    setSpeakingMessageId(message.id);
-    synthesis.speak(utterance);
+  const handleAutoReadChange = (enabled: boolean) => {
+    autoReadRef.current = enabled;
+    setAutoRead(enabled);
+    if (!enabled) stopSpeech();
   };
 
   const handleSendMessage = async (event: React.FormEvent) => {
@@ -339,6 +388,14 @@ export default function ConversationPage() {
           }
         }
       }
+      if (accumulatedText) {
+        queueAutoRead({
+          id: assistantMsgId,
+          role: 'assistant',
+          content: accumulatedText,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        });
+      }
     } catch (error) {
       console.error('Chat error', error);
       setSendError('Kết nối vừa bị gián đoạn. Nội dung của bạn vẫn còn để thử lại.');
@@ -447,6 +504,17 @@ export default function ConversationPage() {
           Bạn giữ quyền quyết định
         </div>
       </section>
+
+      <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-calm-deep-moss/55 px-3.5 py-2 text-[11px] font-medium text-calm-fog/80">
+        <input
+          type="checkbox"
+          checked={autoRead}
+          onChange={(event) => handleAutoReadChange(event.target.checked)}
+          className="h-3.5 w-3.5 accent-[#b9c6a5]"
+        />
+        <Volume2 size={14} className="text-calm-lichen" />
+        Tự đọc phản hồi
+      </label>
 
       <section className="min-h-[380px] rounded-[34px] border border-white/10 bg-calm-deep-moss/35 px-4 py-6 sm:px-7 sm:py-8">
         <div className="space-y-7" aria-live="polite">
