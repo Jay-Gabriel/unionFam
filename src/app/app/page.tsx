@@ -151,13 +151,16 @@ export default function DashboardOverviewPage() {
           <div className="space-y-5 px-5 py-6 sm:px-7">
             {loading && <div className="flex min-h-32 items-center justify-center text-calm-fog"><Loader2 className="h-5 w-5 animate-spin" /></div>}
             {!loading && latestConversation && (
-              <div className="flex items-start gap-3">
+              <Link
+                href={`/app/conversations/${latestConversation.id}`}
+                className="flex items-start gap-3 rounded-[22px] transition hover:bg-white/5"
+              >
                 <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-calm-lichen border border-white/5"><Sprout className="h-4 w-4" /></div>
                 <div className="rounded-[22px] rounded-tl-md bg-white/10 border border-white/5 px-4 py-3 text-[13px] leading-6 text-calm-paper-white">
                   <p className="font-semibold">{latestConversation.title}</p>
                   <p className="mt-1 text-calm-fog/80">Phiên đang ở bước {labelStage(latestConversation.current_stage)}. Mở lại để tiếp tục mạch phản chiếu của bạn.</p>
                 </div>
-              </div>
+              </Link>
             )}
             {!loading && !latestConversation && (
               <div className="rounded-[22px] border border-dashed border-white/15 bg-white/5 px-4 py-6 text-center text-[13px] leading-6 text-calm-fog">
