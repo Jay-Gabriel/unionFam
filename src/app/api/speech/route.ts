@@ -104,8 +104,10 @@ export async function POST(request: Request) {
     }
 
     const model = (process.env.GEMINI_TTS_MODEL || DEFAULT_TTS_MODEL).trim();
-    const voiceName = (process.env.GEMINI_TTS_VOICE || DEFAULT_TTS_VOICE).trim();
-    if (!model || !voiceName) return errorResponse('TTS_NOT_CONFIGURED', 503, requestId);
+    // Keep one fixed voice for the product experience. This intentionally
+    // ignores any stale voice override from an older local/deployment env.
+    const voiceName = DEFAULT_TTS_VOICE;
+    if (!model) return errorResponse('TTS_NOT_CONFIGURED', 503, requestId);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);

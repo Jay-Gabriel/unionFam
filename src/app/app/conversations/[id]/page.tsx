@@ -243,39 +243,10 @@ export default function ConversationPage() {
         });
     };
 
-    const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
-    const canUseNativeSpeech = Boolean(
-      synthesis && typeof window !== 'undefined' && 'SpeechSynthesisUtterance' in window
-    );
-
-    if (!canUseNativeSpeech || !synthesis) {
-      startServerAudio();
-      return true;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    const vietnameseVoice = synthesis.getVoices().find((voice) => voice.lang.toLowerCase().startsWith('vi'));
-    utterance.lang = 'vi-VN';
-    if (vietnameseVoice) utterance.voice = vietnameseVoice;
-    // A slightly slower pace and a soft pitch make reflective copy easier to
-    // listen to when the device provides a native Vietnamese voice.
-    utterance.rate = 0.9;
-    utterance.pitch = 1.04;
-    utterance.volume = 1;
-    utterance.onend = clearSpeakingState;
-    utterance.onerror = () => {
-      // Some mobile browsers expose SpeechSynthesis but cannot actually
-      // render a voice. Switch to the server audio path instead of surfacing
-      // the old “unsupported device” error.
-      startServerAudio();
-    };
-    speakingMessageIdRef.current = messageId;
-    setSpeakingMessageId(messageId);
-    try {
-      synthesis.speak(utterance);
-    } catch {
-      startServerAudio();
-    }
+    // Always use the server-generated Gemini voice. Native SpeechSynthesis is
+    // deliberately not used here because browsers may silently substitute a
+    // different (often male) system voice for Vietnamese.
+    startServerAudio();
     return true;
   }, [stopSpeech]);
 
@@ -636,7 +607,7 @@ export default function ConversationPage() {
             className="h-3.5 w-3.5 accent-[#b9c6a5]"
           />
           <Volume2 size={14} className="text-calm-lichen" />
-          Tự đọc phản hồi
+          Tự đọc bằng giọng AI
         </label>
         {speechNotice && (
           <p className="text-[11px] text-[#e7d3a9]" role="status">
