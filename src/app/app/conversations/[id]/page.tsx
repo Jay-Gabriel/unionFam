@@ -106,6 +106,66 @@ async function requestSpeechAudio(text: string, signal: AbortSignal) {
   return audio;
 }
 
+async function requestSpeechStream(text: string, signal: AbortSignal) {
+  const response = await fetch('/api/speech/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    const code = payload && typeof payload.error === 'string' ? payload.error : 'TTS_PROVIDER_UNAVAILABLE';
+    throw new Error(code);
+  }
+
+  if (!response.body) throw new Error('TTS_STREAM_UNAVAILABLE');
+  return response;
+}
+
+function streamAudioPart(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return null;
+  const candidates = (payload as { candidates?: unknown }).candidates;
+  if (!Array.isArray(candidates)) return null;
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'object') continue;
+    const content = (candidate as { content?: unknown }).content;
+    if (!content || typeof content !== 'object') continue;
+    const parts = (content as { parts?: unknown }).parts;
+    if (!Array.isArray(parts)) continue;
+    for (const part of parts) {
+      if (!part || typeof part !== 'object') continue;
+      const inlineData = (part as { inlineData?: unknown }).inlineData;
+      if (!inlineData || typeof inlineData !== 'object') continue;
+      const base64 = (inlineData as { data?: unknown }).data;
+      if (typeof base64 !== 'string' || !base64) continue;
+      const mimeType = (inlineData as { mimeType?: unknown }).mimeType;
+      return {
+        base64,
+        mimeType: typeof mimeType === 'string' ? mimeType : '',
+      };
+    }
+  }
+  return null;
+}
+
+function streamSampleRate(mimeType: string) {
+  const match = mimeType.match(/(?:rate|samplerate)\s*=\s*(\d+)/i);
+  const parsed = match ? Number(match[1]) : 24_000;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 24_000;
+}
+
+function decodePcmBase64(base64: string) {
+  const binary = window.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
 export default function ConversationPage() {
   const params = useParams();
   const router = useRouter();
@@ -127,6 +187,7 @@ export default function ConversationPage() {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [speechNotice, setSpeechNotice] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesScrollRef = useRef<HTMLElement>(null);
   const openingStartedRef = useRef<string | null>(null);
   const openingPromiseRef = useRef<{ id: string; promise: Promise<void> } | null>(null);
   const newConversationPromiseRef = useRef<Promise<string> | null>(null);
@@ -137,12 +198,26 @@ export default function ConversationPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const audioRequestRef = useRef<AbortController | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioSourcesRef = useRef(new Set<AudioBufferSourceNode>());
+  const audioStreamRequestRef = useRef<AbortController | null>(null);
 
   const stopSpeech = useCallback(() => {
     speechGenerationRef.current += 1;
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
+    audioStreamRequestRef.current?.abort();
+    audioStreamRequestRef.current = null;
     audioRequestRef.current?.abort();
     audioRequestRef.current = null;
+    for (const source of audioSourcesRef.current) {
+      source.onended = null;
+      try {
+        source.stop();
+      } catch {
+        // A source can already have ended between the iteration and stop().
+      }
+    }
+    audioSourcesRef.current.clear();
     if (audioRef.current) {
       audioRef.current.onended = null;
       audioRef.current.onerror = null;
@@ -168,7 +243,6 @@ export default function ConversationPage() {
       setSpeechNotice('');
     }
 
-    let fallbackStarted = false;
     const clearSpeakingState = () => {
       if (speechGenerationRef.current === generation) {
         speakingMessageIdRef.current = null;
@@ -176,12 +250,22 @@ export default function ConversationPage() {
       }
     };
 
-    const startServerAudio = () => {
-      if (fallbackStarted || speechGenerationRef.current !== generation) return;
-      fallbackStarted = true;
-      speakingMessageIdRef.current = messageId;
-      setSpeakingMessageId(messageId);
+    const showSpeechError = (error: unknown) => {
+      if (speechGenerationRef.current !== generation) return;
+      const code = error instanceof Error ? error.message : '';
+      const message = code === 'TTS_NOT_CONFIGURED'
+        ? 'Giọng đọc AI chưa được cấu hình trên máy chủ.'
+        : code === 'TTS_PROVIDER_TIMEOUT'
+          ? 'Giọng đọc đang phản hồi chậm. Bạn hãy thử lại sau một chút nhé.'
+          : code === 'TTS_AUDIO_MISSING'
+            ? 'Life Lab chưa tạo được âm thanh cho phản hồi này. Bạn hãy thử lại nhé.'
+            : 'Chưa tải được giọng đọc AI. Bạn hãy thử lại sau.';
+      if (reportError) setSendError(message);
+      else setSpeechNotice(message);
+    };
 
+    const startBufferedAudio = () => {
+      if (speechGenerationRef.current !== generation) return;
       const controller = new AbortController();
       audioRequestRef.current = controller;
 
@@ -208,11 +292,7 @@ export default function ConversationPage() {
           audio.onerror = () => {
             const isCurrent = speechGenerationRef.current === generation;
             finish();
-            if (isCurrent) {
-              const message = 'Không thể phát file giọng đọc. Bạn hãy kiểm tra âm lượng rồi thử lại.';
-              if (reportError) setSendError(message);
-              else setSpeechNotice(message);
-            }
+            if (isCurrent) showSpeechError(new Error('TTS_AUDIO_PLAYBACK_FAILED'));
           };
 
           try {
@@ -221,32 +301,150 @@ export default function ConversationPage() {
             finish();
             if (speechGenerationRef.current === generation) {
               const blocked = error instanceof DOMException && error.name === 'NotAllowedError';
-              const message = blocked
-                ? 'Trình duyệt đang chặn tự phát âm thanh. Chạm “Nghe phản hồi” để bật giọng đọc.'
-                : 'Không thể phát giọng đọc lúc này. Bạn hãy thử lại nhé.';
-              if (reportError) setSendError(message);
-              else setSpeechNotice(message);
+              if (blocked) {
+                const message = 'Trình duyệt đang chặn tự phát âm thanh. Chạm “Nghe phản hồi” để bật giọng đọc.';
+                if (reportError) setSendError(message);
+                else setSpeechNotice(message);
+              } else {
+                showSpeechError(error);
+              }
             }
           }
         })
         .catch((error) => {
           if (speechGenerationRef.current !== generation || (error instanceof DOMException && error.name === 'AbortError')) return;
           clearSpeakingState();
-          const message = error instanceof Error && error.message === 'TTS_NOT_CONFIGURED'
-            ? 'Giọng đọc AI chưa được cấu hình trên máy chủ.'
-            : 'Chưa tải được giọng đọc AI. Bạn hãy thử lại sau.';
-          if (reportError) setSendError(message);
-          else setSpeechNotice(message);
+          showSpeechError(error);
         })
         .finally(() => {
           if (audioRequestRef.current === controller) audioRequestRef.current = null;
         });
     };
 
-    // Always use the server-generated Gemini voice. Native SpeechSynthesis is
-    // deliberately not used here because browsers may silently substitute a
-    // different (often male) system voice for Vietnamese.
-    startServerAudio();
+    const startStreamingAudio = () => {
+      const controller = new AbortController();
+      audioStreamRequestRef.current = controller;
+
+      void requestSpeechStream(text, controller.signal)
+        .then(async (response) => {
+          if (speechGenerationRef.current !== generation) return;
+
+          const AudioContextConstructor = window.AudioContext ||
+            (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+          if (!AudioContextConstructor) throw new Error('TTS_AUDIO_UNAVAILABLE');
+
+          const context = audioContextRef.current || new AudioContextConstructor();
+          audioContextRef.current = context;
+          if (context.state === 'suspended') await context.resume();
+
+          const reader = response.body!.getReader();
+          const decoder = new TextDecoder();
+          let eventBuffer = '';
+          let nextStartTime = context.currentTime + 0.04;
+          let streamFinished = false;
+          let receivedAudio = false;
+          let receivedPcmBytes = 0;
+
+          const finishIfDone = () => {
+            if (streamFinished && audioSourcesRef.current.size === 0) clearSpeakingState();
+          };
+
+          const scheduleAudio = (base64: string, mimeType: string) => {
+            const bytes = decodePcmBase64(base64);
+            const usableBytes = bytes.byteLength - (bytes.byteLength % 2);
+            if (!usableBytes) return;
+
+            receivedPcmBytes += usableBytes;
+            if (receivedPcmBytes > 10 * 1024 * 1024) throw new Error('TTS_AUDIO_INVALID');
+
+            const pcmView = new DataView(bytes.buffer, bytes.byteOffset, usableBytes);
+            const audioBuffer = context.createBuffer(1, usableBytes / 2, streamSampleRate(mimeType));
+            const channel = audioBuffer.getChannelData(0);
+            for (let index = 0; index < channel.length; index += 1) {
+              channel[index] = pcmView.getInt16(index * 2, true) / 32768;
+            }
+
+            const source = context.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(context.destination);
+            // Keep the reflective tone while trimming a little dead air from
+            // each chunk. The small rate bump is intentionally subtle so the
+            // female voice remains natural in Vietnamese.
+            source.playbackRate.value = 1.06;
+            const startAt = Math.max(nextStartTime, context.currentTime + 0.04);
+            source.start(startAt);
+            nextStartTime = startAt + audioBuffer.duration / source.playbackRate.value;
+            receivedAudio = true;
+            audioSourcesRef.current.add(source);
+            source.onended = () => {
+              audioSourcesRef.current.delete(source);
+              source.disconnect();
+              finishIfDone();
+            };
+          };
+
+          const processEvent = (eventBlock: string) => {
+            const dataString = eventBlock
+              .split(/\r?\n/)
+              .filter((line) => line.startsWith('data:'))
+              .map((line) => line.slice(5).trim())
+              .join('');
+            if (!dataString || dataString === '[DONE]') return;
+            try {
+              const payload = JSON.parse(dataString);
+              const audio = streamAudioPart(payload);
+              if (audio) scheduleAudio(audio.base64, audio.mimeType);
+            } catch (error) {
+              if (error instanceof Error && error.message === 'TTS_AUDIO_INVALID') throw error;
+              // A malformed provider event should not stop already scheduled audio.
+            }
+          };
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              eventBuffer += decoder.decode(value, { stream: true });
+              const events = eventBuffer.split(/\r?\n\r?\n/);
+              eventBuffer = events.pop() || '';
+              events.forEach(processEvent);
+            }
+            eventBuffer += decoder.decode();
+            if (eventBuffer.trim()) processEvent(eventBuffer);
+          } finally {
+            reader.releaseLock();
+          }
+
+          streamFinished = true;
+          finishIfDone();
+          if (!receivedAudio) throw new Error('TTS_AUDIO_MISSING');
+        })
+        .catch((error) => {
+          if (speechGenerationRef.current !== generation || (error instanceof DOMException && error.name === 'AbortError')) return;
+          // Older server builds may not have the streaming route yet. Keep a
+          // buffered Gemini WAV fallback for that one compatibility case.
+          if (error instanceof Error && error.message === 'TTS_STREAM_UNAVAILABLE') {
+            startBufferedAudio();
+            return;
+          }
+          clearSpeakingState();
+          showSpeechError(error);
+        })
+        .finally(() => {
+          if (audioStreamRequestRef.current === controller) audioStreamRequestRef.current = null;
+        });
+    };
+
+    speakingMessageIdRef.current = messageId;
+    setSpeakingMessageId(messageId);
+
+    // Server-generated Gemini audio is preferred everywhere. Web Audio lets
+    // the first PCM chunk play while the remaining chunks are still arriving;
+    // the WAV endpoint remains a compatibility fallback for old browsers.
+    const AudioContextConstructor = typeof window !== 'undefined' && (window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+    if (AudioContextConstructor) startStreamingAudio();
+    else startBufferedAudio();
     return true;
   }, [stopSpeech]);
 
@@ -267,6 +465,14 @@ export default function ConversationPage() {
     // queueing dozens of smooth animations for each small delta; once the
     // response is complete, a smooth settle makes the final position gentle.
     const frame = window.requestAnimationFrame(() => {
+      const container = messagesScrollRef.current;
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: isStreaming ? 'auto' : 'smooth',
+        });
+        return;
+      }
       messagesEndRef.current?.scrollIntoView({
         behavior: isStreaming ? 'auto' : 'smooth',
         block: 'end',
@@ -476,6 +682,18 @@ export default function ConversationPage() {
                 )
               );
             }
+            // `message.completed` is the first moment the full answer is
+            // available. Start TTS here instead of waiting for the reader's
+            // final close notification, so audio generation overlaps that
+            // tiny stream teardown.
+            if (eventType === 'message.completed' && accumulatedText) {
+              queueAutoRead({
+                id: assistantMsgId,
+                role: 'assistant',
+                content: accumulatedText,
+                timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+              });
+            }
           } catch {
             // Malformed provider events are ignored without breaking the current conversation.
           }
@@ -616,7 +834,11 @@ export default function ConversationPage() {
         )}
       </div>
 
-      <section className="min-h-[380px] rounded-[34px] border border-white/10 bg-calm-deep-moss/35 px-4 py-6 sm:px-7 sm:py-8">
+      <section
+        ref={messagesScrollRef}
+        className="min-h-[380px] max-h-[calc(100svh-260px)] overflow-y-auto overscroll-contain rounded-[34px] border border-white/10 bg-calm-deep-moss/35 px-4 py-6 sm:px-7 sm:py-8"
+        aria-label="Nội dung cuộc trò chuyện"
+      >
         <div className="space-y-7" aria-live="polite">
           {messages.map((message) => (
             <div key={message.id} className="space-y-3">

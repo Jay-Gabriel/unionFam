@@ -1,82 +1,26 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/server/auth/current-user';
 import { pcmToWav } from '@/server/audio/pcm-wav';
+import {
+  extractAudio,
+  MAX_TTS_PCM_BYTES,
+  MAX_TTS_TEXT_LENGTH,
+  readTtsText,
+  sampleRateFromMimeType,
+  TTS_MODEL,
+  TTS_TIMEOUT_MS,
+  ttsRequestBody,
+} from '@/server/audio/tts';
 import { consumeRateLimit } from '@/server/security/rate-limit';
 import { recordApplicationError } from '@/server/observability/log';
 
 export const dynamic = 'force-dynamic';
-
-const MAX_TEXT_LENGTH = 3_000;
-const MAX_PCM_BYTES = 10 * 1024 * 1024;
-const DEFAULT_TTS_MODEL = 'gemini-2.5-flash-preview-tts';
-// A single warm voice keeps the Life Lab experience consistent across turns.
-// Sulafat is the warm preset in Gemini's voice library and suits reflective
-// Vietnamese responses better than the breezier default used previously.
-const DEFAULT_TTS_VOICE = 'Sulafat';
-const TTS_TIMEOUT_MS = 20_000;
-
-type GeminiPart = {
-  inlineData?: {
-    data?: unknown;
-    mimeType?: unknown;
-  };
-};
 
 function errorResponse(error: string, status: number, requestId: string) {
   return NextResponse.json(
     { error, requestId },
     { status, headers: { 'X-Request-Id': requestId } }
   );
-}
-
-function readText(body: unknown) {
-  if (!body || typeof body !== 'object' || !('text' in body)) return '';
-  const value = (body as { text?: unknown }).text;
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function extractAudio(payload: unknown) {
-  if (!payload || typeof payload !== 'object') return null;
-  const candidates = (payload as { candidates?: unknown }).candidates;
-  if (!Array.isArray(candidates)) return null;
-
-  for (const candidate of candidates) {
-    if (!candidate || typeof candidate !== 'object') continue;
-    const content = (candidate as { content?: unknown }).content;
-    if (!content || typeof content !== 'object') continue;
-    const parts = (content as { parts?: unknown }).parts;
-    if (!Array.isArray(parts)) continue;
-    for (const part of parts as GeminiPart[]) {
-      const inlineData = part?.inlineData;
-      if (
-        inlineData &&
-        typeof inlineData.data === 'string' &&
-        inlineData.data.length > 0
-      ) {
-        return {
-          base64: inlineData.data,
-          mimeType: typeof inlineData.mimeType === 'string' ? inlineData.mimeType : '',
-        };
-      }
-    }
-  }
-  return null;
-}
-
-function sampleRateFromMimeType(mimeType: string) {
-  const match = mimeType.match(/(?:rate|samplerate)\s*=\s*(\d+)/i);
-  const parsed = match ? Number(match[1]) : 24_000;
-  return Number.isFinite(parsed) ? parsed : 24_000;
-}
-
-function ttsPrompt(text: string) {
-  return [
-    '[warmly, softly, with gentle pauses]',
-    'Đọc bằng tiếng Việt với một giọng nữ trưởng thành, ấm áp, dịu và truyền cảm.',
-    'Tốc độ hơi chậm, phát âm rõ, tự nhiên như một người đồng hành đang lắng nghe; không kịch, không robot.',
-    'Đọc nguyên văn nội dung bên dưới, không thêm lời dẫn và không đọc các chỉ dẫn này:',
-    text,
-  ].join('\n\n');
 }
 
 export async function POST(request: Request) {
@@ -93,8 +37,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => null);
-    const text = readText(body);
-    if (!text || text.length > MAX_TEXT_LENGTH) {
+    const text = readTtsText(body);
+    if (!text || text.length > MAX_TTS_TEXT_LENGTH) {
       return errorResponse('INVALID_SPEECH_TEXT', 422, requestId);
     }
 
@@ -103,11 +47,9 @@ export async function POST(request: Request) {
       return errorResponse('TTS_NOT_CONFIGURED', 503, requestId);
     }
 
-    const model = (process.env.GEMINI_TTS_MODEL || DEFAULT_TTS_MODEL).trim();
-    // Keep one fixed voice for the product experience. This intentionally
-    // ignores any stale voice override from an older local/deployment env.
-    const voiceName = DEFAULT_TTS_VOICE;
-    if (!model) return errorResponse('TTS_NOT_CONFIGURED', 503, requestId);
+    // Keep the model and voice fixed for a consistent product experience. This
+    // intentionally ignores stale overrides from older local/deployment envs.
+    const model = TTS_MODEL;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
@@ -122,16 +64,7 @@ export async function POST(request: Request) {
             'x-goog-api-key': apiKey,
           },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: ttsPrompt(text) }] }],
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: {
-                languageCode: 'vi-VN',
-                voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName },
-                },
-              },
-            },
+            ...ttsRequestBody(text),
           }),
           signal: controller.signal,
         }
@@ -166,7 +99,7 @@ export async function POST(request: Request) {
     }
 
     const pcm = Buffer.from(audio.base64, 'base64');
-    if (!pcm.length || pcm.length > MAX_PCM_BYTES) {
+    if (!pcm.length || pcm.length > MAX_TTS_PCM_BYTES) {
       return errorResponse('TTS_AUDIO_INVALID', 502, requestId);
     }
 
