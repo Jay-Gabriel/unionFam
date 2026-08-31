@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   CheckCircle2,
@@ -48,6 +48,23 @@ export default function ConversationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendError, setSendError] = useState('');
   const [retryContent, setRetryContent] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isLoadingConversation) return;
+
+    // Keep the latest turn visible while Gemini streams. `auto` avoids
+    // queueing dozens of smooth animations for each small delta; once the
+    // response is complete, a smooth settle makes the final position gentle.
+    const frame = window.requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: isStreaming ? 'auto' : 'smooth',
+        block: 'end',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isLoadingConversation, isStreaming, messages]);
 
   useEffect(() => {
     let cancelled = false;
@@ -464,6 +481,7 @@ export default function ConversationPage() {
               )}
             </div>
           ))}
+          <div ref={messagesEndRef} aria-hidden="true" />
         </div>
       </section>
 
