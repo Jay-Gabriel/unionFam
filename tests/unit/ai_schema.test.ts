@@ -27,4 +27,17 @@ describe('AI Structured Output & Schema Validation', () => {
     expect(result.success).toBe(false);
     expect(result.errorCode).toBe('AI_SCHEMA_INVALID');
   });
+
+  it('normalizes Gemini reflection/question fields into the server contract', () => {
+    const raw = JSON.stringify({
+      reflection: 'Mình nghe thấy bạn đang ưu tiên gia đình.',
+      question: 'Điều gì đang cản trở bạn dành thời gian cho gia đình?',
+      nextQuestionId: 'q1_life_focus',
+    });
+
+    const result = parseStrictAIOutput(raw, ['q1_life_focus']);
+    expect(result.success).toBe(true);
+    expect(result.data?.responseText).toContain('ưu tiên gia đình');
+    expect(result.data?.responseText).toContain('Điều gì đang cản trở');
+  });
 });

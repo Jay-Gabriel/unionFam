@@ -65,14 +65,24 @@ export interface SchemaParseResult {
 function normalizeProviderPayload(raw: unknown) {
   if (!raw || typeof raw !== 'object') return raw;
   const value = raw as Record<string, unknown>;
-  const observation = (value.observation || value.observationProposal) as Record<string, unknown> | undefined;
+  const observationValue = value.observation || value.observationProposal || value.insight;
+  const observation = observationValue && typeof observationValue === 'object'
+    ? observationValue as Record<string, unknown>
+    : undefined;
   const safety = (value.safety || {}) as Record<string, unknown>;
+  const responseCandidate = value.responseText ?? value.assistant_message ?? value.reflection ?? value.message ?? value.answer;
+  const followUpQuestion = value.nextQuestion ?? value.question;
+  const responseText = [responseCandidate, followUpQuestion]
+    .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+    .join('\n\n');
 
   return {
-    responseText: value.responseText ?? value.assistant_message,
+    responseText,
     nextStage: value.nextStage ?? value.next_stage,
     requiresPermission: value.requiresPermission ?? value.requires_permission,
-    nextQuestionId: value.nextQuestionId ?? value.next_question_id,
+    nextQuestionId: typeof (value.nextQuestionId ?? value.next_question_id) === 'string'
+      ? value.nextQuestionId ?? value.next_question_id
+      : undefined,
     observationProposal: observation
       ? {
           dimension: observation.dimension,

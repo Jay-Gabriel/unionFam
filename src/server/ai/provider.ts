@@ -1,5 +1,43 @@
 import { SchemaParseResult, parseStrictAIOutput } from './schemas';
 import { buildContextPayload, ContextBudgetParams } from './context';
+import { SchemaType, type ResponseSchema } from '@google/generative-ai';
+
+const GEMINI_RESPONSE_SCHEMA: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    responseText: { type: SchemaType.STRING, description: 'Phản hồi phản chiếu bằng tiếng Việt.' },
+    nextStage: {
+      type: SchemaType.STRING,
+      enum: ['onboarding', 'discovery', 'clarify', 'permission', 'synthesis', 'design', 'experiment', 'reflection', 'completed'],
+    },
+    requiresPermission: { type: SchemaType.BOOLEAN },
+    safety: {
+      type: SchemaType.OBJECT,
+      properties: {
+        isSafe: { type: SchemaType.BOOLEAN },
+        safetyFlag: { type: SchemaType.STRING },
+        userMessage: { type: SchemaType.STRING },
+      },
+      required: ['isSafe'],
+    },
+    nextQuestionId: { type: SchemaType.STRING },
+    observationProposal: {
+      type: SchemaType.OBJECT,
+      properties: {
+        dimension: {
+          type: SchemaType.STRING,
+          enum: ['my_life', 'what_matters', 'my_ideal_day', 'what_it_takes', 'my_trade_offs', 'the_question', 'financial_life', 'other'],
+        },
+        observationType: { type: SchemaType.STRING },
+        contentOriginal: { type: SchemaType.STRING },
+        confidence: { type: SchemaType.NUMBER },
+        evidenceMessageIds: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+      },
+      required: ['dimension', 'contentOriginal'],
+    },
+  },
+  required: ['responseText', 'nextStage', 'requiresPermission', 'safety'],
+};
 
 export class GeminiConversationProvider {
   private apiKey: string | undefined;
@@ -38,12 +76,20 @@ export class GeminiConversationProvider {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(this.apiKey);
       const model = genAI.getGenerativeModel({
-        model: process.env.AI_MODEL || 'gemini-1.5-flash',
+        model: process.env.AI_MODEL || 'gemini-3.6-flash',
       });
 
-      const prompt = `System Context:\n${contextText}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nRespond ONLY with one JSON object conforming strictly to AIStructuredOutputSchema. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}.`;
+      const prompt = `System Context:\n${contextText}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nReturn ONLY one JSON object with exactly these field names: responseText (string), nextStage (one of onboarding/discovery/clarify/permission/synthesis/design/experiment/reflection/completed), requiresPermission (boolean), safety ({isSafe:boolean}), optional nextQuestionId (only from the allowlist), and optional observationProposal ({dimension, observationType, contentOriginal, confidence, evidenceMessageIds}). Do not use aliases such as reflection, question, answer, or assistant_message. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}. If no question or observation is needed, omit those optional fields.`;
       const timeoutMs = Math.max(3000, Number(process.env.AI_TIMEOUT_MS || 15000));
-      const result = await withTimeout(model.generateContent(prompt), timeoutMs);
+      const result = await withTimeout(model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: GEMINI_RESPONSE_SCHEMA,
+          temperature: 0.5,
+          maxOutputTokens: 1400,
+        },
+      }), timeoutMs);
       const text = result.response.text();
       const firstAttempt = parseStrictAIOutput(text, allowedQuestionIds);
       if (firstAttempt.success) return firstAttempt;
