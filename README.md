@@ -57,4 +57,4 @@ npx supabase migration up --local --yes
 npm run typecheck && npm run lint && npm test
 ```
 
-`AUTH_REQUIRED=false` chỉ dành cho preview UI local. Trước production phải cấu hình Auth/provider và đặt `AUTH_REQUIRED=true`. Xem [Technical RC Status](docs/12_TECHNICAL_RC_STATUS.md) để biết các credential/input còn chờ khách.
+`AUTH_REQUIRED=false` dành cho local preview. Khi `DEV_PREVIEW_AUTH=true` (mặc định trong `.env.example`), server tự tạo một tài khoản preview nội bộ và cấp session cookie để các API conversation/onboarding/question chạy end-to-end mà không cần bật provider email/Google. Đây chỉ là tiện ích phát triển; trước production phải cấu hình Auth/provider và đặt `AUTH_REQUIRED=true`. Xem [Technical RC Status](docs/12_TECHNICAL_RC_STATUS.md) để biết các credential/input còn chờ khách.

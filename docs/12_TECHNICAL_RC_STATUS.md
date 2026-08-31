@@ -56,3 +56,7 @@ Các mục sau cần input/quyền từ phía khách hoặc operator, nên vẫn
 - Rate limit hiện là process-local; khi chạy nhiều instance cần thay bằng Redis/Upstash.
 - Three.js là decorative layer; mobile, reduced-motion, save-data, WebGL lỗi hoặc thiết bị yếu dùng poster/static path.
 - Admin P0 read-only; không có impersonation hay chỉnh prompt/confirmed insight từ browser.
+
+## Local preview không cần provider đăng nhập
+
+Đặt `AUTH_REQUIRED=false` và `DEV_PREVIEW_AUTH=true`. Request đầu tiên tới API sẽ bootstrap tài khoản `preview@lifelab.test` bằng service-role ở server, đăng nhập qua cookie HttpOnly và dùng cùng session cho conversation, onboarding, question và các màn hình persist khác. Tắt cơ chế này bằng `DEV_PREVIEW_AUTH=false`; không bật nó trên môi trường public/staging. Tài khoản preview chỉ phục vụ kiểm thử, không phải luồng đăng nhập sản phẩm.
