@@ -9,7 +9,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "UNIONFAM Life Lab — Understand → Choose → Become",
+  title: "UNIONFAM Life Lab — Hiểu mình → Chọn hướng → Trở thành",
   description: "Xây dựng thiết kế cuộc sống cá nhân hóa cùng AI Conversation Engine, Life Design Map và Micro-Experiments.",
   icons: {
     icon: "/favicon.ico",

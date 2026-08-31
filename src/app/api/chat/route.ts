@@ -6,6 +6,7 @@ import { computeEligibleQuestions } from '@/server/domain/questions';
 import { resolveNextStage } from '@/server/domain/conversation';
 import { consumeRateLimit } from '@/server/security/rate-limit';
 import { recordAiRunLog, recordApplicationError } from '@/server/observability/log';
+import { labelDimension } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,7 +82,7 @@ function toMessageEvents(params: {
       data: {
         id: params.observation.id,
         dimension: params.observation.dimension,
-        dimensionLabel: params.observation.dimension.replaceAll('_', ' ').toUpperCase(),
+        dimensionLabel: labelDimension(params.observation.dimension),
         contentOriginal: params.observation.contentOriginal,
         status: params.observation.status,
       },
@@ -115,12 +116,19 @@ export async function POST(request: Request) {
     if (!body || typeof body !== 'object') {
       return NextResponse.json({ error: 'INVALID_REQUEST', requestId }, { status: 400, headers: { 'X-Request-Id': requestId } });
     }
+    const opening = body.opening === true;
     const content = typeof body.content === 'string' ? body.content.trim() : '';
     const requestedConversationId = typeof body.conversationId === 'string' ? body.conversationId : '';
-    const idempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim() : '';
+    const providedIdempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim() : '';
+    const idempotencyKey = opening
+      ? providedIdempotencyKey || (requestedConversationId ? `opening:${requestedConversationId}` : '')
+      : providedIdempotencyKey;
 
-    if (!content || content.length > 4000 || idempotencyKey.length > 128) {
+    if ((!opening && !content) || content.length > 4000 || idempotencyKey.length > 128) {
       return NextResponse.json({ error: 'INVALID_MESSAGE' }, { status: 422 });
+    }
+    if (opening && (!requestedConversationId || requestedConversationId === 'new')) {
+      return NextResponse.json({ error: 'CONVERSATION_ID_REQUIRED' }, { status: 422 });
     }
 
     const supabase = createClient();
@@ -128,7 +136,57 @@ export async function POST(request: Request) {
     let existingUserMessage: { id: string; conversation_id: string; sequence_no: number; content: string; status: string } | null = null;
     let existingAssistantMessage: { id: string; content: string; status: string } | null = null;
 
-    if (idempotencyKey) {
+    if (opening) {
+      const { data: existingAssistant } = await supabase
+        .from('messages')
+        .select('id, content, status')
+        .eq('user_id', user.id)
+        .eq('conversation_id', requestedConversationId)
+        .eq('role', 'assistant')
+        .eq('idempotency_key', `${idempotencyKey}:assistant`)
+        .maybeSingle();
+      existingAssistantMessage = existingAssistant;
+
+      if (existingAssistant?.status === 'complete') {
+        const [{ data: replayConversation }, { data: replayObservation }] = await Promise.all([
+          supabase
+            .from('conversations')
+            .select('current_stage')
+            .eq('id', requestedConversationId)
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('ai_observations')
+            .select('id, dimension, content_original, status')
+            .eq('assistant_message_id', existingAssistant.id)
+            .eq('user_id', user.id)
+            .maybeSingle(),
+        ]);
+        return streamEvents(
+          toMessageEvents({
+            conversationId: requestedConversationId,
+            assistantMessageId: existingAssistant.id,
+            responseText: existingAssistant.content,
+            nextStage: replayConversation?.current_stage || 'discovery',
+            requiresPermission: Boolean(replayObservation),
+            observation: replayObservation
+              ? {
+                  id: replayObservation.id,
+                  dimension: replayObservation.dimension,
+                  contentOriginal: replayObservation.content_original,
+                  status: replayObservation.status,
+                }
+              : undefined,
+            idempotencyKey,
+          })
+        );
+      }
+      if (existingAssistant && existingAssistant.status !== 'failed') {
+        return NextResponse.json({
+          data: { duplicate: true, conversationId: requestedConversationId, messageId: existingAssistant.id },
+        }, { status: 409 });
+      }
+    } else if (idempotencyKey) {
       const { data: existingMessage } = await supabase
         .from('messages')
         .select('id, conversation_id, sequence_no, content, status')
@@ -350,7 +408,7 @@ export async function POST(request: Request) {
     );
 
     let userMessage = existingUserMessage;
-    if (!userMessage) {
+    if (!userMessage && !opening) {
       const { data: insertedUserMessage, error: userMessageError } = await supabase
         .from('messages')
         .insert({
@@ -388,7 +446,7 @@ export async function POST(request: Request) {
       .map((message: { role: string; content: string }) => ({ role: message.role, content: message.content }));
     // A retry reuses the canonical user row, which is already present in the
     // recent-message query. Avoid injecting the same turn twice into context.
-    if (!existingUserMessage) {
+    if (!opening && !existingUserMessage) {
       recentMessages.push({ role: 'user', content: userMessage?.content || content });
     }
     const provider = new GeminiConversationProvider();
@@ -410,8 +468,11 @@ export async function POST(request: Request) {
         recentReflection: reflectionRow ? JSON.stringify(reflectionRow) : undefined,
         rejectedObservations: (rejectedRows || []).map((row: { content_original: string }) => row.content_original),
       },
-      content,
-      eligibleQuestionIds
+      opening
+        ? 'Hãy mở đầu cuộc trò chuyện bằng một lời chào ấm áp và chỉ một câu hỏi phản chiếu mở, ngắn gọn. Đây là lượt đầu tiên nên không đưa ra insight, không tạo đề xuất quan sát và không yêu cầu người dùng xác nhận điều gì.'
+        : content,
+      eligibleQuestionIds,
+      opening ? 'opening' : 'message'
     );
 
     await recordAiRunLog({
@@ -474,7 +535,7 @@ export async function POST(request: Request) {
     if (assistantError || !assistantMessage) throw assistantError || new Error('ASSISTANT_MESSAGE_SAVE_FAILED');
 
     let observation: { id: string; dimension: string; contentOriginal: string; status: string } | undefined;
-    if (aiData.observationProposal && aiData.safety.isSafe && aiData.observationProposal.observationType === 'insight_candidate') {
+    if (!opening && aiData.observationProposal && aiData.safety.isSafe && aiData.observationProposal.observationType === 'insight_candidate') {
       const { data: observationPayload, error: observationError } = await supabase.rpc('create_pending_observation', {
         p_conversation_id: conversationId,
         p_assistant_message_id: assistantMessage.id,

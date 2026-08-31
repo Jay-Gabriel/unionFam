@@ -11,8 +11,11 @@ import {
   ShieldCheck,
   Sprout,
   UserRound,
+  Volume2,
+  VolumeX,
   XCircle,
 } from 'lucide-react';
+import { labelDimension } from '@/lib/i18n';
 
 interface Observation {
   id: string;
@@ -29,6 +32,59 @@ interface Message {
   content: string;
   timestamp: string;
   observation?: Observation;
+}
+
+function mapConversationMessages(data: Record<string, unknown>): Message[] {
+  const observationsByMessage = new Map<string, Observation>();
+  const observations = Array.isArray(data.observations) ? data.observations : [];
+  observations.forEach((value) => {
+    if (!value || typeof value !== 'object') return;
+    const observation = value as Record<string, unknown>;
+    observationsByMessage.set(String(observation.assistant_message_id), {
+      id: String(observation.id),
+      dimension: String(observation.dimension),
+      dimensionLabel: labelDimension(String(observation.dimension)),
+      contentOriginal: String(observation.content_original),
+      contentEdited: typeof observation.content_user_edited === 'string' ? observation.content_user_edited : undefined,
+      status: observation.status as Observation['status'],
+    });
+  });
+
+  const messages = Array.isArray(data.messages) ? data.messages : [];
+  return messages
+    .filter((value): value is Record<string, unknown> => Boolean(value && typeof value === 'object'))
+    .filter((message) => message.role !== 'system_tool')
+    .map((message) => ({
+      id: String(message.id),
+      role: message.role as Message['role'],
+      content: String(message.content || ''),
+      timestamp: new Date(String(message.created_at)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      observation: observationsByMessage.get(String(message.id)),
+    }));
+}
+
+async function requestOpeningTurn(id: string) {
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      conversationId: id,
+      opening: true,
+      idempotencyKey: `opening:${id}`,
+    }),
+  });
+
+  if (!response.ok) {
+    const json = await response.json().catch(() => ({}));
+    throw new Error(typeof json.error === 'string' ? `Chưa thể mở lời chào (${json.error}).` : 'Chưa thể mở lời chào của Life Lab.');
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Kết nối mở lời chào không trả về dữ liệu.');
+  while (true) {
+    const { done } = await reader.read();
+    if (done) break;
+  }
 }
 
 export default function ConversationPage() {
@@ -48,7 +104,14 @@ export default function ConversationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendError, setSendError] = useState('');
   const [retryContent, setRetryContent] = useState('');
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const openingStartedRef = useRef<string | null>(null);
+  const openingPromiseRef = useRef<{ id: string; promise: Promise<void> } | null>(null);
+
+  useEffect(() => () => {
+    window.speechSynthesis?.cancel();
+  }, []);
 
   useEffect(() => {
     if (isLoadingConversation) return;
@@ -74,42 +137,47 @@ export default function ConversationPage() {
       setConversationError('');
       try {
         let activeId = routeConversationId;
+        let createdNewConversation = false;
         if (activeId === 'new') {
           const createResponse = await fetch('/api/conversations', { method: 'POST' });
           if (!createResponse.ok) throw new Error('Không thể tạo cuộc trò chuyện');
           const created = await createResponse.json();
           activeId = created.data.id;
+          createdNewConversation = true;
           if (!cancelled) {
             setConversationId(activeId);
             router.replace(`/app/conversations/${activeId}`);
           }
         }
 
-        const response = await fetch(`/api/conversations/${activeId}`);
-        if (!response.ok) throw new Error(response.status === 401 ? 'Phiên đăng nhập đã hết hạn' : 'Không thể tải cuộc trò chuyện');
-        const json = await response.json();
+        const loadData = async () => {
+          const response = await fetch(`/api/conversations/${activeId}`);
+          if (!response.ok) throw new Error(response.status === 401 ? 'Phiên đăng nhập đã hết hạn' : 'Không thể tải cuộc trò chuyện');
+          const json = await response.json();
+          return json.data as Record<string, unknown>;
+        };
+
+        let data = await loadData();
+        const loadedMessages = Array.isArray(data.messages) ? data.messages : [];
+        const shouldOpen = createdNewConversation || loadedMessages.length === 0;
+        if (shouldOpen) {
+          if (openingStartedRef.current !== activeId) {
+            openingStartedRef.current = activeId;
+            const openingPromise = requestOpeningTurn(activeId);
+            openingPromiseRef.current = { id: activeId, promise: openingPromise };
+            await openingPromise;
+          } else if (openingPromiseRef.current?.id === activeId) {
+            // A route.replace can re-run this effect while the first opening
+            // request is still streaming. Wait for that same request instead
+            // of briefly rendering an empty conversation.
+            await openingPromiseRef.current.promise;
+          }
+          data = await loadData();
+        }
         if (cancelled) return;
 
-        const observationsByMessage = new Map<string, Observation>();
-        (json.data.observations || []).forEach((observation: Record<string, unknown>) => {
-          observationsByMessage.set(String(observation.assistant_message_id), {
-            id: String(observation.id),
-            dimension: String(observation.dimension),
-            dimensionLabel: String(observation.dimension).replaceAll('_', ' ').toUpperCase(),
-            contentOriginal: String(observation.content_original),
-            contentEdited: typeof observation.content_user_edited === 'string' ? observation.content_user_edited : undefined,
-            status: observation.status as Observation['status'],
-          });
-        });
-
         setConversationId(activeId);
-        setMessages((json.data.messages || []).filter((message: Record<string, unknown>) => message.role !== 'system_tool').map((message: Record<string, unknown>) => ({
-          id: String(message.id),
-          role: message.role as Message['role'],
-          content: String(message.content || ''),
-          timestamp: new Date(String(message.created_at)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          observation: observationsByMessage.get(String(message.id)),
-        })));
+        setMessages(mapConversationMessages(data));
       } catch (error) {
         if (!cancelled) setConversationError(error instanceof Error ? error.message : 'Không thể tải cuộc trò chuyện');
       } finally {
@@ -122,6 +190,43 @@ export default function ConversationPage() {
       cancelled = true;
     };
   }, [routeConversationId, router]);
+
+  const handleSpeakMessage = (message: Message) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setSendError('Thiết bị này chưa hỗ trợ đọc giọng nói.');
+      return;
+    }
+
+    const synthesis = window.speechSynthesis;
+    if (speakingMessageId === message.id) {
+      synthesis.cancel();
+      setSpeakingMessageId(null);
+      return;
+    }
+
+    synthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(message.content);
+    const voices = synthesis.getVoices();
+    const vietnameseVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith('vi'));
+    // Keep the language Vietnamese even when the browser has not finished
+    // loading its voice list yet; assigning an English voice would make the
+    // Vietnamese reflection difficult to understand.
+    utterance.lang = 'vi-VN';
+    if (vietnameseVoice) utterance.voice = vietnameseVoice;
+    // A slightly slower pace and a soft pitch make reflective copy easier to
+    // listen to. The actual voice timbre still comes from the user's device.
+    utterance.rate = 0.9;
+    utterance.pitch = 1.04;
+    utterance.volume = 1;
+    utterance.onend = () => setSpeakingMessageId(null);
+    utterance.onerror = () => {
+      setSpeakingMessageId(null);
+      setSendError('Không thể phát giọng đọc trên thiết bị này.');
+    };
+    setSendError('');
+    setSpeakingMessageId(message.id);
+    synthesis.speak(utterance);
+  };
 
   const handleSendMessage = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -218,7 +323,13 @@ export default function ConversationPage() {
               setMessages((previous) =>
                 previous.map((message) =>
                   message.id === assistantMsgId
-                    ? { ...message, observation: data as Observation }
+                    ? {
+                        ...message,
+                        observation: {
+                          ...(data as Observation),
+                          dimensionLabel: labelDimension(String(data.dimension)),
+                        },
+                      }
                     : message
                 )
               );
@@ -363,7 +474,21 @@ export default function ConversationPage() {
                       {message.content ||
                         (isStreaming && <Loader2 size={17} className="animate-spin text-calm-lichen" />)}
                     </div>
-                    <span className="block px-2 text-[10px] text-calm-fog/55">{message.timestamp}</span>
+                    <div className="flex items-center gap-2 px-2 text-[10px] text-calm-fog/55">
+                      <span>{message.timestamp}</span>
+                      {message.content && (
+                        <button
+                          type="button"
+                          onClick={() => handleSpeakMessage(message)}
+                          className="inline-flex items-center gap-1 rounded-full px-1.5 py-1 text-calm-fog/65 transition hover:bg-white/5 hover:text-calm-lichen"
+                          aria-label={speakingMessageId === message.id ? 'Dừng đọc phản hồi' : 'Đọc phản hồi'}
+                          title={speakingMessageId === message.id ? 'Dừng đọc' : 'Đọc phản hồi'}
+                        >
+                          {speakingMessageId === message.id ? <VolumeX size={13} /> : <Volume2 size={13} />}
+                          <span>{speakingMessageId === message.id ? 'Dừng đọc' : 'Nghe phản hồi'}</span>
+                        </button>
+                      )}
+                    </div>
 
                     {message.observation && (
                       <div className="space-y-4 rounded-[28px] border border-calm-lichen/25 bg-calm-moss/60 p-4 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
@@ -420,7 +545,7 @@ export default function ConversationPage() {
                           editingObsId !== message.observation.id && (
                             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                               <p className="text-[11px] font-medium leading-5 text-calm-fog/75">
-                                Chỉ lưu vào Life Design Map khi điều này đúng với bạn.
+                                Chỉ lưu vào bản đồ cuộc sống khi điều này đúng với bạn.
                               </p>
                               <div className="flex flex-wrap items-center gap-2">
                                 <button
@@ -460,7 +585,7 @@ export default function ConversationPage() {
                         {message.observation.status === 'accepted' && (
                           <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2.5 text-xs font-semibold text-[#c9e2cf]">
                             <span className="flex items-center gap-1.5">
-                              <CheckCircle2 size={16} /> Đã xác nhận và thêm vào Life Design Map
+                              <CheckCircle2 size={16} /> Đã xác nhận và thêm vào bản đồ cuộc sống
                             </span>
                             <span className="text-[9px] uppercase tracking-[0.12em]">Đã lưu</span>
                           </div>

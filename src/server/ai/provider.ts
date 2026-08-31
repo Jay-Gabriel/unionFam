@@ -2,6 +2,8 @@ import { SchemaParseResult, parseStrictAIOutput } from './schemas';
 import { buildContextPayload, ContextBudgetParams } from './context';
 import { SchemaType, type ResponseSchema } from '@google/generative-ai';
 
+export type ConversationTurnMode = 'opening' | 'message';
+
 const GEMINI_RESPONSE_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -49,12 +51,24 @@ export class GeminiConversationProvider {
   async generateResponse(
     contextParams: ContextBudgetParams,
     latestUserMessage: string,
-    allowedQuestionIds: string[] = []
+    allowedQuestionIds: string[] = [],
+    mode: ConversationTurnMode = 'message'
   ): Promise<SchemaParseResult> {
     const contextText = buildContextPayload(contextParams);
 
     if (!this.apiKey || this.apiKey === 'replace_with_server_only_gemini_api_key') {
       // Deterministic Mock Provider for dev/test
+      if (mode === 'opening') {
+        const mockOpeningJSON = JSON.stringify({
+          responseText: 'Chào bạn. Mình ở đây để lắng nghe cùng bạn. Hôm nay điều gì đang khiến bạn muốn dừng lại và nhìn lại cuộc sống của mình?',
+          nextStage: 'discovery',
+          requiresPermission: false,
+          safety: { isSafe: true },
+          nextQuestionId: allowedQuestionIds[0],
+        });
+        return parseStrictAIOutput(mockOpeningJSON, allowedQuestionIds);
+      }
+
       const mockRawJSON = JSON.stringify({
         responseText: `Life Lab lắng nghe chia sẻ của bạn: "${latestUserMessage}". Bạn có muốn trích xuất nhận thức này thành mục tiêu trên Life Design Map?`,
         nextStage: 'discovery',
@@ -79,7 +93,10 @@ export class GeminiConversationProvider {
         model: process.env.AI_MODEL || 'gemini-flash-lite-latest',
       });
 
-      const prompt = `System Context:\n${contextText}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nReturn ONLY one JSON object with exactly these field names: responseText (string), nextStage (one of onboarding/discovery/clarify/permission/synthesis/design/experiment/reflection/completed), requiresPermission (boolean), safety ({isSafe:boolean}), optional nextQuestionId (only from the allowlist), and optional observationProposal ({dimension, observationType, contentOriginal, confidence, evidenceMessageIds}). Do not use aliases such as reflection, question, answer, or assistant_message. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}. If no question or observation is needed, omit those optional fields.`;
+      const turnInstruction = mode === 'opening'
+        ? 'Đây là lượt mở đầu của một cuộc trò chuyện mới. Chỉ chào người dùng và hỏi đúng một câu hỏi phản chiếu mở, gần gũi, bằng tiếng Việt. Không đưa ra insight, không tạo observationProposal, không yêu cầu quyền xác nhận và không trả lời thay người dùng.'
+        : 'Đây là lượt phản hồi thông thường. Hãy lắng nghe, phản chiếu ngắn gọn và chỉ đề xuất insight khi có đủ căn cứ; nếu có đề xuất, người dùng luôn phải được quyền xác nhận.';
+      const prompt = `System Context:\n${contextText}\n\nTurn instruction:\n${turnInstruction}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nReturn ONLY one JSON object with exactly these field names: responseText (string), nextStage (one of onboarding/discovery/clarify/permission/synthesis/design/experiment/reflection/completed), requiresPermission (boolean), safety ({isSafe:boolean}), optional nextQuestionId (only from the allowlist), and optional observationProposal ({dimension, observationType, contentOriginal, confidence, evidenceMessageIds}). Do not use aliases such as reflection, question, answer, or assistant_message. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}. If no question or observation is needed, omit those optional fields. For the opening turn, omit observationProposal and set requiresPermission to false.`;
       const timeoutMs = Math.max(3000, Number(process.env.AI_TIMEOUT_MS || 15000));
       const result = await withTimeout(model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],

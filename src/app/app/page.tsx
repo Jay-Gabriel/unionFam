@@ -21,23 +21,24 @@ import {
   Target,
   Loader2,
 } from 'lucide-react';
+import { labelStage, labelStatus } from '@/lib/i18n';
 
 const mapItems = [
-  { key: 'my_life', index: '01', title: 'MY LIFE', detail: 'Cuộc đời tôi muốn sống', icon: Compass, tone: 'bg-white/10 text-calm-lichen' },
-  { key: 'what_matters', index: '02', title: 'WHAT MATTERS', detail: 'Điều thực sự quan trọng', icon: Heart, tone: 'bg-white/10 text-calm-success-leaf' },
-  { key: 'my_ideal_day', index: '03', title: 'MY IDEAL DAY', detail: 'Một ngày lý tưởng', icon: SunMedium, tone: 'bg-white/10 text-calm-warning-earth' },
-  { key: 'what_it_takes', index: '04', title: 'WHAT IT TAKES', detail: 'Điều cần để sống như vậy', icon: Target, tone: 'bg-white/10 text-calm-pollen' },
-  { key: 'my_trade_offs', index: '05', title: 'MY TRADE-OFFS', detail: 'Điều tôi chọn và từ bỏ', icon: Scale, tone: 'bg-white/10 text-calm-danger-clay' },
-  { key: 'the_question', index: '06', title: 'THE QUESTION', detail: 'Câu hỏi để đi sâu hơn', icon: Lightbulb, tone: 'bg-white/10 text-calm-lichen' },
+  { key: 'my_life', index: '01', title: 'ĐỜI SỐNG MONG MUỐN', detail: 'Cuộc đời tôi muốn sống', icon: Compass, tone: 'bg-white/10 text-calm-lichen' },
+  { key: 'what_matters', index: '02', title: 'ĐIỀU QUAN TRỌNG', detail: 'Điều thực sự quan trọng', icon: Heart, tone: 'bg-white/10 text-calm-success-leaf' },
+  { key: 'my_ideal_day', index: '03', title: 'NGÀY LÝ TƯỞNG', detail: 'Một ngày lý tưởng', icon: SunMedium, tone: 'bg-white/10 text-calm-warning-earth' },
+  { key: 'what_it_takes', index: '04', title: 'ĐIỀU CẦN CÓ', detail: 'Điều cần để sống như vậy', icon: Target, tone: 'bg-white/10 text-calm-pollen' },
+  { key: 'my_trade_offs', index: '05', title: 'ĐIỀU ĐÁNH ĐỔI', detail: 'Điều tôi chọn và từ bỏ', icon: Scale, tone: 'bg-white/10 text-calm-danger-clay' },
+  { key: 'the_question', index: '06', title: 'CÂU HỎI TIẾP THEO', detail: 'Câu hỏi để đi sâu hơn', icon: Lightbulb, tone: 'bg-white/10 text-calm-lichen' },
 ];
 
 const loopSteps = [
-  { title: 'Explore', detail: 'Khám phá', icon: Compass },
-  { title: 'Choose', detail: 'Lựa chọn', icon: Target },
-  { title: 'Experiment', detail: 'Thử nghiệm', icon: FlaskConical },
-  { title: 'Experience', detail: 'Trải nghiệm', icon: Sprout },
-  { title: 'Reflection', detail: 'Nhìn lại', icon: BookOpen },
-  { title: 'Learning', detail: 'Rút ra bài học', icon: Lightbulb },
+  { title: 'Khám phá', detail: 'Nhìn rõ điều mình muốn', icon: Compass },
+  { title: 'Lựa chọn', detail: 'Chọn hướng phù hợp', icon: Target },
+  { title: 'Thử nghiệm', detail: 'Thử một bước nhỏ', icon: FlaskConical },
+  { title: 'Trải nghiệm', detail: 'Sống và quan sát', icon: Sprout },
+  { title: 'Nhìn lại', detail: 'Ghi nhận điều đã xảy ra', icon: BookOpen },
+  { title: 'Bài học', detail: 'Rút ra điều cho mình', icon: Lightbulb },
 ];
 
 const reveal = {
@@ -154,7 +155,7 @@ export default function DashboardOverviewPage() {
                 <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-calm-lichen border border-white/5"><Sprout className="h-4 w-4" /></div>
                 <div className="rounded-[22px] rounded-tl-md bg-white/10 border border-white/5 px-4 py-3 text-[13px] leading-6 text-calm-paper-white">
                   <p className="font-semibold">{latestConversation.title}</p>
-                  <p className="mt-1 text-calm-fog/80">Phiên đang ở bước {latestConversation.current_stage}. Mở lại để tiếp tục mạch phản chiếu của bạn.</p>
+                  <p className="mt-1 text-calm-fog/80">Phiên đang ở bước {labelStage(latestConversation.current_stage)}. Mở lại để tiếp tục mạch phản chiếu của bạn.</p>
                 </div>
               </div>
             )}
@@ -187,7 +188,7 @@ export default function DashboardOverviewPage() {
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-calm-fog/70">Bản đồ đang lớn lên</p>
-                <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.02em] text-calm-paper-white">Life Design Map</h3>
+                <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.02em] text-calm-paper-white">Bản đồ cuộc sống</h3>
               </div>
               <Link href="/app/life-map" className="text-[11px] font-semibold text-calm-fog hover:text-white">
                 Xem chi tiết
@@ -231,7 +232,7 @@ export default function DashboardOverviewPage() {
                   <h3 className="mt-1 text-[15px] font-semibold leading-5 text-calm-paper-white">{activeExperiment?.title || 'Chưa có thử nghiệm đang chạy'}</h3>
                 </div>
               </div>
-              {activeExperiment && <span className="rounded-full bg-calm-success-leaf/20 border border-calm-success-leaf/20 px-2.5 py-1 text-[9px] font-semibold text-calm-success-leaf">{activeExperiment.status === 'active' ? 'Đang diễn ra' : activeExperiment.status}</span>}
+              {activeExperiment && <span className="rounded-full bg-calm-success-leaf/20 border border-calm-success-leaf/20 px-2.5 py-1 text-[9px] font-semibold text-calm-success-leaf">{labelStatus(activeExperiment.status)}</span>}
             </div>
             {activeExperiment ? <div className="mt-5 space-y-3"><div className="flex items-center justify-between text-[11px] text-calm-fog"><span>Hạn {activeExperiment.target_date}</span><span className="font-semibold text-calm-warm-ivory">{activeExperiment.progress_percent}%</span></div><div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-calm-success-leaf to-calm-lichen" style={{ width: `${activeExperiment.progress_percent}%` }} /></div><div className="flex items-start gap-2 text-[11px] leading-5 text-calm-fog/90"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-calm-success-leaf" />Dữ liệu tiến độ lấy từ thử nghiệm của bạn, không phải chỉ số suy đoán.</div></div> : <Link href="/app/experiments" className="mt-5 inline-flex text-[12px] font-semibold text-calm-lichen">Tạo thử nghiệm đầu tiên <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>}
           </motion.section>

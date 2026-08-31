@@ -40,24 +40,24 @@ const navigation: Array<{ label: string; items: NavItem[] }> = [
   {
     label: 'Thiết kế cuộc sống',
     items: [
-      { label: 'Life Design Map', href: '/app/life-map', icon: Compass },
-      { label: 'Financial Life', href: '/app/financial-life', icon: Wallet },
+      { label: 'Bản đồ cuộc sống', href: '/app/life-map', icon: Compass },
+      { label: 'Tài chính & nguồn lực', href: '/app/financial-life', icon: Wallet },
     ],
   },
   {
     label: 'Thực hành',
     items: [
-      { label: 'Experiments', href: '/app/experiments', icon: FlaskConical },
-      { label: 'Reflections', href: '/app/reflections', icon: BookOpen },
-      { label: 'Learnings', href: '/app/learnings', icon: GraduationCap },
+      { label: 'Thử nghiệm', href: '/app/experiments', icon: FlaskConical },
+      { label: 'Ghi nhận', href: '/app/reflections', icon: BookOpen },
+      { label: 'Bài học', href: '/app/learnings', icon: GraduationCap },
     ],
   },
   {
     label: 'Nhìn lại',
     items: [
-      { label: 'Progress', href: '/app/progress', icon: TrendingUp },
-      { label: 'Resources', href: '/app/resources', icon: FolderArchive },
-      { label: 'Lịch sử Life Map', href: '/app/life-map/history', icon: History },
+      { label: 'Tiến độ', href: '/app/progress', icon: TrendingUp },
+      { label: 'Tài nguyên', href: '/app/resources', icon: FolderArchive },
+      { label: 'Lịch sử bản đồ', href: '/app/life-map/history', icon: History },
     ],
   },
 ];
@@ -65,7 +65,7 @@ const navigation: Array<{ label: string; items: NavItem[] }> = [
 const mobileNavigation = [
   { label: 'Hôm nay', href: '/app', icon: Home },
   { label: 'Trò chuyện', href: '/app/conversations/new', icon: MessageCircleHeart },
-  { label: 'Life Map', href: '/app/life-map', icon: Compass },
+  { label: 'Bản đồ', href: '/app/life-map', icon: Compass },
   { label: 'Thử nghiệm', href: '/app/experiments', icon: FlaskConical },
 ];
 
@@ -83,7 +83,7 @@ function Brand() {
       <div>
         <div className="text-[17px] font-semibold tracking-[-0.025em] text-calm-paper-white">Life Lab</div>
         <div className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.17em] text-calm-fog/70">
-          Understand · Choose · Become
+          Hiểu mình · Chọn hướng · Trở thành
         </div>
       </div>
     </Link>
@@ -247,7 +247,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-calm-warm-ivory shadow-sm border border-white/5">
                 <Sprout className="h-4 w-4" />
               </span>
-              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-calm-fog">Life Lab Loop</span>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-calm-fog">Vòng lặp Life Lab</span>
             </div>
             <p className="text-[12px] font-medium leading-relaxed text-calm-fog/90">
               Mỗi câu trả lời là một hạt giống để bạn hiểu mình rõ hơn.
@@ -270,7 +270,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3">
             {process.env.NODE_ENV !== 'production' && (
               <span className="rounded-full border border-calm-pollen/30 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-calm-pollen">
-                Local preview
+                Xem thử nội bộ
               </span>
             )}
             <button type="button" onClick={() => void handleLogout()} className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-sm font-semibold text-calm-paper-white shadow-sm" title={displayName ? `${displayName} · Đăng xuất` : 'Đăng xuất'} aria-label="Đăng xuất">

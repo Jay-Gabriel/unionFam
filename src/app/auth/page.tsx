@@ -95,7 +95,7 @@ function AuthForm() {
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
           {isSignUp ? 'Tạo tài khoản Life Lab' : 'Đăng nhập Life Lab'}
         </h1>
-        <p className="text-xs text-slate-500">Understand → Choose → Become</p>
+        <p className="text-xs text-slate-500">Hiểu mình → Chọn hướng → Trở thành</p>
       </div>
 
       {(errorMsg || configurationMessage) && (
@@ -111,7 +111,7 @@ function AuthForm() {
           onClick={() => router.push('/app')}
           className="w-full rounded-2xl border border-emerald-300 bg-emerald-100 px-4 py-3 text-sm font-bold text-emerald-800 transition-colors hover:bg-emerald-200"
         >
-          Vào xem giao diện (Local Preview)
+          Vào xem giao diện (xem thử nội bộ)
         </button>
       )}
 
@@ -138,7 +138,7 @@ function AuthForm() {
 
       {!EMAIL_AUTH_ENABLED && (
         <p className="rounded-2xl bg-slate-50 px-4 py-3 text-center text-xs leading-relaxed text-slate-500">
-          Email đang tạm tắt. Google sẽ xuất hiện sau khi provider được cấu hình.
+          Đăng nhập bằng email đang tạm tắt. Google sẽ xuất hiện sau khi được cấu hình.
         </p>
       )}
 

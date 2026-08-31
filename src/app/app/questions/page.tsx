@@ -21,16 +21,16 @@ export default function QuestionsPage() {
       try {
         const res = await fetch('/api/questions');
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Không thể tải Question Flow');
+        if (!res.ok) throw new Error(json.error || 'Không thể tải bộ câu hỏi');
         if (json.data) {
           setQuestions(json.data.questions);
-          setFlowVersion(json.data.flowVersion || 'Question Flow');
+          setFlowVersion(json.data.flowVersion || 'Bộ câu hỏi khám phá');
           setEligibleQuestionIds(json.data.eligibleQuestionIds || json.data.questions.map((q: QuestionItem) => q.id));
           setAnswers(json.data.userAnswers || {});
           setCurrentIndex(json.data.resumeIndex || 0);
         }
       } catch (e) {
-        setSaveError(e instanceof Error ? e.message : 'Không thể tải Question Flow');
+        setSaveError(e instanceof Error ? e.message : 'Không thể tải bộ câu hỏi');
       } finally {
         setIsLoading(false);
       }
@@ -116,7 +116,7 @@ export default function QuestionsPage() {
     return (
       <div className="legacy-calm-page flex flex-col items-center justify-center min-h-[400px] gap-3 text-slate-500">
         <Loader2 size={32} className="animate-spin text-indigo-600" />
-        <span className="text-xs font-semibold">Đang tải Question Flow versioned...</span>
+        <span className="text-xs font-semibold">Đang tải bộ câu hỏi…</span>
       </div>
     );
   }
@@ -130,7 +130,7 @@ export default function QuestionsPage() {
         <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
           <span className="flex items-center gap-1.5 text-indigo-600">
             <Sparkles size={16} />
-            {flowVersion || 'Question Flow'}
+            {flowVersion || 'Bộ câu hỏi khám phá'}
           </span>
           <span>
             Câu {currentIndex + 1} / {visibleQuestions.length} ({progressPercent}%)
@@ -154,7 +154,7 @@ export default function QuestionsPage() {
       <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-card space-y-6">
         <div className="space-y-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 px-2.5 py-1 rounded-full bg-indigo-50">
-            Question #{currentIndex + 1}
+            Câu hỏi {currentIndex + 1}
           </span>
           <h2 className="text-lg md:text-xl font-bold text-slate-900 leading-snug">
             {currentQ.title}

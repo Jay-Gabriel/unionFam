@@ -73,7 +73,7 @@ export default function OnboardingPage() {
           <div className="flex items-start gap-2.5">
             <ShieldCheck className="text-indigo-600 flex-shrink-0 mt-0.5" size={18} />
             <p>
-              <strong className="text-indigo-950 font-bold">Quyền làm chủ (User Agency):</strong> Mọi phân tích hoặc đề xuất từ AI chỉ là gợi ý. Chỉ những điều bạn chủ động bấm <span className="font-bold text-indigo-700">Đồng ý (Accept)</span> mới đi vào Life Design Map của bạn.
+              <strong className="text-indigo-950 font-bold">Quyền làm chủ:</strong> Mọi phân tích hoặc đề xuất từ AI chỉ là gợi ý. Chỉ những điều bạn chủ động bấm <span className="font-bold text-indigo-700">Đồng ý</span> mới đi vào bản đồ cuộc sống của bạn.
             </p>
           </div>
         </div>

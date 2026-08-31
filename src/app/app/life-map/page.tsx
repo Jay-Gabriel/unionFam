@@ -16,12 +16,12 @@ import {
 import Link from 'next/link';
 
 const dimensions = [
-  { id: 'my_life', code: '1. MY LIFE', title: 'Cuộc đời tôi muốn sống', icon: Sparkles, color: 'text-indigo-600', bgColor: 'bg-indigo-50/70', borderColor: 'border-indigo-200' },
-  { id: 'what_matters', code: '2. WHAT MATTERS', title: 'Điều thực sự quan trọng', icon: Heart, color: 'text-emerald-600', bgColor: 'bg-emerald-50/70', borderColor: 'border-emerald-200' },
-  { id: 'my_ideal_day', code: '3. MY IDEAL DAY', title: 'Một ngày lý tưởng', icon: Sun, color: 'text-amber-600', bgColor: 'bg-amber-50/70', borderColor: 'border-amber-200' },
-  { id: 'what_it_takes', code: '4. WHAT IT TAKES', title: 'Tôi cần gì để sống cuộc đời đó', icon: ListOrdered, color: 'text-blue-600', bgColor: 'bg-blue-50/70', borderColor: 'border-blue-200' },
-  { id: 'my_trade_offs', code: '5. MY TRADE-OFFS', title: 'Tôi đang lựa chọn và từ bỏ điều gì', icon: Scale, color: 'text-rose-600', bgColor: 'bg-rose-50/70', borderColor: 'border-rose-200' },
-  { id: 'the_question', code: '6. THE QUESTION', title: 'Câu hỏi tiếp theo để khám phá', icon: HelpCircle, color: 'text-violet-600', bgColor: 'bg-violet-50/70', borderColor: 'border-violet-200' },
+  { id: 'my_life', code: '1. ĐỜI SỐNG MONG MUỐN', title: 'Cuộc đời tôi muốn sống', icon: Sparkles, color: 'text-indigo-600', bgColor: 'bg-indigo-50/70', borderColor: 'border-indigo-200' },
+  { id: 'what_matters', code: '2. ĐIỀU QUAN TRỌNG', title: 'Điều thực sự quan trọng', icon: Heart, color: 'text-emerald-600', bgColor: 'bg-emerald-50/70', borderColor: 'border-emerald-200' },
+  { id: 'my_ideal_day', code: '3. NGÀY LÝ TƯỞNG', title: 'Một ngày lý tưởng', icon: Sun, color: 'text-amber-600', bgColor: 'bg-amber-50/70', borderColor: 'border-amber-200' },
+  { id: 'what_it_takes', code: '4. ĐIỀU CẦN CÓ', title: 'Tôi cần gì để sống cuộc đời đó', icon: ListOrdered, color: 'text-blue-600', bgColor: 'bg-blue-50/70', borderColor: 'border-blue-200' },
+  { id: 'my_trade_offs', code: '5. ĐIỀU ĐÁNH ĐỔI', title: 'Tôi đang lựa chọn và từ bỏ điều gì', icon: Scale, color: 'text-rose-600', bgColor: 'bg-rose-50/70', borderColor: 'border-rose-200' },
+  { id: 'the_question', code: '6. CÂU HỎI TIẾP THEO', title: 'Câu hỏi tiếp theo để khám phá', icon: HelpCircle, color: 'text-violet-600', bgColor: 'bg-violet-50/70', borderColor: 'border-violet-200' },
 ] as const;
 
 type ProfileData = {
@@ -45,11 +45,11 @@ export default function LifeMapPage() {
     try {
       const response = await fetch('/api/life-profile');
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error || 'Không thể tải Life Profile');
+      if (!response.ok) throw new Error(json.error || 'Không thể tải bản đồ cuộc sống');
       setProfile(json.data);
       setSnapshot(json.data.snapshot || {});
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể tải Life Profile');
+      setError(err instanceof Error ? err.message : 'Không thể tải bản đồ cuộc sống');
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export default function LifeMapPage() {
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || 'Không thể xác nhận bản đồ');
-      setMessage(`Đã lưu Life Design Map phiên bản ${json.data.version_no}.`);
+      setMessage(`Đã lưu bản đồ cuộc sống phiên bản ${json.data.version_no}.`);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không thể xác nhận bản đồ');
@@ -105,7 +105,7 @@ export default function LifeMapPage() {
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || 'Không thể lưu bản nháp');
-      setMessage('Đã lưu bản nháp Life Design Map.');
+      setMessage('Đã lưu bản nháp bản đồ cuộc sống.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không thể lưu bản nháp');
     } finally {
@@ -126,7 +126,7 @@ export default function LifeMapPage() {
     <div className="legacy-calm-page space-y-6 pb-12">
       <div className="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-card md:flex-row md:items-center">
         <div>
-          <div className="flex items-center gap-2"><Compass className="text-indigo-600" size={22} /><h2 className="text-xl font-bold text-slate-900">Life Design Map</h2></div>
+          <div className="flex items-center gap-2"><Compass className="text-indigo-600" size={22} /><h2 className="text-xl font-bold text-slate-900">Bản đồ cuộc sống</h2></div>
           <p className="mt-1 text-xs text-slate-500">Bản đồ chỉ tổng hợp từ những điều bạn đã xác nhận. {profile?.draft ? 'Đang xem bản nháp chưa xác nhận' : profile?.current ? `Phiên bản ${profile.current.version_no}` : 'Chưa có phiên bản xác nhận'}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -150,7 +150,7 @@ export default function LifeMapPage() {
           const Icon = dimension.icon;
           const summary = snapshot?.dimensions?.[dimension.id]?.summary || '';
           return <div key={dimension.id} className="flex flex-col justify-between space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-card transition hover:shadow-lg">
-            <div className="space-y-3"><div className="flex items-center justify-between"><span className={`rounded-full px-3 py-1 text-[11px] font-bold tracking-wider ${dimension.bgColor} ${dimension.color}`}>{dimension.code}</span><span className="flex items-center gap-1 text-[10px] font-bold text-slate-400"><CheckCircle2 size={12} className="text-emerald-500" /> {insightCounts.get(dimension.id) || 0} insights</span></div><div className="flex items-start gap-3"><div className={`mt-0.5 rounded-2xl p-2.5 ${dimension.bgColor} ${dimension.color}`}><Icon size={20} /></div><h3 className="text-base font-bold leading-snug text-slate-900">{dimension.title}</h3></div><textarea value={summary} onChange={(event) => updateDimension(dimension.id, event.target.value)} placeholder="Chưa có insight được xác nhận ở chiều này." rows={4} className="min-h-24 w-full resize-y rounded-2xl border border-slate-100 bg-slate-50 p-3.5 text-xs font-medium leading-relaxed text-slate-600 outline-none focus:border-indigo-300 focus:bg-white" /></div><div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs"><span className="font-medium text-slate-400">Dữ liệu cá nhân</span><span className="font-bold text-indigo-600">Bạn quyết định nội dung →</span></div>
+            <div className="space-y-3"><div className="flex items-center justify-between"><span className={`rounded-full px-3 py-1 text-[11px] font-bold tracking-wider ${dimension.bgColor} ${dimension.color}`}>{dimension.code}</span><span className="flex items-center gap-1 text-[10px] font-bold text-slate-400"><CheckCircle2 size={12} className="text-emerald-500" /> {insightCounts.get(dimension.id) || 0} nhận thức</span></div><div className="flex items-start gap-3"><div className={`mt-0.5 rounded-2xl p-2.5 ${dimension.bgColor} ${dimension.color}`}><Icon size={20} /></div><h3 className="text-base font-bold leading-snug text-slate-900">{dimension.title}</h3></div><textarea value={summary} onChange={(event) => updateDimension(dimension.id, event.target.value)} placeholder="Chưa có nhận thức nào được xác nhận ở chiều này." rows={4} className="min-h-24 w-full resize-y rounded-2xl border border-slate-100 bg-slate-50 p-3.5 text-xs font-medium leading-relaxed text-slate-600 outline-none focus:border-indigo-300 focus:bg-white" /></div><div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs"><span className="font-medium text-slate-400">Dữ liệu cá nhân</span><span className="font-bold text-indigo-600">Bạn quyết định nội dung →</span></div>
           </div>;
         })}
       </div>
