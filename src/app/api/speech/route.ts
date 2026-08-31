@@ -9,7 +9,10 @@ export const dynamic = 'force-dynamic';
 const MAX_TEXT_LENGTH = 3_000;
 const MAX_PCM_BYTES = 10 * 1024 * 1024;
 const DEFAULT_TTS_MODEL = 'gemini-2.5-flash-preview-tts';
-const DEFAULT_TTS_VOICE = 'Aoede';
+// A single warm voice keeps the Life Lab experience consistent across turns.
+// Sulafat is the warm preset in Gemini's voice library and suits reflective
+// Vietnamese responses better than the breezier default used previously.
+const DEFAULT_TTS_VOICE = 'Sulafat';
 const TTS_TIMEOUT_MS = 20_000;
 
 type GeminiPart = {
@@ -68,9 +71,10 @@ function sampleRateFromMimeType(mimeType: string) {
 
 function ttsPrompt(text: string) {
   return [
-    'Nói bằng tiếng Việt với giọng nữ ấm áp, bình tĩnh và truyền cảm.',
-    'Tốc độ vừa chậm, phát âm rõ, ngắt nghỉ tự nhiên như một người đồng hành đang lắng nghe.',
-    'Đọc nguyên văn nội dung bên dưới và không thêm lời dẫn, không đọc các chỉ dẫn này:',
+    '[warmly, softly, with gentle pauses]',
+    'Đọc bằng tiếng Việt với một giọng nữ trưởng thành, ấm áp, dịu và truyền cảm.',
+    'Tốc độ hơi chậm, phát âm rõ, tự nhiên như một người đồng hành đang lắng nghe; không kịch, không robot.',
+    'Đọc nguyên văn nội dung bên dưới, không thêm lời dẫn và không đọc các chỉ dẫn này:',
     text,
   ].join('\n\n');
 }
