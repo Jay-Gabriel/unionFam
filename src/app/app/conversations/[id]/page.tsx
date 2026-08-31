@@ -13,7 +13,6 @@ import {
   UserRound,
   XCircle,
 } from 'lucide-react';
-import { AmbientMusic } from '@/components/calm/ambient-music';
 import { labelDimension } from '@/lib/i18n';
 
 interface Observation {
@@ -424,10 +423,6 @@ export default function ConversationPage() {
           Bạn giữ quyền quyết định
         </div>
       </section>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <AmbientMusic />
-      </div>
 
       <section
         ref={messagesScrollRef}
