@@ -133,6 +133,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = React.useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
@@ -150,6 +152,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       .catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
+
+  React.useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setProfileMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [profileMenuOpen]);
 
   return (
     <div
@@ -273,9 +295,43 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 Xem thử nội bộ
               </span>
             )}
-            <button type="button" onClick={() => void handleLogout()} className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-sm font-semibold text-calm-paper-white shadow-sm" title={displayName ? `${displayName} · Đăng xuất` : 'Đăng xuất'} aria-label="Đăng xuất">
-              {(displayName || 'U').slice(0, 1).toUpperCase()}
-            </button>
+            <div ref={profileMenuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen((open) => !open)}
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-sm font-semibold text-calm-paper-white shadow-sm transition hover:bg-white/15"
+                title={displayName || 'Mở hồ sơ'}
+                aria-label="Mở menu hồ sơ"
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+              >
+                {(displayName || 'U').slice(0, 1).toUpperCase()}
+              </button>
+
+              {profileMenuOpen && (
+                <div
+                  role="menu"
+                  aria-label="Menu hồ sơ"
+                  className="absolute right-0 top-full z-50 mt-3 w-56 overflow-hidden rounded-2xl border border-white/10 bg-[#263128]/95 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+                >
+                  <div className="border-b border-white/10 px-3 py-2.5">
+                    <p className="truncate text-sm font-semibold text-calm-paper-white">{displayName || 'Bạn'}</p>
+                    <p className="mt-0.5 text-[11px] text-calm-fog/70">Tài khoản Life Lab</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      void handleLogout();
+                    }}
+                    className="mt-1 flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-calm-warm-ivory transition hover:bg-white/10"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
