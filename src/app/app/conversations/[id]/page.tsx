@@ -255,6 +255,8 @@ export default function ConversationPage() {
       const code = error instanceof Error ? error.message : '';
       const message = code === 'TTS_NOT_CONFIGURED'
         ? 'Giọng đọc AI chưa được cấu hình trên máy chủ.'
+        : code === 'TTS_RATE_LIMITED'
+          ? 'Gemini đang giới hạn lượt đọc. Bạn hãy thử lại sau vài giây nhé.'
         : code === 'TTS_PROVIDER_TIMEOUT'
           ? 'Giọng đọc đang phản hồi chậm. Bạn hãy thử lại sau một chút nhé.'
           : code === 'TTS_AUDIO_MISSING'

@@ -1,6 +1,10 @@
 export const MAX_TTS_TEXT_LENGTH = 3_000;
 export const MAX_TTS_PCM_BYTES = 10 * 1024 * 1024;
 export const TTS_MODEL = 'gemini-3.1-flash-tts-preview';
+// The preview 3.1 model can have a tighter per-minute quota on free projects.
+// Keep the same voice and prompt on this compatible fallback so a second
+// consecutive message does not silently lose its audio.
+export const TTS_FALLBACK_MODEL = 'gemini-2.5-flash-preview-tts';
 export const TTS_VOICE = 'Sulafat';
 export const TTS_TIMEOUT_MS = 20_000;
 

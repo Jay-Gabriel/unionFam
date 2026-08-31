@@ -7,6 +7,7 @@ import {
   MAX_TTS_TEXT_LENGTH,
   readTtsText,
   sampleRateFromMimeType,
+  TTS_FALLBACK_MODEL,
   TTS_MODEL,
   TTS_TIMEOUT_MS,
   ttsRequestBody,
@@ -47,43 +48,54 @@ export async function POST(request: Request) {
       return errorResponse('TTS_NOT_CONFIGURED', 503, requestId);
     }
 
-    // Keep the model and voice fixed for a consistent product experience. This
-    // intentionally ignores stale overrides from older local/deployment envs.
-    const model = TTS_MODEL;
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
-    let providerResponse: Response;
+    const models = [TTS_MODEL, TTS_FALLBACK_MODEL];
+    let providerResponse: Response | null = null;
+    let providerModel = TTS_MODEL;
     try {
-      providerResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            ...ttsRequestBody(text),
-          }),
-          signal: controller.signal,
-        }
-      );
+      for (const model of models) {
+        providerModel = model;
+        providerResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey,
+            },
+            body: JSON.stringify(ttsRequestBody(text)),
+            signal: controller.signal,
+          }
+        );
+
+        const canTryFallback = model === TTS_MODEL
+          && (providerResponse.status === 429 || providerResponse.status >= 500);
+        if (!canTryFallback) break;
+        await providerResponse.body?.cancel().catch(() => undefined);
+      }
     } finally {
       clearTimeout(timeout);
     }
 
+    if (!providerResponse) throw new Error('TTS_PROVIDER_UNAVAILABLE');
     const payload = await providerResponse.json().catch(() => null);
     if (!providerResponse.ok) {
+      const rateLimited = providerResponse.status === 429;
+      const errorCode = rateLimited ? 'TTS_RATE_LIMITED' : 'TTS_PROVIDER_UNAVAILABLE';
       await recordApplicationError({
         requestId,
         userId,
-        errorCode: 'TTS_PROVIDER_UNAVAILABLE',
+        errorCode,
         route: '/api/speech',
-        detail: { provider_status: providerResponse.status, model },
+        detail: {
+          provider_status: providerResponse.status,
+          model: providerModel,
+          fallback_used: providerModel !== TTS_MODEL,
+        },
       });
-      console.error('TTS provider request failed', providerResponse.status, model);
-      return errorResponse('TTS_PROVIDER_UNAVAILABLE', 502, requestId);
+      console.error('TTS provider request failed', providerResponse.status, providerModel);
+      return errorResponse(errorCode, rateLimited ? 429 : 502, requestId);
     }
 
     const audio = extractAudio(payload);
@@ -93,7 +105,7 @@ export async function POST(request: Request) {
         userId,
         errorCode: 'TTS_AUDIO_MISSING',
         route: '/api/speech',
-        detail: { model },
+        detail: { model: providerModel },
       });
       return errorResponse('TTS_AUDIO_MISSING', 502, requestId);
     }

@@ -3,6 +3,7 @@ import { requireUser } from '@/server/auth/current-user';
 import {
   MAX_TTS_TEXT_LENGTH,
   readTtsText,
+  TTS_FALLBACK_MODEL,
   TTS_MODEL,
   TTS_TIMEOUT_MS,
   ttsRequestBody,
@@ -66,46 +67,63 @@ export async function POST(request: Request) {
       request.signal.removeEventListener('abort', onClientAbort);
     };
 
-    let providerResponse: Response;
+    const models = [TTS_MODEL, TTS_FALLBACK_MODEL];
+    let providerResponse: Response | null = null;
+    let providerModel = TTS_MODEL;
     try {
-      providerResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(TTS_MODEL)}:streamGenerateContent?alt=sse`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey,
-          },
-          body: JSON.stringify(ttsRequestBody(text)),
-          signal: controller.signal,
-        }
-      );
+      for (const model of models) {
+        providerModel = model;
+        providerResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey,
+            },
+            body: JSON.stringify(ttsRequestBody(text)),
+            signal: controller.signal,
+          }
+        );
+
+        const canTryFallback = model === TTS_MODEL
+          && (providerResponse.status === 429 || providerResponse.status >= 500);
+        if (!canTryFallback) break;
+        await providerResponse.body?.cancel().catch(() => undefined);
+      }
     } catch (error) {
       cleanupProviderRequest();
       cleanupProviderRequest = undefined;
       throw error;
     }
 
+    if (!providerResponse) throw new Error('TTS_PROVIDER_UNAVAILABLE');
     if (!providerResponse.ok || !providerResponse.body) {
+      const rateLimited = providerResponse.status === 429;
+      const errorCode = !providerResponse.body && providerResponse.ok
+        ? 'TTS_STREAM_UNAVAILABLE'
+        : rateLimited
+          ? 'TTS_RATE_LIMITED'
+          : 'TTS_PROVIDER_UNAVAILABLE';
       cleanupProviderRequest();
       cleanupProviderRequest = undefined;
       await recordApplicationError({
         requestId,
         userId,
-        errorCode: providerResponse.body ? 'TTS_PROVIDER_UNAVAILABLE' : 'TTS_STREAM_UNAVAILABLE',
+        errorCode,
         route: '/api/speech/stream',
-        detail: { provider_status: providerResponse.status, model: TTS_MODEL },
+        detail: {
+          provider_status: providerResponse.status,
+          model: providerModel,
+          fallback_used: providerModel !== TTS_MODEL,
+        },
       });
       console.error(
         'TTS streaming provider request failed',
         providerResponse.status,
-        providerResponse.body ? TTS_MODEL : 'missing_body'
+        providerResponse.body ? providerModel : 'missing_body'
       );
-      return errorResponse(
-        providerResponse.body ? 'TTS_PROVIDER_UNAVAILABLE' : 'TTS_STREAM_UNAVAILABLE',
-        502,
-        requestId
-      );
+      return errorResponse(errorCode, rateLimited ? 429 : 502, requestId);
     }
 
     // Proxy the provider bytes without buffering them in the Next.js route.
