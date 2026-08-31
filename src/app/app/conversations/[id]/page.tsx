@@ -11,10 +11,9 @@ import {
   ShieldCheck,
   Sprout,
   UserRound,
-  Volume2,
-  VolumeX,
   XCircle,
 } from 'lucide-react';
+import { AmbientMusic } from '@/components/calm/ambient-music';
 import { labelDimension } from '@/lib/i18n';
 
 interface Observation {
@@ -87,85 +86,6 @@ async function requestOpeningTurn(id: string) {
   }
 }
 
-async function requestSpeechAudio(text: string, signal: AbortSignal) {
-  const response = await fetch('/api/speech', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-    signal,
-  });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    const code = payload && typeof payload.error === 'string' ? payload.error : 'TTS_PROVIDER_UNAVAILABLE';
-    throw new Error(code);
-  }
-
-  const audio = await response.blob();
-  if (!audio.size) throw new Error('TTS_AUDIO_INVALID');
-  return audio;
-}
-
-async function requestSpeechStream(text: string, signal: AbortSignal) {
-  const response = await fetch('/api/speech/stream', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-    signal,
-  });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    const code = payload && typeof payload.error === 'string' ? payload.error : 'TTS_PROVIDER_UNAVAILABLE';
-    throw new Error(code);
-  }
-
-  if (!response.body) throw new Error('TTS_STREAM_UNAVAILABLE');
-  return response;
-}
-
-function streamAudioPart(payload: unknown) {
-  if (!payload || typeof payload !== 'object') return null;
-  const candidates = (payload as { candidates?: unknown }).candidates;
-  if (!Array.isArray(candidates)) return null;
-
-  for (const candidate of candidates) {
-    if (!candidate || typeof candidate !== 'object') continue;
-    const content = (candidate as { content?: unknown }).content;
-    if (!content || typeof content !== 'object') continue;
-    const parts = (content as { parts?: unknown }).parts;
-    if (!Array.isArray(parts)) continue;
-    for (const part of parts) {
-      if (!part || typeof part !== 'object') continue;
-      const inlineData = (part as { inlineData?: unknown }).inlineData;
-      if (!inlineData || typeof inlineData !== 'object') continue;
-      const base64 = (inlineData as { data?: unknown }).data;
-      if (typeof base64 !== 'string' || !base64) continue;
-      const mimeType = (inlineData as { mimeType?: unknown }).mimeType;
-      return {
-        base64,
-        mimeType: typeof mimeType === 'string' ? mimeType : '',
-      };
-    }
-  }
-  return null;
-}
-
-function streamSampleRate(mimeType: string) {
-  const match = mimeType.match(/(?:rate|samplerate)\s*=\s*(\d+)/i);
-  const parsed = match ? Number(match[1]) : 24_000;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 24_000;
-}
-
-function decodePcmBase64(base64: string) {
-  const binary = window.atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return bytes;
-}
-
 export default function ConversationPage() {
   const params = useParams();
   const router = useRouter();
@@ -183,283 +103,11 @@ export default function ConversationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendError, setSendError] = useState('');
   const [retryContent, setRetryContent] = useState('');
-  const [autoRead, setAutoRead] = useState(true);
-  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
-  const [speechNotice, setSpeechNotice] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLElement>(null);
   const openingStartedRef = useRef<string | null>(null);
   const openingPromiseRef = useRef<{ id: string; promise: Promise<void> } | null>(null);
   const newConversationPromiseRef = useRef<Promise<string> | null>(null);
-  const autoReadRef = useRef(true);
-  const speakingMessageIdRef = useRef<string | null>(null);
-  const speechGenerationRef = useRef(0);
-  const spokenMessageIdsRef = useRef(new Set<string>());
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef = useRef<string | null>(null);
-  const audioRequestRef = useRef<AbortController | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioSourcesRef = useRef(new Set<AudioBufferSourceNode>());
-  const audioStreamRequestRef = useRef<AbortController | null>(null);
-
-  const stopSpeech = useCallback(() => {
-    speechGenerationRef.current += 1;
-    if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
-    audioStreamRequestRef.current?.abort();
-    audioStreamRequestRef.current = null;
-    audioRequestRef.current?.abort();
-    audioRequestRef.current = null;
-    for (const source of audioSourcesRef.current) {
-      source.onended = null;
-      try {
-        source.stop();
-      } catch {
-        // A source can already have ended between the iteration and stop().
-      }
-    }
-    audioSourcesRef.current.clear();
-    if (audioRef.current) {
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
-    audioRef.current = null;
-    if (audioUrlRef.current) {
-      URL.revokeObjectURL(audioUrlRef.current);
-      audioUrlRef.current = null;
-    }
-    speakingMessageIdRef.current = null;
-    setSpeakingMessageId(null);
-  }, []);
-
-  const speakText = useCallback((text: string, messageId: string, reportError: boolean) => {
-    if (!text.trim()) return false;
-    stopSpeech();
-    const generation = speechGenerationRef.current;
-
-    if (reportError) {
-      setSendError('');
-      setSpeechNotice('');
-    }
-
-    const clearSpeakingState = () => {
-      if (speechGenerationRef.current === generation) {
-        speakingMessageIdRef.current = null;
-        setSpeakingMessageId(null);
-      }
-    };
-
-    const showSpeechError = (error: unknown) => {
-      if (speechGenerationRef.current !== generation) return;
-      const code = error instanceof Error ? error.message : '';
-      const message = code === 'TTS_NOT_CONFIGURED'
-        ? 'Giọng đọc AI chưa được cấu hình trên máy chủ.'
-        : code === 'TTS_RATE_LIMITED'
-          ? 'Gemini đang giới hạn lượt đọc. Bạn hãy thử lại sau vài giây nhé.'
-        : code === 'TTS_PROVIDER_TIMEOUT'
-          ? 'Giọng đọc đang phản hồi chậm. Bạn hãy thử lại sau một chút nhé.'
-          : code === 'TTS_AUDIO_MISSING'
-            ? 'Life Lab chưa tạo được âm thanh cho phản hồi này. Bạn hãy thử lại nhé.'
-            : 'Chưa tải được giọng đọc AI. Bạn hãy thử lại sau.';
-      if (reportError) setSendError(message);
-      else setSpeechNotice(message);
-    };
-
-    const startBufferedAudio = () => {
-      if (speechGenerationRef.current !== generation) return;
-      const controller = new AbortController();
-      audioRequestRef.current = controller;
-
-      void requestSpeechAudio(text, controller.signal)
-        .then(async (audioBlob) => {
-          if (speechGenerationRef.current !== generation) return;
-
-          const objectUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(objectUrl);
-          audio.preload = 'auto';
-          audio.setAttribute('playsinline', 'true');
-          audioUrlRef.current = objectUrl;
-          audioRef.current = audio;
-
-          const finish = () => {
-            if (audioRef.current === audio) audioRef.current = null;
-            if (audioUrlRef.current === objectUrl) {
-              URL.revokeObjectURL(objectUrl);
-              audioUrlRef.current = null;
-            }
-            clearSpeakingState();
-          };
-          audio.onended = finish;
-          audio.onerror = () => {
-            const isCurrent = speechGenerationRef.current === generation;
-            finish();
-            if (isCurrent) showSpeechError(new Error('TTS_AUDIO_PLAYBACK_FAILED'));
-          };
-
-          try {
-            await audio.play();
-          } catch (error) {
-            finish();
-            if (speechGenerationRef.current === generation) {
-              const blocked = error instanceof DOMException && error.name === 'NotAllowedError';
-              if (blocked) {
-                const message = 'Trình duyệt đang chặn tự phát âm thanh. Chạm “Nghe phản hồi” để bật giọng đọc.';
-                if (reportError) setSendError(message);
-                else setSpeechNotice(message);
-              } else {
-                showSpeechError(error);
-              }
-            }
-          }
-        })
-        .catch((error) => {
-          if (speechGenerationRef.current !== generation || (error instanceof DOMException && error.name === 'AbortError')) return;
-          clearSpeakingState();
-          showSpeechError(error);
-        })
-        .finally(() => {
-          if (audioRequestRef.current === controller) audioRequestRef.current = null;
-        });
-    };
-
-    const startStreamingAudio = () => {
-      const controller = new AbortController();
-      audioStreamRequestRef.current = controller;
-
-      void requestSpeechStream(text, controller.signal)
-        .then(async (response) => {
-          if (speechGenerationRef.current !== generation) return;
-
-          const AudioContextConstructor = window.AudioContext ||
-            (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-          if (!AudioContextConstructor) throw new Error('TTS_AUDIO_UNAVAILABLE');
-
-          const context = audioContextRef.current || new AudioContextConstructor();
-          audioContextRef.current = context;
-          if (context.state === 'suspended') await context.resume();
-
-          const reader = response.body!.getReader();
-          const decoder = new TextDecoder();
-          let eventBuffer = '';
-          let nextStartTime = context.currentTime + 0.04;
-          let streamFinished = false;
-          let receivedAudio = false;
-          let receivedPcmBytes = 0;
-
-          const finishIfDone = () => {
-            if (streamFinished && audioSourcesRef.current.size === 0) clearSpeakingState();
-          };
-
-          const scheduleAudio = (base64: string, mimeType: string) => {
-            const bytes = decodePcmBase64(base64);
-            const usableBytes = bytes.byteLength - (bytes.byteLength % 2);
-            if (!usableBytes) return;
-
-            receivedPcmBytes += usableBytes;
-            if (receivedPcmBytes > 10 * 1024 * 1024) throw new Error('TTS_AUDIO_INVALID');
-
-            const pcmView = new DataView(bytes.buffer, bytes.byteOffset, usableBytes);
-            const audioBuffer = context.createBuffer(1, usableBytes / 2, streamSampleRate(mimeType));
-            const channel = audioBuffer.getChannelData(0);
-            for (let index = 0; index < channel.length; index += 1) {
-              channel[index] = pcmView.getInt16(index * 2, true) / 32768;
-            }
-
-            const source = context.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(context.destination);
-            // Keep the reflective tone while trimming a little dead air from
-            // each chunk. The small rate bump is intentionally subtle so the
-            // female voice remains natural in Vietnamese.
-            source.playbackRate.value = 1.06;
-            const startAt = Math.max(nextStartTime, context.currentTime + 0.04);
-            source.start(startAt);
-            nextStartTime = startAt + audioBuffer.duration / source.playbackRate.value;
-            receivedAudio = true;
-            audioSourcesRef.current.add(source);
-            source.onended = () => {
-              audioSourcesRef.current.delete(source);
-              source.disconnect();
-              finishIfDone();
-            };
-          };
-
-          const processEvent = (eventBlock: string) => {
-            const dataString = eventBlock
-              .split(/\r?\n/)
-              .filter((line) => line.startsWith('data:'))
-              .map((line) => line.slice(5).trim())
-              .join('');
-            if (!dataString || dataString === '[DONE]') return;
-            try {
-              const payload = JSON.parse(dataString);
-              const audio = streamAudioPart(payload);
-              if (audio) scheduleAudio(audio.base64, audio.mimeType);
-            } catch (error) {
-              if (error instanceof Error && error.message === 'TTS_AUDIO_INVALID') throw error;
-              // A malformed provider event should not stop already scheduled audio.
-            }
-          };
-
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              eventBuffer += decoder.decode(value, { stream: true });
-              const events = eventBuffer.split(/\r?\n\r?\n/);
-              eventBuffer = events.pop() || '';
-              events.forEach(processEvent);
-            }
-            eventBuffer += decoder.decode();
-            if (eventBuffer.trim()) processEvent(eventBuffer);
-          } finally {
-            reader.releaseLock();
-          }
-
-          streamFinished = true;
-          finishIfDone();
-          if (!receivedAudio) throw new Error('TTS_AUDIO_MISSING');
-        })
-        .catch((error) => {
-          if (speechGenerationRef.current !== generation || (error instanceof DOMException && error.name === 'AbortError')) return;
-          // Older server builds may not have the streaming route yet. Keep a
-          // buffered Gemini WAV fallback for that one compatibility case.
-          if (error instanceof Error && error.message === 'TTS_STREAM_UNAVAILABLE') {
-            startBufferedAudio();
-            return;
-          }
-          clearSpeakingState();
-          showSpeechError(error);
-        })
-        .finally(() => {
-          if (audioStreamRequestRef.current === controller) audioStreamRequestRef.current = null;
-        });
-    };
-
-    speakingMessageIdRef.current = messageId;
-    setSpeakingMessageId(messageId);
-
-    // Server-generated Gemini audio is preferred everywhere. Web Audio lets
-    // the first PCM chunk play while the remaining chunks are still arriving;
-    // the WAV endpoint remains a compatibility fallback for old browsers.
-    const AudioContextConstructor = typeof window !== 'undefined' && (window.AudioContext ||
-      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
-    if (AudioContextConstructor) startStreamingAudio();
-    else startBufferedAudio();
-    return true;
-  }, [stopSpeech]);
-
-  const queueAutoRead = useCallback((message: Message) => {
-    if (!autoReadRef.current || !message.content || spokenMessageIdsRef.current.has(message.id)) return;
-    spokenMessageIdsRef.current.add(message.id);
-    speakText(message.content, message.id, false);
-  }, [speakText]);
-
-  useEffect(() => () => {
-    stopSpeech();
-  }, [stopSpeech]);
-
   useEffect(() => {
     if (isLoadingConversation) return;
 
@@ -544,10 +192,6 @@ export default function ConversationPage() {
         setConversationId(activeId);
         const mappedMessages = mapConversationMessages(data);
         setMessages(mappedMessages);
-        if (shouldOpen) {
-          const openingMessage = mappedMessages.find((message) => message.role === 'assistant' && message.content);
-          if (openingMessage) queueAutoRead(openingMessage);
-        }
       } catch (error) {
         if (!cancelled) setConversationError(error instanceof Error ? error.message : 'Không thể tải cuộc trò chuyện');
       } finally {
@@ -559,24 +203,7 @@ export default function ConversationPage() {
     return () => {
       cancelled = true;
     };
-  }, [queueAutoRead, routeConversationId, router]);
-
-  const handleSpeakMessage = (message: Message) => {
-    if (speakingMessageIdRef.current === message.id) {
-      stopSpeech();
-      return;
-    }
-    speakText(message.content, message.id, true);
-  };
-
-  const handleAutoReadChange = (enabled: boolean) => {
-    autoReadRef.current = enabled;
-    setAutoRead(enabled);
-    if (!enabled) {
-      setSpeechNotice('');
-      stopSpeech();
-    }
-  };
+  }, [routeConversationId, router]);
 
   const handleSendMessage = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -684,30 +311,10 @@ export default function ConversationPage() {
                 )
               );
             }
-            // `message.completed` is the first moment the full answer is
-            // available. Start TTS here instead of waiting for the reader's
-            // final close notification, so audio generation overlaps that
-            // tiny stream teardown.
-            if (eventType === 'message.completed' && accumulatedText) {
-              queueAutoRead({
-                id: assistantMsgId,
-                role: 'assistant',
-                content: accumulatedText,
-                timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-              });
-            }
           } catch {
             // Malformed provider events are ignored without breaking the current conversation.
           }
         }
-      }
-      if (accumulatedText) {
-        queueAutoRead({
-          id: assistantMsgId,
-          role: 'assistant',
-          content: accumulatedText,
-          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        });
       }
     } catch (error) {
       console.error('Chat error', error);
@@ -819,21 +426,7 @@ export default function ConversationPage() {
       </section>
 
       <div className="flex flex-wrap items-center gap-3">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-calm-deep-moss/55 px-3.5 py-2 text-[11px] font-medium text-calm-fog/80">
-          <input
-            type="checkbox"
-            checked={autoRead}
-            onChange={(event) => handleAutoReadChange(event.target.checked)}
-            className="h-3.5 w-3.5 accent-[#b9c6a5]"
-          />
-          <Volume2 size={14} className="text-calm-lichen" />
-          Tự đọc bằng giọng AI
-        </label>
-        {speechNotice && (
-          <p className="text-[11px] text-[#e7d3a9]" role="status">
-            {speechNotice}
-          </p>
-        )}
+        <AmbientMusic />
       </div>
 
       <section
@@ -868,18 +461,6 @@ export default function ConversationPage() {
                     </div>
                     <div className="flex items-center gap-2 px-2 text-[10px] text-calm-fog/55">
                       <span>{message.timestamp}</span>
-                      {message.content && (
-                        <button
-                          type="button"
-                          onClick={() => handleSpeakMessage(message)}
-                          className="inline-flex items-center gap-1 rounded-full px-1.5 py-1 text-calm-fog/65 transition hover:bg-white/5 hover:text-calm-lichen"
-                          aria-label={speakingMessageId === message.id ? 'Dừng đọc phản hồi' : 'Đọc phản hồi'}
-                          title={speakingMessageId === message.id ? 'Dừng đọc' : 'Đọc phản hồi'}
-                        >
-                          {speakingMessageId === message.id ? <VolumeX size={13} /> : <Volume2 size={13} />}
-                          <span>{speakingMessageId === message.id ? 'Dừng đọc' : 'Nghe phản hồi'}</span>
-                        </button>
-                      )}
                     </div>
 
                     {message.observation && (
