@@ -1,5 +1,7 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Enable UUID generation on hosted Supabase.
+-- `gen_random_uuid()` is provided by pgcrypto and is available on hosted
+-- Supabase projects without relying on the `uuid-ossp` search path.
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
 
 -- 1. PROFILES
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -16,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 -- 2. QUESTION FLOW VERSIONS
 CREATE TABLE IF NOT EXISTS public.question_flow_versions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code TEXT NOT NULL,
   version_no INT NOT NULL,
   name TEXT NOT NULL,
@@ -31,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.question_flow_versions (
 
 -- 3. QUESTIONS
 CREATE TABLE IF NOT EXISTS public.questions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   flow_version_id UUID NOT NULL REFERENCES public.question_flow_versions(id) ON DELETE CASCADE,
   question_key TEXT NOT NULL,
   title TEXT NOT NULL,
@@ -48,7 +50,7 @@ CREATE TABLE IF NOT EXISTS public.questions (
 
 -- 4. USER ANSWERS
 CREATE TABLE IF NOT EXISTS public.user_answers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   flow_version_id UUID NOT NULL REFERENCES public.question_flow_versions(id) ON DELETE CASCADE,
   question_id UUID NOT NULL REFERENCES public.questions(id) ON DELETE CASCADE,
@@ -62,7 +64,7 @@ CREATE TABLE IF NOT EXISTS public.user_answers (
 
 -- 5. CONVERSATIONS
 CREATE TABLE IF NOT EXISTS public.conversations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL DEFAULT 'Cuộc trò chuyện mới',
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed', 'archived')),
@@ -78,7 +80,7 @@ CREATE TABLE IF NOT EXISTS public.conversations (
 
 -- 6. MESSAGES
 CREATE TABLE IF NOT EXISTS public.messages (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   conversation_id UUID NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system_tool')),
@@ -100,7 +102,7 @@ CREATE TABLE IF NOT EXISTS public.messages (
 
 -- 7. USER STATEMENTS
 CREATE TABLE IF NOT EXISTS public.user_statements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   conversation_id UUID NOT NULL,
   message_id UUID NOT NULL,
@@ -115,7 +117,7 @@ CREATE TABLE IF NOT EXISTS public.user_statements (
 
 -- 8. AI OBSERVATIONS
 CREATE TABLE IF NOT EXISTS public.ai_observations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   conversation_id UUID NOT NULL,
   assistant_message_id UUID,
@@ -137,7 +139,7 @@ CREATE TABLE IF NOT EXISTS public.ai_observations (
 
 -- 9. CONFIRMED INSIGHTS
 CREATE TABLE IF NOT EXISTS public.confirmed_insights (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   source_observation_id UUID UNIQUE,
   insight_type TEXT NOT NULL DEFAULT 'core_observation' CHECK (insight_type = 'core_observation'),
@@ -155,7 +157,7 @@ CREATE TABLE IF NOT EXISTS public.confirmed_insights (
 
 -- 10. LIFE PROFILE VERSIONS
 CREATE TABLE IF NOT EXISTS public.life_profile_versions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   version_no INT NOT NULL,
   status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('draft', 'confirmed')),
@@ -173,7 +175,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_current_life_profile ON public.life_profil
 
 -- 11. RESOURCES
 CREATE TABLE IF NOT EXISTS public.resources (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   dimension TEXT NOT NULL,
   resource_type TEXT NOT NULL,
@@ -189,7 +191,7 @@ CREATE TABLE IF NOT EXISTS public.resources (
 
 -- 12. GAPS
 CREATE TABLE IF NOT EXISTS public.gaps (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   dimension TEXT NOT NULL,
   title TEXT NOT NULL,
@@ -207,7 +209,7 @@ CREATE TABLE IF NOT EXISTS public.gaps (
 
 -- 13. EXPERIMENTS
 CREATE TABLE IF NOT EXISTS public.experiments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   gap_id UUID,
   title TEXT NOT NULL,
@@ -228,7 +230,7 @@ CREATE TABLE IF NOT EXISTS public.experiments (
 
 -- 14. REFLECTIONS
 CREATE TABLE IF NOT EXISTS public.reflections (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   experiment_id UUID NOT NULL,
   result TEXT NOT NULL,
@@ -245,7 +247,7 @@ CREATE TABLE IF NOT EXISTS public.reflections (
 
 -- 15. LEARNING RECORDS
 CREATE TABLE IF NOT EXISTS public.learning_records (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   source_reflection_id UUID,
   content TEXT NOT NULL,
@@ -259,7 +261,7 @@ CREATE TABLE IF NOT EXISTS public.learning_records (
 
 -- SUPPORT TABLES
 CREATE TABLE IF NOT EXISTS public.user_roles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('member', 'admin')),
   granted_by UUID REFERENCES auth.users(id),
@@ -268,7 +270,7 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
 );
 
 CREATE TABLE IF NOT EXISTS public.prompt_configs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code TEXT NOT NULL,
   version TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -281,7 +283,7 @@ CREATE TABLE IF NOT EXISTS public.prompt_configs (
 );
 
 CREATE TABLE IF NOT EXISTS public.idempotency_records (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   operation TEXT NOT NULL,
   key TEXT NOT NULL,
@@ -291,7 +293,7 @@ CREATE TABLE IF NOT EXISTS public.idempotency_records (
 );
 
 CREATE TABLE IF NOT EXISTS public.ai_run_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id TEXT NOT NULL,
   user_hash TEXT NOT NULL,
   provider TEXT NOT NULL,
@@ -305,7 +307,7 @@ CREATE TABLE IF NOT EXISTS public.ai_run_logs (
 );
 
 CREATE TABLE IF NOT EXISTS public.application_errors (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id TEXT NOT NULL,
   error_code TEXT NOT NULL,
   sanitized_detail JSONB NOT NULL,
@@ -315,7 +317,7 @@ CREATE TABLE IF NOT EXISTS public.application_errors (
 );
 
 CREATE TABLE IF NOT EXISTS public.admin_access_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   admin_id UUID NOT NULL REFERENCES auth.users(id),
   target_user_id UUID,
   resource_type TEXT NOT NULL,
@@ -325,7 +327,7 @@ CREATE TABLE IF NOT EXISTS public.admin_access_logs (
 );
 
 CREATE TABLE IF NOT EXISTS public.activity_events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   event_type TEXT NOT NULL,
   event_date DATE NOT NULL DEFAULT CURRENT_DATE,
