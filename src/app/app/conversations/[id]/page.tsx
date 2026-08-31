@@ -62,27 +62,56 @@ function mapConversationMessages(data: Record<string, unknown>): Message[] {
 }
 
 async function requestOpeningTurn(id: string) {
-  const response = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      conversationId: id,
-      opening: true,
-      idempotencyKey: `opening:${id}`,
-    }),
-  });
+  const idempotencyKey = `opening:${id}`;
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    const json = await response.json().catch(() => ({}));
-    throw new Error(typeof json.error === 'string' ? `Chưa thể mở lời chào (${json.error}).` : 'Chưa thể mở lời chào của Life Lab.');
+  // Provider/Supabase cold starts can occasionally return a transient 5xx on
+  // the first request for a brand-new session. Reuse the same idempotency key
+  // so the server updates/replays the canonical assistant row instead of
+  // creating a duplicate opening message.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    // Transport failures (including a dropped connection) are retryable; an
+    // HTTP validation/auth response below can explicitly turn this off.
+    let retryableFailure = true;
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId: id,
+          opening: true,
+          idempotencyKey,
+        }),
+      });
+
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        const error = new Error(
+          typeof json.error === 'string' ? `Chưa thể mở lời chào (${json.error}).` : 'Chưa thể mở lời chào của Life Lab.'
+        );
+        lastError = error;
+        // Retry only transient provider/server failures. Validation/auth
+        // errors need to be shown immediately instead of being repeated.
+        retryableFailure = response.status >= 500 || response.status === 429;
+        if (!retryableFailure) throw error;
+      } else {
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('Kết nối mở lời chào không trả về dữ liệu.');
+        while (true) {
+          const { done } = await reader.read();
+          if (done) break;
+        }
+        return;
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Không thể kết nối với Life Lab.');
+      if (!retryableFailure || attempt === 1) throw lastError;
+    }
+
+    if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 350));
   }
 
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('Kết nối mở lời chào không trả về dữ liệu.');
-  while (true) {
-    const { done } = await reader.read();
-    if (done) break;
-  }
+  throw lastError || new Error('Chưa thể mở lời chào của Life Lab.');
 }
 
 export default function ConversationPage() {
