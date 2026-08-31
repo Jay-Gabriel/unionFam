@@ -87,6 +87,25 @@ async function requestOpeningTurn(id: string) {
   }
 }
 
+async function requestSpeechAudio(text: string, signal: AbortSignal) {
+  const response = await fetch('/api/speech', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    const code = payload && typeof payload.error === 'string' ? payload.error : 'TTS_PROVIDER_UNAVAILABLE';
+    throw new Error(code);
+  }
+
+  const audio = await response.blob();
+  if (!audio.size) throw new Error('TTS_AUDIO_INVALID');
+  return audio;
+}
+
 export default function ConversationPage() {
   const params = useParams();
   const router = useRouter();
@@ -106,6 +125,7 @@ export default function ConversationPage() {
   const [retryContent, setRetryContent] = useState('');
   const [autoRead, setAutoRead] = useState(true);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [speechNotice, setSpeechNotice] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const openingStartedRef = useRef<string | null>(null);
   const openingPromiseRef = useRef<{ id: string; promise: Promise<void> } | null>(null);
@@ -114,49 +134,148 @@ export default function ConversationPage() {
   const speakingMessageIdRef = useRef<string | null>(null);
   const speechGenerationRef = useRef(0);
   const spokenMessageIdsRef = useRef(new Set<string>());
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+  const audioRequestRef = useRef<AbortController | null>(null);
 
   const stopSpeech = useCallback(() => {
     speechGenerationRef.current += 1;
-    window.speechSynthesis?.cancel();
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
+    audioRequestRef.current?.abort();
+    audioRequestRef.current = null;
+    if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+    audioRef.current = null;
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
     speakingMessageIdRef.current = null;
     setSpeakingMessageId(null);
   }, []);
 
   const speakText = useCallback((text: string, messageId: string, reportError: boolean) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
-      if (reportError) setSendError('Thiết bị này chưa hỗ trợ đọc giọng nói.');
-      return false;
+    if (!text.trim()) return false;
+    stopSpeech();
+    const generation = speechGenerationRef.current;
+
+    if (reportError) {
+      setSendError('');
+      setSpeechNotice('');
     }
 
-    const synthesis = window.speechSynthesis;
-    stopSpeech();
+    let fallbackStarted = false;
+    const clearSpeakingState = () => {
+      if (speechGenerationRef.current === generation) {
+        speakingMessageIdRef.current = null;
+        setSpeakingMessageId(null);
+      }
+    };
+
+    const startServerAudio = () => {
+      if (fallbackStarted || speechGenerationRef.current !== generation) return;
+      fallbackStarted = true;
+      speakingMessageIdRef.current = messageId;
+      setSpeakingMessageId(messageId);
+
+      const controller = new AbortController();
+      audioRequestRef.current = controller;
+
+      void requestSpeechAudio(text, controller.signal)
+        .then(async (audioBlob) => {
+          if (speechGenerationRef.current !== generation) return;
+
+          const objectUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(objectUrl);
+          audio.preload = 'auto';
+          audio.setAttribute('playsinline', 'true');
+          audioUrlRef.current = objectUrl;
+          audioRef.current = audio;
+
+          const finish = () => {
+            if (audioRef.current === audio) audioRef.current = null;
+            if (audioUrlRef.current === objectUrl) {
+              URL.revokeObjectURL(objectUrl);
+              audioUrlRef.current = null;
+            }
+            clearSpeakingState();
+          };
+          audio.onended = finish;
+          audio.onerror = () => {
+            const isCurrent = speechGenerationRef.current === generation;
+            finish();
+            if (isCurrent) {
+              const message = 'Không thể phát file giọng đọc. Bạn hãy kiểm tra âm lượng rồi thử lại.';
+              if (reportError) setSendError(message);
+              else setSpeechNotice(message);
+            }
+          };
+
+          try {
+            await audio.play();
+          } catch (error) {
+            finish();
+            if (speechGenerationRef.current === generation) {
+              const blocked = error instanceof DOMException && error.name === 'NotAllowedError';
+              const message = blocked
+                ? 'Trình duyệt đang chặn tự phát âm thanh. Chạm “Nghe phản hồi” để bật giọng đọc.'
+                : 'Không thể phát giọng đọc lúc này. Bạn hãy thử lại nhé.';
+              if (reportError) setSendError(message);
+              else setSpeechNotice(message);
+            }
+          }
+        })
+        .catch((error) => {
+          if (speechGenerationRef.current !== generation || (error instanceof DOMException && error.name === 'AbortError')) return;
+          clearSpeakingState();
+          const message = error instanceof Error && error.message === 'TTS_NOT_CONFIGURED'
+            ? 'Giọng đọc AI chưa được cấu hình trên máy chủ.'
+            : 'Chưa tải được giọng đọc AI. Bạn hãy thử lại sau.';
+          if (reportError) setSendError(message);
+          else setSpeechNotice(message);
+        })
+        .finally(() => {
+          if (audioRequestRef.current === controller) audioRequestRef.current = null;
+        });
+    };
+
+    const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
+    const canUseNativeSpeech = Boolean(
+      synthesis && typeof window !== 'undefined' && 'SpeechSynthesisUtterance' in window
+    );
+
+    if (!canUseNativeSpeech || !synthesis) {
+      startServerAudio();
+      return true;
+    }
+
     const utterance = new SpeechSynthesisUtterance(text);
     const vietnameseVoice = synthesis.getVoices().find((voice) => voice.lang.toLowerCase().startsWith('vi'));
     utterance.lang = 'vi-VN';
     if (vietnameseVoice) utterance.voice = vietnameseVoice;
     // A slightly slower pace and a soft pitch make reflective copy easier to
-    // listen to. The actual voice timbre still comes from the user's device.
+    // listen to when the device provides a native Vietnamese voice.
     utterance.rate = 0.9;
     utterance.pitch = 1.04;
     utterance.volume = 1;
-    const generation = speechGenerationRef.current;
-    utterance.onend = () => {
-      if (speechGenerationRef.current === generation) {
-        speakingMessageIdRef.current = null;
-        setSpeakingMessageId(null);
-      }
-    };
+    utterance.onend = clearSpeakingState;
     utterance.onerror = () => {
-      if (speechGenerationRef.current === generation) {
-        speakingMessageIdRef.current = null;
-        setSpeakingMessageId(null);
-        if (reportError) setSendError('Không thể phát giọng đọc trên thiết bị này.');
-      }
+      // Some mobile browsers expose SpeechSynthesis but cannot actually
+      // render a voice. Switch to the server audio path instead of surfacing
+      // the old “unsupported device” error.
+      startServerAudio();
     };
     speakingMessageIdRef.current = messageId;
     setSpeakingMessageId(messageId);
-    if (reportError) setSendError('');
-    synthesis.speak(utterance);
+    try {
+      synthesis.speak(utterance);
+    } catch {
+      startServerAudio();
+    }
     return true;
   }, [stopSpeech]);
 
@@ -274,7 +393,10 @@ export default function ConversationPage() {
   const handleAutoReadChange = (enabled: boolean) => {
     autoReadRef.current = enabled;
     setAutoRead(enabled);
-    if (!enabled) stopSpeech();
+    if (!enabled) {
+      setSpeechNotice('');
+      stopSpeech();
+    }
   };
 
   const handleSendMessage = async (event: React.FormEvent) => {
@@ -505,16 +627,23 @@ export default function ConversationPage() {
         </div>
       </section>
 
-      <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-calm-deep-moss/55 px-3.5 py-2 text-[11px] font-medium text-calm-fog/80">
-        <input
-          type="checkbox"
-          checked={autoRead}
-          onChange={(event) => handleAutoReadChange(event.target.checked)}
-          className="h-3.5 w-3.5 accent-[#b9c6a5]"
-        />
-        <Volume2 size={14} className="text-calm-lichen" />
-        Tự đọc phản hồi
-      </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-calm-deep-moss/55 px-3.5 py-2 text-[11px] font-medium text-calm-fog/80">
+          <input
+            type="checkbox"
+            checked={autoRead}
+            onChange={(event) => handleAutoReadChange(event.target.checked)}
+            className="h-3.5 w-3.5 accent-[#b9c6a5]"
+          />
+          <Volume2 size={14} className="text-calm-lichen" />
+          Tự đọc phản hồi
+        </label>
+        {speechNotice && (
+          <p className="text-[11px] text-[#e7d3a9]" role="status">
+            {speechNotice}
+          </p>
+        )}
+      </div>
 
       <section className="min-h-[380px] rounded-[34px] border border-white/10 bg-calm-deep-moss/35 px-4 py-6 sm:px-7 sm:py-8">
         <div className="space-y-7" aria-live="polite">
