@@ -418,7 +418,7 @@ export async function POST(request: Request) {
       requestId,
       userId: user.id,
       provider: 'gemini',
-      model: process.env.AI_MODEL || 'gemini-3.6-flash',
+      model: process.env.AI_MODEL || 'gemini-flash-lite-latest',
       latencyMs: Date.now() - aiStartedAt,
       status: result.success ? 'success' : 'error',
       errorCode: result.errorCode,
