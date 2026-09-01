@@ -65,7 +65,7 @@ VALUES
   '22222222-2222-2222-2222-222222222201',
   '11111111-1111-1111-1111-111111111111',
   'q1_life_focus',
-  'Nếu bạn được tự lựa chọn cuộc đời mình, bạn muốn dành thời gian và năng lượng của mình cho điều gì?',
+  'Hãy tưởng tượng bạn đang sống một cuộc đời do chính mình lựa chọn. Trong một ngày bình thường, bạn muốn dành thời gian và năng lượng của mình cho những điều gì?',
   'Hãy nghĩ về mong muốn chân thật nhất của bạn ở thời điểm hiện tại.',
   'text',
   '[]'::jsonb,

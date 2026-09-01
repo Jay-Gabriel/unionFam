@@ -17,6 +17,7 @@ Bộ tài liệu này chuyển brief ban đầu thành đặc tả đủ chi ti�
 11. [Week 1 Execution Plan](docs/10_WEEK_1_EXECUTION_PLAN.md) — kế hoạch chi tiết Ngày 1–5, acceptance gate và prompt giao AI theo từng lượt.
 12. [Week 1 Remediation & Supabase Plan](docs/11_WEEK_1_REMEDIATION_SUPABASE_PLAN.md) — kế hoạch sửa Auth/RLS/persistence thật, test security và gate trước khi đẩy migration lên Supabase.
 13. [Technical RC Status](docs/12_TECHNICAL_RC_STATUS.md) — những gì đã chạy thật, kết quả kiểm chứng và các gate `PENDING_PO`.
+14. [Blueprint 1 Conversation Playbook](docs/14_BLUEPRINT_1_CONVERSATION_PLAYBOOK.md) — policy hội thoại dài hạn, thang đào sâu và nhịp tạo giá trị 12 tháng.
 
 ## Nguồn và mức độ chắc chắn
 
@@ -26,7 +27,7 @@ Tài liệu được lập từ:
 - `/home/jay/Downloads/Giai_phap_ky_thuat_MVP_LifeLab.pdf`
 - Ba ảnh yêu cầu khách hàng cung cấp ngày 28/08/2026: bảng 12 hạng mục và mockup Dashboard Life Lab.
 
-Input mới đã chốt Google Auth, Question Engine, Life Profile Engine, dashboard cá nhân hóa, AI Reflection và Admin Dashboard. Khách chưa bàn giao nội dung “flow 89 trang”, prompt/methodology đầy đủ, rule chấm điểm và asset thiết kế gốc. Các phần này được đóng gói thành cấu hình có version; agent dùng fixture trung tính để hoàn thiện kỹ thuật và thay nội dung thật sau mà không sửa kiến trúc.
+Input mới đã chốt Google Auth, Question Engine, Life Profile Engine, dashboard cá nhân hóa, AI Reflection và Admin Dashboard. Blueprint 1 hiện đã được chuẩn hóa thành policy hội thoại server-side trong [Blueprint 1 Conversation Playbook](docs/14_BLUEPRINT_1_CONVERSATION_PLAYBOOK.md). Flow 89 trang, prompt/methodology đầy đủ, rule chấm điểm và asset thiết kế gốc vẫn cần product owner duyệt riêng; không tự suy đoán các phần đó từ fixture.
 
 ## Kết quả bàn giao mong đợi
 

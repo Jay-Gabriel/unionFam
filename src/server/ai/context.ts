@@ -3,12 +3,20 @@ export interface ContextMessage {
   content: string;
 }
 
+export interface ContextQuestion {
+  id: string;
+  questionKey: string;
+  title: string;
+  helperText?: string;
+}
+
 export interface ContextBudgetParams {
   userId: string;
   conversationId: string;
   currentStage?: string;
   allowedTransitions?: string[];
   eligibleQuestionIds?: string[];
+  questionCatalog?: ContextQuestion[];
   methodologyVersion?: string;
   profile?: string;
   recentMessages: ContextMessage[];
@@ -64,6 +72,18 @@ export function buildContextPayload(params: ContextBudgetParams): string {
   ];
 
   const optionalSections = [
+    params.questionCatalog?.length
+      ? block(
+          'ELIGIBLE_QUESTION_CATALOG',
+          params.questionCatalog
+            .slice(0, 24)
+            .map((question) => {
+              const helper = question.helperText ? ` — ${clean(question.helperText, 320)}` : '';
+              return `${clean(question.id, 128)} | ${clean(question.questionKey, 160)} | ${clean(question.title, 420)}${helper}`;
+            })
+            .join('\n')
+        )
+      : '',
     params.profile ? block('PROFILE', clean(params.profile, 1800)) : '',
     params.userAnswersSummary ? block('CONFIRMED_QUESTION_ANSWERS', clean(params.userAnswersSummary, 4000)) : '',
     params.confirmedInsights.length

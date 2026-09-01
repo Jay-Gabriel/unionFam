@@ -28,7 +28,7 @@ export const DefaultQuestionFlowFixture: QuestionItem[] = [
   {
     id: '22222222-2222-2222-2222-222222222201',
     questionKey: 'q1_life_focus',
-    title: 'Nếu bạn được tự lựa chọn cuộc đời mình, bạn muốn dành thời gian và năng lượng của mình cho điều gì?',
+    title: 'Hãy tưởng tượng bạn đang sống một cuộc đời do chính mình lựa chọn. Trong một ngày bình thường, bạn muốn dành thời gian và năng lượng của mình cho những điều gì?',
     helperText: 'Hãy nghĩ về mong muốn chân thật nhất của bạn ở thời điểm hiện tại.',
     answerType: 'text',
     options: [],

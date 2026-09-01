@@ -3,7 +3,8 @@ import { GeminiConversationProvider } from '@/server/ai/provider';
 import { requireUser } from '@/server/auth/current-user';
 import { createClient } from '@/lib/supabase/server';
 import { computeEligibleQuestions } from '@/server/domain/questions';
-import { resolveNextStage } from '@/server/domain/conversation';
+import { allowedNextStages, resolveNextStage } from '@/server/domain/conversation';
+import { BLUEPRINT_OPENING_QUESTION } from '@/server/ai/life-lab-blueprint';
 import { consumeRateLimit } from '@/server/security/rate-limit';
 import { recordAiRunLog, recordApplicationError } from '@/server/observability/log';
 import { labelDimension } from '@/lib/i18n';
@@ -154,7 +155,7 @@ async function handleDemoChat(body: unknown, requestId: string) {
       userAnswersSummary: '',
     },
     opening
-      ? 'Hãy mở đầu cuộc trò chuyện bằng một lời chào ấm áp và chỉ một câu hỏi phản chiếu mở, ngắn gọn. Đây là lượt đầu tiên nên không đưa ra insight, không tạo đề xuất quan sát và không yêu cầu người dùng xác nhận điều gì.'
+      ? BLUEPRINT_OPENING_QUESTION
       : content,
     [],
     opening ? 'opening' : 'message'
@@ -373,7 +374,14 @@ export async function POST(request: Request) {
     type InsightRow = { dimension: string; content: string };
     type AnswerRow = { question_id: string; answer: unknown };
     type RejectedRow = { content_original: string };
-    type QuestionRow = { id: string; question_key: string; branch_rules: unknown; ordinal: number };
+    type QuestionRow = {
+      id: string;
+      question_key: string;
+      title: string;
+      helper_text: string | null;
+      branch_rules: unknown;
+      ordinal: number;
+    };
     type ProfileRow = { snapshot: unknown; version_no: number };
     type ResourceRow = { dimension: string; resource_type: string; name: string; description: string | null };
     type GapRow = { dimension: string; title: string; current_state: string; desired_state: string; priority: number; status: string };
@@ -423,10 +431,10 @@ export async function POST(request: Request) {
           .eq('status', 'rejected')
           .order('created_at', { ascending: false })
           .limit(8),
-        conversation.question_flow_version_id
+          conversation.question_flow_version_id
           ? supabase
               .from('questions')
-              .select('id, question_key, branch_rules, ordinal')
+              .select('id, question_key, title, helper_text, branch_rules, ordinal')
               .eq('flow_version_id', conversation.question_flow_version_id)
               .order('ordinal', { ascending: true })
           : Promise.resolve({ data: [] as unknown[], error: null }),
@@ -506,7 +514,8 @@ export async function POST(request: Request) {
       questionData.map((question) => ({
         id: question.id,
         questionKey: question.question_key,
-        title: '',
+        title: question.title,
+        helperText: question.helper_text || undefined,
         answerType: 'text' as const,
         options: [],
         branchRules: Array.isArray(question.branch_rules) ? question.branch_rules as never : [],
@@ -565,7 +574,16 @@ export async function POST(request: Request) {
         userId: user.id,
         conversationId,
         currentStage: conversation.current_stage,
+        allowedTransitions: allowedNextStages(conversation.current_stage),
         eligibleQuestionIds,
+        questionCatalog: questionData
+          .filter((question) => eligibleQuestionIds.includes(question.id))
+          .map((question) => ({
+            id: question.id,
+            questionKey: question.question_key,
+            title: question.title,
+            helperText: question.helper_text || undefined,
+          })),
         methodologyVersion: conversation.prompt_version,
         profile: profileRow ? JSON.stringify(profileRow.snapshot) : undefined,
         recentMessages,
@@ -578,7 +596,7 @@ export async function POST(request: Request) {
         rejectedObservations: (rejectedRows || []).map((row: { content_original: string }) => row.content_original),
       },
       opening
-        ? 'Hãy mở đầu cuộc trò chuyện bằng một lời chào ấm áp và chỉ một câu hỏi phản chiếu mở, ngắn gọn. Đây là lượt đầu tiên nên không đưa ra insight, không tạo đề xuất quan sát và không yêu cầu người dùng xác nhận điều gì.'
+        ? BLUEPRINT_OPENING_QUESTION
         : content,
       eligibleQuestionIds,
       opening ? 'opening' : 'message'

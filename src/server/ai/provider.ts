@@ -1,5 +1,10 @@
 import { SchemaParseResult, parseStrictAIOutput } from './schemas';
 import { buildContextPayload, ContextBudgetParams } from './context';
+import {
+  BLUEPRINT_OPENING_QUESTION,
+  buildBlueprintTurnInstruction,
+  LIFE_LAB_BLUEPRINT_PROMPT,
+} from './life-lab-blueprint';
 import { SchemaType, type ResponseSchema } from '@google/generative-ai';
 
 export type ConversationTurnMode = 'opening' | 'message';
@@ -7,7 +12,10 @@ export type ConversationTurnMode = 'opening' | 'message';
 const GEMINI_RESPONSE_SCHEMA: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
-    responseText: { type: SchemaType.STRING, description: 'Phản hồi phản chiếu bằng tiếng Việt.' },
+    responseText: {
+      type: SchemaType.STRING,
+      description: '2–4 câu tiếng Việt: ghi nhận cụ thể, phản chiếu có điều kiện và đúng một câu hỏi mở.',
+    },
     nextStage: {
       type: SchemaType.STRING,
       enum: ['onboarding', 'discovery', 'clarify', 'permission', 'synthesis', 'design', 'experiment', 'reflection', 'completed'],
@@ -60,7 +68,7 @@ export class GeminiConversationProvider {
       // Deterministic Mock Provider for dev/test
       if (mode === 'opening') {
         const mockOpeningJSON = JSON.stringify({
-          responseText: 'Chào bạn. Mình ở đây để lắng nghe cùng bạn. Hôm nay điều gì đang khiến bạn muốn dừng lại và nhìn lại cuộc sống của mình?',
+          responseText: `Chào bạn. Mình ở đây để lắng nghe cùng bạn. ${BLUEPRINT_OPENING_QUESTION}`,
           nextStage: 'discovery',
           requiresPermission: false,
           safety: { isSafe: true },
@@ -70,17 +78,11 @@ export class GeminiConversationProvider {
       }
 
       const mockRawJSON = JSON.stringify({
-        responseText: `Life Lab lắng nghe chia sẻ của bạn: "${latestUserMessage}". Bạn có muốn trích xuất nhận thức này thành mục tiêu trên Life Design Map?`,
+        responseText: `Mình nghe bạn đang nói về "${latestUserMessage}". Điều này có thể đang chạm tới điều bạn muốn giữ lại trong cuộc sống, nhưng mình chưa muốn đoán thay bạn. Khi điều đó trở thành một ngày bình thường có thật, khoảnh khắc nào trong ngày sẽ cho bạn biết mình đang sống đúng hướng?`,
         nextStage: 'discovery',
-        requiresPermission: true,
+        requiresPermission: false,
         safety: { isSafe: true },
         nextQuestionId: allowedQuestionIds[0],
-        observationProposal: {
-          dimension: 'what_matters',
-          observationType: 'insight_candidate',
-          contentOriginal: `Tự do thời gian và chiều sâu cuộc sống là ưu tiên bạn đang quan tâm: "${latestUserMessage}".`,
-          confidence: 0.9,
-        },
       });
 
       return parseStrictAIOutput(mockRawJSON, allowedQuestionIds);
@@ -93,10 +95,8 @@ export class GeminiConversationProvider {
         model: process.env.AI_MODEL || 'gemini-flash-lite-latest',
       });
 
-      const turnInstruction = mode === 'opening'
-        ? 'Đây là lượt mở đầu của một cuộc trò chuyện mới. Chỉ chào người dùng và hỏi đúng một câu hỏi phản chiếu mở, gần gũi, bằng tiếng Việt. Không đưa ra insight, không tạo observationProposal, không yêu cầu quyền xác nhận và không trả lời thay người dùng.'
-        : 'Đây là lượt phản hồi thông thường. Hãy lắng nghe, phản chiếu ngắn gọn và chỉ đề xuất insight khi có đủ căn cứ; nếu có đề xuất, người dùng luôn phải được quyền xác nhận.';
-      const prompt = `System Context:\n${contextText}\n\nTurn instruction:\n${turnInstruction}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nReturn ONLY one JSON object with exactly these field names: responseText (string), nextStage (one of onboarding/discovery/clarify/permission/synthesis/design/experiment/reflection/completed), requiresPermission (boolean), safety ({isSafe:boolean}), optional nextQuestionId (only from the allowlist), and optional observationProposal ({dimension, observationType, contentOriginal, confidence, evidenceMessageIds}). Do not use aliases such as reflection, question, answer, or assistant_message. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}. If no question or observation is needed, omit those optional fields. For the opening turn, omit observationProposal and set requiresPermission to false.`;
+      const turnInstruction = buildBlueprintTurnInstruction(mode);
+      const prompt = `${LIFE_LAB_BLUEPRINT_PROMPT}\n\nSYSTEM CONTEXT:\n${contextText}\n\nTURN INSTRUCTION:\n${turnInstruction}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nReturn ONLY one JSON object with exactly these field names: responseText (string), nextStage (one of onboarding/discovery/clarify/permission/synthesis/design/experiment/reflection/completed), requiresPermission (boolean), safety ({isSafe:boolean}), optional nextQuestionId (only from the allowlist), and optional observationProposal ({dimension, observationType, contentOriginal, confidence, evidenceMessageIds}). Do not use aliases such as reflection, question, answer, or assistant_message. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}. If no question or observation is needed, omit those optional fields. For the opening turn, responseText must contain the exact canonical opening question, observationProposal must be omitted, and requiresPermission must be false. For a regular turn, responseText must contain 2–4 Vietnamese sentences and exactly one open question.`;
       const timeoutMs = Math.max(3000, Number(process.env.AI_TIMEOUT_MS || 15000));
       const result = await withTimeout(model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
