@@ -5,6 +5,11 @@ import {
   buildBlueprintTurnInstruction,
   LIFE_LAB_BLUEPRINT_PROMPT,
 } from './life-lab-blueprint';
+import {
+  buildMockResponse,
+  ensureNonRepeatingQuestion,
+  collectAskedQuestions,
+} from './question-guard';
 import { SchemaType, type ResponseSchema } from '@google/generative-ai';
 
 export type ConversationTurnMode = 'opening' | 'message';
@@ -78,14 +83,25 @@ export class GeminiConversationProvider {
       }
 
       const mockRawJSON = JSON.stringify({
-        responseText: `Mình nghe bạn đang nói về "${latestUserMessage}". Điều này có thể đang chạm tới điều bạn muốn giữ lại trong cuộc sống, nhưng mình chưa muốn đoán thay bạn. Khi điều đó trở thành một ngày bình thường có thật, khoảnh khắc nào trong ngày sẽ cho bạn biết mình đang sống đúng hướng?`,
+        responseText: buildMockResponse(latestUserMessage, contextParams.recentMessages),
         nextStage: 'discovery',
         requiresPermission: false,
         safety: { isSafe: true },
         nextQuestionId: allowedQuestionIds[0],
       });
 
-      return parseStrictAIOutput(mockRawJSON, allowedQuestionIds);
+      const mockResult = parseStrictAIOutput(mockRawJSON, allowedQuestionIds);
+      if (!mockResult.success || !mockResult.data) return mockResult;
+      return {
+        ...mockResult,
+        data: {
+          ...mockResult.data,
+          responseText: ensureNonRepeatingQuestion(
+            mockResult.data.responseText,
+            contextParams.recentMessages
+          ),
+        },
+      };
     }
 
     try {
@@ -96,7 +112,11 @@ export class GeminiConversationProvider {
       });
 
       const turnInstruction = buildBlueprintTurnInstruction(mode);
-      const prompt = `${LIFE_LAB_BLUEPRINT_PROMPT}\n\nSYSTEM CONTEXT:\n${contextText}\n\nTURN INSTRUCTION:\n${turnInstruction}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nReturn ONLY one JSON object with exactly these field names: responseText (string), nextStage (one of onboarding/discovery/clarify/permission/synthesis/design/experiment/reflection/completed), requiresPermission (boolean), safety ({isSafe:boolean}), optional nextQuestionId (only from the allowlist), and optional observationProposal ({dimension, observationType, contentOriginal, confidence, evidenceMessageIds}). Do not use aliases such as reflection, question, answer, or assistant_message. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}. If no question or observation is needed, omit those optional fields. For the opening turn, responseText must contain the exact canonical opening question, observationProposal must be omitted, and requiresPermission must be false. For a regular turn, responseText must contain 2–4 Vietnamese sentences and exactly one open question.`;
+      const askedQuestions = collectAskedQuestions(contextParams.recentMessages);
+      const antiRepeatInstruction = askedQuestions.length
+        ? `\n\nDo not repeat or lightly paraphrase any question in ALREADY_ASKED_QUESTIONS. Choose a different, specific follow-up focus.`
+        : '';
+      const prompt = `${LIFE_LAB_BLUEPRINT_PROMPT}\n\nSYSTEM CONTEXT:\n${contextText}\n\nTURN INSTRUCTION:\n${turnInstruction}${antiRepeatInstruction}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nReturn ONLY one JSON object with exactly these field names: responseText (string), nextStage (one of onboarding/discovery/clarify/permission/synthesis/design/experiment/reflection/completed), requiresPermission (boolean), safety ({isSafe:boolean}), optional nextQuestionId (only from the allowlist), and optional observationProposal ({dimension, observationType, contentOriginal, confidence, evidenceMessageIds}). Do not use aliases such as reflection, question, answer, or assistant_message. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}. If no question or observation is needed, omit those optional fields. For the opening turn, responseText must contain the exact canonical opening question, observationProposal must be omitted, and requiresPermission must be false. For a regular turn, responseText must contain 2–4 Vietnamese sentences and exactly one open question.`;
       const timeoutMs = Math.max(3000, Number(process.env.AI_TIMEOUT_MS || 15000));
       const result = await withTimeout(model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -109,13 +129,40 @@ export class GeminiConversationProvider {
       }), timeoutMs);
       const text = result.response.text();
       const firstAttempt = parseStrictAIOutput(text, allowedQuestionIds);
-      if (firstAttempt.success) return firstAttempt;
+      if (firstAttempt.success && firstAttempt.data) {
+        return {
+          ...firstAttempt,
+          data: {
+            ...firstAttempt.data,
+            responseText:
+              mode === 'opening'
+                ? firstAttempt.data.responseText
+                : ensureNonRepeatingQuestion(firstAttempt.data.responseText, contextParams.recentMessages),
+          },
+        };
+      }
 
       // One bounded repair attempt: remove markdown fences or surrounding prose
       // without sending the invalid provider payload back to the browser.
       const repaired = extractJSONObject(text);
       if (repaired && repaired !== text) {
-        return parseStrictAIOutput(repaired, allowedQuestionIds);
+        const repairedAttempt = parseStrictAIOutput(repaired, allowedQuestionIds);
+        if (repairedAttempt.success && repairedAttempt.data) {
+          return {
+            ...repairedAttempt,
+            data: {
+              ...repairedAttempt.data,
+              responseText:
+                mode === 'opening'
+                  ? repairedAttempt.data.responseText
+                  : ensureNonRepeatingQuestion(
+                      repairedAttempt.data.responseText,
+                      contextParams.recentMessages
+                    ),
+            },
+          };
+        }
+        return repairedAttempt;
       }
       return firstAttempt;
     } catch (error) {

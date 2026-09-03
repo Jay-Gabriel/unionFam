@@ -9,7 +9,7 @@ export default async function AdminLayout({
   try {
     await requireAdmin();
   } catch (err) {
-    redirect('/app');
+    redirect('/auth/admin?returnUrl=/admin');
   }
 
   return <>{children}</>;

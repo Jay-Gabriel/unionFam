@@ -31,16 +31,26 @@ export const statusLabels: Record<string, string> = {
   rejected: 'Đã từ chối',
   confirmed: 'Đã xác nhận',
   draft: 'Bản nháp',
+  published: 'Đang áp dụng',
 };
 
 export const roleLabels: Record<string, string> = {
   user: 'Người dùng',
+  member: 'Thành viên',
   admin: 'Quản trị viên',
+  content_admin: 'Biên tập viên AI',
 };
 
 export const auditActionLabels: Record<string, string> = {
   read_user_detail: 'Xem chi tiết người dùng',
   read_overview: 'Xem tổng quan',
+  list: 'Xem danh sách',
+  create_draft: 'Tạo bản nháp kịch bản',
+  update_draft: 'Cập nhật bản nháp kịch bản',
+  publish: 'Xuất bản kịch bản',
+  archive: 'Lưu trữ kịch bản',
+  grant_content_admin: 'Cấp quyền biên tập AI',
+  revoke_content_admin: 'Gỡ quyền biên tập AI',
 };
 
 export const resourceTypeLabels: Record<string, string> = {
@@ -57,6 +67,10 @@ export const resourceTypeLabels: Record<string, string> = {
   tool: 'Công cụ',
   person: 'Con người',
   other: 'Khác',
+  admin_overview: 'Tổng quan quản trị',
+  user_detail: 'Chi tiết người dùng',
+  user_role: 'Vai trò người dùng',
+  ai_script_documents: 'Kịch bản AI',
 };
 
 export const stageLabels: Record<string, string> = {

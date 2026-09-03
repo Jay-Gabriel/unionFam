@@ -9,6 +9,7 @@ import {
   BookOpen,
   ChevronRight,
   Compass,
+  FileText,
   FlaskConical,
   FolderArchive,
   GraduationCap,
@@ -18,6 +19,7 @@ import {
   Menu,
   MessageCircleHeart,
   Sprout,
+  ShieldCheck,
   TrendingUp,
   Wallet,
   X,
@@ -141,6 +143,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [currentRole, setCurrentRole] = useState<'member' | 'admin' | 'content_admin'>('member');
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = React.useRef<HTMLDivElement>(null);
 
@@ -152,10 +155,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     let cancelled = false;
-    fetch('/api/onboarding')
-      .then((response) => response.ok ? response.json() : null)
-      .then((json) => {
-        if (!cancelled && typeof json?.data?.display_name === 'string') setDisplayName(json.data.display_name.trim());
+    Promise.all([
+      fetch('/api/onboarding', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null),
+      fetch('/api/auth/me', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null),
+    ])
+      .then(([onboarding, auth]) => {
+        if (cancelled) return;
+        if (typeof onboarding?.data?.display_name === 'string') setDisplayName(onboarding.data.display_name.trim());
+        if (auth?.data?.role === 'admin' || auth?.data?.role === 'content_admin' || auth?.data?.role === 'member') {
+          setCurrentRole(auth.data.role);
+        }
       })
       .catch(() => undefined);
     return () => { cancelled = true; };
@@ -256,6 +265,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
               <Navigation pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+              {(currentRole === 'admin' || currentRole === 'content_admin') && (
+                <div className="mt-6 border-t border-white/10 pt-4">
+                  <Link
+                    href="/content-admin"
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition ${
+                      isRouteActive(pathname, '/content-admin')
+                        ? 'bg-white/10 text-calm-warm-ivory'
+                        : 'text-calm-fog hover:bg-white/5 hover:text-calm-paper-white'
+                    }`}
+                  >
+                    <FileText className="h-[17px] w-[17px] text-calm-lichen" />
+                    Thư viện kịch bản AI
+                  </Link>
+                  {currentRole === 'admin' && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileOpen(false)}
+                      className="mt-1 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-calm-fog transition hover:bg-white/5 hover:text-calm-paper-white"
+                    >
+                      <ShieldCheck className="h-[17px] w-[17px] text-calm-pollen" />
+                      Bảng vận hành
+                    </Link>
+                  )}
+                </div>
+              )}
             </motion.aside>
           </>
         )}
@@ -324,8 +359,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 >
                   <div className="border-b border-white/10 px-3 py-2.5">
                     <p className="truncate text-sm font-semibold text-calm-paper-white">{displayName || 'Bạn'}</p>
-                    <p className="mt-0.5 text-[11px] text-calm-fog/70">Tài khoản Life Lab</p>
+                    <p className="mt-0.5 text-[11px] text-calm-fog/70">
+                      {currentRole === 'admin' ? 'Quản trị viên' : currentRole === 'content_admin' ? 'Biên tập viên AI' : 'Tài khoản Life Lab'}
+                    </p>
                   </div>
+                  {(currentRole === 'admin' || currentRole === 'content_admin') && (
+                    <Link
+                      href="/content-admin"
+                      role="menuitem"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-calm-fog transition hover:bg-white/10 hover:text-calm-paper-white"
+                    >
+                      <FileText className="h-4 w-4 text-calm-lichen" />
+                      Thư viện kịch bản AI
+                    </Link>
+                  )}
+                  {currentRole === 'admin' && (
+                    <Link
+                      href="/admin"
+                      role="menuitem"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-calm-fog transition hover:bg-white/10 hover:text-calm-paper-white"
+                    >
+                      <ShieldCheck className="h-4 w-4 text-calm-pollen" />
+                      Bảng vận hành
+                    </Link>
+                  )}
                   <button
                     type="button"
                     role="menuitem"

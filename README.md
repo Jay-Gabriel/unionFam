@@ -18,6 +18,7 @@ Bộ tài liệu này chuyển brief ban đầu thành đặc tả đủ chi ti�
 12. [Week 1 Remediation & Supabase Plan](docs/11_WEEK_1_REMEDIATION_SUPABASE_PLAN.md) — kế hoạch sửa Auth/RLS/persistence thật, test security và gate trước khi đẩy migration lên Supabase.
 13. [Technical RC Status](docs/12_TECHNICAL_RC_STATUS.md) — những gì đã chạy thật, kết quả kiểm chứng và các gate `PENDING_PO`.
 14. [Blueprint 1 Conversation Playbook](docs/14_BLUEPRINT_1_CONVERSATION_PLAYBOOK.md) — policy hội thoại dài hạn, thang đào sâu và nhịp tạo giá trị 12 tháng.
+15. [Admin Access Link](docs/15_ADMIN_ACCESS_LINK.md) — link bearer mở thẳng khu vực quản trị bằng session Supabase thật.
 
 ## Nguồn và mức độ chắc chắn
 
@@ -79,3 +80,46 @@ APP_BASE_URL=https://union-fam.vercel.app
 ```
 
 Trong Supabase **Authentication → Providers → Google**, bật provider và dán Google OAuth Client ID/Secret. Trong **Authentication → URL Configuration**, đặt Site URL là `https://union-fam.vercel.app` và thêm `https://union-fam.vercel.app/auth/callback**` cùng callback local `http://localhost:3000/auth/callback**`. Trong Google Cloud, tạo OAuth client loại **Web application**, thêm origin của app (`https://union-fam.vercel.app`, và `http://localhost:3000` khi phát triển), rồi thêm đúng callback URL Supabase hiển thị trong trang Google provider (thường là `https://<project-ref>.supabase.co/auth/v1/callback`). Không đưa Client Secret hoặc service-role key vào mã nguồn hay chat.
+
+## Đăng nhập quản trị viên bằng email/mật khẩu
+
+Admin dùng màn hình riêng tại `/auth/admin`; luồng này không hiển thị Google và không phụ thuộc `NEXT_PUBLIC_ENABLE_EMAIL_AUTH`. Sau khi Supabase xác thực email/mật khẩu, ứng dụng còn kiểm tra role `admin`; tài khoản không có role này sẽ bị đăng xuất ngay.
+
+1. Trong Supabase **Authentication → Providers → Email**, bật đăng nhập email/password.
+2. Trong **Authentication → Users**, tạo tài khoản admin bằng email và mật khẩu mạnh; bật **Auto Confirm User** hoặc xác nhận email trước lần đăng nhập đầu tiên.
+3. Cấp role `admin` cho đúng user bằng một admin/operator hiện có. Nếu đây là admin đầu tiên, chạy một lần trong Supabase SQL Editor (thay email bằng email thật):
+
+   ```sql
+   insert into public.user_roles (user_id, role, granted_by)
+   select id, 'admin', id
+   from auth.users
+   where email = 'admin@example.com'
+   on conflict (user_id, role) do nothing;
+   ```
+
+4. Mở `https://union-fam.vercel.app/auth/admin` và đăng nhập. Không lưu mật khẩu trong `.env`, mã nguồn, README hoặc tin nhắn.
+
+`NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` chỉ điều khiển nút Google cho người dùng thường. Có thể giữ `NEXT_PUBLIC_ENABLE_EMAIL_AUTH=false` nếu không muốn mở form email đăng ký cho thành viên; màn hình admin vẫn dùng được email/password. Sau khi thay biến môi trường hoặc provider trên Vercel, tạo deployment mới rồi kiểm tra cả `/auth/admin` và `/admin`.
+
+## Link vào Admin không cần hiện màn hình đăng nhập
+
+Nếu AI/operator cần mở thẳng bảng quản trị, có thể dùng bearer link riêng tại `/auth/admin-link`. Link này không nhận diện admin từ query tùy ý và không bật chế độ admin giả: server kiểm tra khóa bí mật, tìm đúng tài khoản đã có role `admin`, tạo token magic-link một lần qua Supabase rồi lưu **session thật** vào cookie phiên Supabase trước khi chuyển tới `/admin`.
+
+1. Tạo một user Supabase đã xác nhận email và cấp role `admin` như phần trên.
+2. Trong Vercel → **Settings → Environment Variables**, thêm cho **Production** (và Preview nếu thật sự cần):
+
+   ```env
+   ADMIN_LINK_EMAIL=admin@example.com
+   ADMIN_ACCESS_KEY=<chuỗi ngẫu nhiên dài ít nhất 24 ký tự>
+   ```
+
+   Có thể tạo khóa URL-safe bằng `openssl rand -hex 32`. Không đặt hai biến này dưới tiền tố `NEXT_PUBLIC_`.
+3. Redeploy. Mở:
+
+   ```text
+   https://union-fam.vercel.app/auth/admin-link?key=<ADMIN_ACCESS_KEY>
+   ```
+
+   Người mở link sẽ vào thẳng `/admin`, không qua Google hay form mật khẩu. `/auth/admin` vẫn là đường đăng nhập dự phòng.
+
+ Link là **bearer credential**: bất kỳ ai có URL đều có quyền admin. Không gửi qua chat công khai, không nhúng vào mã nguồn, và đổi `ADMIN_ACCESS_KEY` rồi redeploy ngay nếu bị lộ. Nếu nhận `ADMIN_LINK_NOT_CONFIGURED` hoặc `ADMIN_LINK_UNAVAILABLE`, kiểm tra service-role key, email Auth đã tồn tại/xác nhận, role `admin`, Email provider và deployment mới.

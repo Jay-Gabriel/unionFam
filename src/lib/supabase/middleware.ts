@@ -34,7 +34,7 @@ function authUnavailable(request: NextRequest, reason: 'config' | 'service') {
   }
 
   const url = request.nextUrl.clone();
-  url.pathname = '/auth';
+  url.pathname = pathname.startsWith('/admin') ? '/auth/admin' : '/auth';
   url.search = '';
   url.searchParams.set('returnUrl', pathname);
   url.searchParams.set('error', reason);
@@ -121,7 +121,7 @@ export async function updateSession(request: NextRequest) {
 
     if (!user && !publicPath) {
       const url = request.nextUrl.clone();
-      url.pathname = '/auth';
+      url.pathname = pathname.startsWith('/admin') ? '/auth/admin' : '/auth';
       url.searchParams.set('returnUrl', pathname);
       return NextResponse.redirect(url);
     }

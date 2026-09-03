@@ -57,7 +57,7 @@ async function ensurePreviewUser() {
 export interface VerifiedUser {
   id: string;
   email: string;
-  role: 'member' | 'admin';
+  role: 'member' | 'admin' | 'content_admin';
 }
 
 export async function requireUser(): Promise<VerifiedUser> {
@@ -88,14 +88,20 @@ export async function requireUser(): Promise<VerifiedUser> {
     throw new Error('AUTH_REQUIRED');
   }
 
-  const { data: roleRow } = await supabase
+  const { data: roleRows } = await supabase
     .from('user_roles')
     .select('role')
     .eq('user_id', user.id)
-    .eq('role', 'admin')
-    .maybeSingle();
+    .in('role', ['admin', 'content_admin']);
 
-  const role = (roleRow as { role: string } | null)?.role === 'admin' ? 'admin' : 'member';
+  // A full admin may also have the content-admin role. Keep the stronger role
+  // when both rows exist so existing admin protections are never downgraded.
+  const roles = (roleRows || []).map((row) => (row as { role: string }).role);
+  const role: VerifiedUser['role'] = roles.includes('admin')
+    ? 'admin'
+    : roles.includes('content_admin')
+      ? 'content_admin'
+      : 'member';
 
   return {
     id: user.id,
@@ -107,6 +113,18 @@ export async function requireUser(): Promise<VerifiedUser> {
 export async function requireAdmin(): Promise<VerifiedUser> {
   const user = await requireUser();
   if (user.role !== 'admin') {
+    throw new Error('FORBIDDEN');
+  }
+  return user;
+}
+
+/**
+ * Content administrators can manage the editorial script library, but cannot
+ * inspect users, sessions, or operational logs. Full admins retain access too.
+ */
+export async function requireContentAdmin(): Promise<VerifiedUser> {
+  const user = await requireUser();
+  if (user.role !== 'admin' && user.role !== 'content_admin') {
     throw new Error('FORBIDDEN');
   }
   return user;

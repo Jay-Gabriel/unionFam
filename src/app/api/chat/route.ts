@@ -9,6 +9,7 @@ import { consumeRateLimit } from '@/server/security/rate-limit';
 import { recordAiRunLog, recordApplicationError } from '@/server/observability/log';
 import { labelDimension } from '@/lib/i18n';
 import { DEMO_USER_ID, isDemoMode } from '@/lib/demo-mode';
+import { loadPublishedScripts } from '@/server/ai/script-library';
 
 export const dynamic = 'force-dynamic';
 
@@ -401,9 +402,10 @@ export async function POST(request: Request) {
     let gapRows: GapRow[] = [];
     let experimentRow: ExperimentRow | null = null;
     let reflectionRow: ReflectionRow | null = null;
+    let approvedScripts: Awaited<ReturnType<typeof loadPublishedScripts>> = [];
 
     if (!opening) {
-      const [previousResult, insightResult, answerResult, rejectedResult, questionResult, profileResult, resourceResult, gapResult, experimentResult, reflectionResult] = await Promise.all([
+      const [previousResult, insightResult, answerResult, rejectedResult, questionResult, profileResult, resourceResult, gapResult, experimentResult, reflectionResult, scriptsResult] = await Promise.all([
         supabase
           .from('messages')
           .select('role, content, sequence_no')
@@ -475,6 +477,7 @@ export async function POST(request: Request) {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
+        loadPublishedScripts(),
       ]);
 
       const readError = [
@@ -501,6 +504,7 @@ export async function POST(request: Request) {
       gapRows = (gapResult.data || []) as GapRow[];
       experimentRow = (experimentResult.data || null) as ExperimentRow | null;
       reflectionRow = (reflectionResult.data || null) as ReflectionRow | null;
+      approvedScripts = scriptsResult;
     }
 
     const questionData = questionRows;
@@ -594,6 +598,7 @@ export async function POST(request: Request) {
         activeExperiment: experimentRow ? JSON.stringify(experimentRow) : undefined,
         recentReflection: reflectionRow ? JSON.stringify(reflectionRow) : undefined,
         rejectedObservations: (rejectedRows || []).map((row: { content_original: string }) => row.content_original),
+        approvedScripts,
       },
       opening
         ? BLUEPRINT_OPENING_QUESTION

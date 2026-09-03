@@ -87,3 +87,53 @@ export async function GET(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: 'ADMIN_USER_DETAIL_UNAVAILABLE' }, { status: 503 });
   }
 }
+
+/** Grant or revoke the narrowly scoped AI-script editor role. Full admin
+ * access is never changeable through this endpoint. */
+export async function POST(request: Request, { params }: { params: { id: string } }) {
+  try {
+    const admin = await requireAdmin();
+    if (!isUuid(params.id)) return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 });
+
+    const payload = await request.json().catch(() => null) as { role?: unknown } | null;
+    const role = payload?.role;
+    if (role !== 'content_admin' && role !== 'member') {
+      return NextResponse.json({ error: 'INVALID_ROLE' }, { status: 422 });
+    }
+
+    const service = createAdminClient();
+    const { data: target, error: targetError } = await service.auth.admin.getUserById(params.id);
+    if (targetError || !target.user) return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 });
+
+    if (role === 'content_admin') {
+      const { error } = await service.from('user_roles').upsert(
+        { user_id: params.id, role: 'content_admin', granted_by: admin.id },
+        { onConflict: 'user_id,role' }
+      );
+      if (error) throw error;
+    } else {
+      const { error } = await service
+        .from('user_roles')
+        .delete()
+        .eq('user_id', params.id)
+        .eq('role', 'content_admin');
+      if (error) throw error;
+    }
+
+    await service.from('admin_access_logs').insert({
+      admin_id: admin.id,
+      target_user_id: params.id,
+      resource_type: 'user_role',
+      action: role === 'content_admin' ? 'grant_content_admin' : 'revoke_content_admin',
+      reason: 'AI script library access management',
+    });
+
+    return NextResponse.json({ data: { userId: params.id, role } });
+  } catch (error) {
+    if (error instanceof Error && (error.message === 'AUTH_REQUIRED' || error.message === 'FORBIDDEN')) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+    console.error('ADMIN_ROLE_UPDATE_FAILED', error instanceof Error ? error.name : 'UnknownError');
+    return NextResponse.json({ error: 'ADMIN_ROLE_UPDATE_UNAVAILABLE' }, { status: 503 });
+  }
+}

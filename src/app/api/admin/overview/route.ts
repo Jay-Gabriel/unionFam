@@ -43,7 +43,13 @@ export async function GET(request: Request) {
       ? await service.from('user_roles').select('user_id, role').in('user_id', userIds)
       : { data: [], error: null };
     if (rolesError) throw rolesError;
-    const roleByUserId = new Map((roleRows || []).map((row: { user_id: string; role: string }) => [row.user_id, row.role]));
+    // A full admin can also carry the content-admin role. Keep the stronger
+    // role deterministic regardless of database row ordering.
+    const roleByUserId = new Map<string, string>();
+    (roleRows || []).forEach((row: { user_id: string; role: string }) => {
+      const current = roleByUserId.get(row.user_id);
+      if (!current || row.role === 'admin') roleByUserId.set(row.user_id, row.role);
+    });
 
     await service.from('admin_access_logs').insert({
       admin_id: admin.id,

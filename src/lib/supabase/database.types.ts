@@ -91,6 +91,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_script_documents: {
+        Row: {
+          content: string
+          content_hash: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          published_at: string | null
+          script_key: string
+          source_filename: string | null
+          source_type: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string
+          version_no: number
+        }
+        Insert: {
+          content: string
+          content_hash: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          published_at?: string | null
+          script_key: string
+          source_filename?: string | null
+          source_type?: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by: string
+          version_no?: number
+        }
+        Update: {
+          content?: string
+          content_hash?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          published_at?: string | null
+          script_key?: string
+          source_filename?: string | null
+          source_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string
+          version_no?: number
+        }
+        Relationships: []
+      }
       ai_observations: {
         Row: {
           assistant_message_id: string | null
@@ -1060,6 +1114,8 @@ export type Database = {
         Returns: Json
       }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
+      is_content_admin: { Args: { p_user_id: string }; Returns: boolean }
+      publish_ai_script: { Args: { p_script_id: string }; Returns: Json }
       save_life_profile_draft: {
         Args: {
           p_snapshot: Json

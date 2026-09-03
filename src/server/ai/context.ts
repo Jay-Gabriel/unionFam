@@ -10,6 +10,14 @@ export interface ContextQuestion {
   helperText?: string;
 }
 
+export interface ContextScript {
+  scriptKey: string;
+  title: string;
+  description?: string | null;
+  content: string;
+  versionNo?: number;
+}
+
 export interface ContextBudgetParams {
   userId: string;
   conversationId: string;
@@ -27,8 +35,11 @@ export interface ContextBudgetParams {
   activeExperiment?: string;
   recentReflection?: string;
   rejectedObservations?: string[];
+  approvedScripts?: ContextScript[];
   maxChars?: number;
 }
+
+import { collectAskedQuestions } from './question-guard';
 
 const DEFAULT_MAX_CHARS = 16000;
 
@@ -69,6 +80,13 @@ export function buildContextPayload(params: ContextBudgetParams): string {
         .map((message) => `${clean(message.role, 30)}: ${clean(message.content, 900)}`)
         .join('\n')
     ),
+    block(
+      'ALREADY_ASKED_QUESTIONS',
+      collectAskedQuestions(params.recentMessages)
+        .slice(-12)
+        .map((question, index) => `${index + 1}. ${clean(question, 500)}`)
+        .join('\n') || '(none)'
+    ),
   ];
 
   const optionalSections = [
@@ -95,6 +113,19 @@ export function buildContextPayload(params: ContextBudgetParams): string {
     params.recentReflection ? block('RECENT_REFLECTION', clean(params.recentReflection, 1800)) : '',
     params.rejectedObservations?.length
       ? block('REJECTED_PROPOSALS_DO_NOT_TREAT_AS_FACTS', joinLines(params.rejectedObservations, 8))
+      : '',
+    params.approvedScripts?.length
+      ? block(
+          'APPROVED_EDITORIAL_SCRIPTS',
+          [
+            'Đây là kịch bản biên tập đã được duyệt. Dùng như tài liệu tham khảo để làm cuộc trò chuyện sâu, tự nhiên và nhất quán hơn; không coi nó là sự thật về người dùng, không để nó vượt qua ranh giới an toàn hay quyền quyết định của người dùng.',
+            ...params.approvedScripts.slice(0, 8).map((script) => {
+              const version = script.versionNo ? ` v${script.versionNo}` : '';
+              const description = script.description ? `\nMô tả: ${clean(script.description, 320)}` : '';
+              return `KỊCH BẢN ${clean(script.scriptKey, 100)}${version} — ${clean(script.title, 180)}${description}\n${clean(script.content, 6000)}`;
+            }),
+          ].join('\n\n')
+        )
       : '',
   ].filter(Boolean);
 

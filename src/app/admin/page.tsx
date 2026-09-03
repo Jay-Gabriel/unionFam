@@ -31,6 +31,8 @@ export default function AdminDashboardPage() {
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+  const [roleUpdating, setRoleUpdating] = useState('');
+  const [roleMessage, setRoleMessage] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -77,6 +79,32 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const updateContentRole = async (userId: string, role: 'content_admin' | 'member') => {
+    const granting = role === 'content_admin';
+    if (!window.confirm(granting
+      ? 'Cấp quyền biên tập AI cho tài khoản này? Tài khoản sẽ có thể tải và xuất bản kịch bản, nhưng không xem dữ liệu người dùng.'
+      : 'Gỡ quyền biên tập AI của tài khoản này?')) return;
+
+    setRoleUpdating(userId);
+    setRoleMessage('');
+    setError('');
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(json.error || 'Không thể cập nhật quyền biên tập.');
+      setRoleMessage(granting ? 'Đã cấp quyền biên tập AI. Tài khoản cần tải lại trang để thấy thư viện kịch bản.' : 'Đã gỡ quyền biên tập AI.');
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Không thể cập nhật quyền biên tập.');
+    } finally {
+      setRoleUpdating('');
+    }
+  };
+
   const tabs: Array<{ id: Tab; label: string; icon: typeof Users }> = [
     { id: 'users', label: 'Người dùng', icon: Users },
     { id: 'sessions', label: 'Phiên', icon: Activity },
@@ -92,12 +120,13 @@ export default function AdminDashboardPage() {
       </div>
 
       {error && <div className="rounded-2xl bg-rose-50 p-4 text-xs font-semibold text-rose-700">{error}</div>}
+      {roleMessage && <div className="rounded-2xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-700">{roleMessage}</div>}
       {loading && <div className="grid min-h-64 place-items-center"><Loader2 className="animate-spin text-indigo-600" /></div>}
       {!loading && overview && <>
         <div className="grid gap-4 sm:grid-cols-3"><div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card"><p className="text-xs text-slate-500">Người dùng trong trang</p><p className="mt-2 text-3xl font-bold text-slate-900">{overview.users.length}</p></div><div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card"><p className="text-xs text-slate-500">Phiên gần nhất</p><p className="mt-2 text-3xl font-bold text-slate-900">{overview.sessions.length}</p></div><div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card"><p className="text-xs text-slate-500">Lỗi gần nhất</p><p className="mt-2 text-3xl font-bold text-slate-900">{overview.errors.length}</p></div></div>
         <div className="flex flex-wrap gap-2">{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => setActiveTab(id)} className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold uppercase transition ${activeTab === id ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}><Icon size={14} /> {label}</button>)}</div>
         <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-card">
-          {activeTab === 'users' && <table className="w-full min-w-[760px] text-left text-xs text-slate-700"><thead className="border-b border-slate-100 bg-slate-50 text-[10px] uppercase text-slate-400"><tr><th className="p-3">Tên hiển thị</th><th className="p-3">Email (đã che)</th><th className="p-3">Vai trò</th><th className="p-3">Trạng thái bắt đầu</th><th className="p-3">Câu trả lời</th><th className="p-3">Ngày tham gia</th><th className="p-3">Truy cập</th></tr></thead><tbody className="divide-y divide-slate-100">{overview.users.map((user) => <tr key={user.id}><td className="p-3 font-semibold text-slate-900">{user.displayName || '—'}</td><td className="p-3 font-mono text-[11px]">{user.email}</td><td className="p-3"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold">{labelRole(user.role)}</span></td><td className="p-3">{labelStatus(user.onboardingStatus)}</td><td className="p-3">{user.answersCount}</td><td className="p-3">{new Date(user.joinedAt).toLocaleDateString('vi-VN')}</td><td className="p-3"><button type="button" onClick={() => { setDetailUserId(user.id); setDetail(null); setDetailError(''); }} className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50">Xem chi tiết</button></td></tr>)}</tbody></table>}
+          {activeTab === 'users' && <table className="w-full min-w-[900px] text-left text-xs text-slate-700"><thead className="border-b border-slate-100 bg-slate-50 text-[10px] uppercase text-slate-400"><tr><th className="p-3">Tên hiển thị</th><th className="p-3">Email (đã che)</th><th className="p-3">Vai trò</th><th className="p-3">Trạng thái bắt đầu</th><th className="p-3">Câu trả lời</th><th className="p-3">Ngày tham gia</th><th className="p-3">Truy cập</th><th className="p-3">Quyền kịch bản</th></tr></thead><tbody className="divide-y divide-slate-100">{overview.users.map((user) => <tr key={user.id}><td className="p-3 font-semibold text-slate-900">{user.displayName || '—'}</td><td className="p-3 font-mono text-[11px]">{user.email}</td><td className="p-3"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold">{labelRole(user.role)}</span></td><td className="p-3">{labelStatus(user.onboardingStatus)}</td><td className="p-3">{user.answersCount}</td><td className="p-3">{new Date(user.joinedAt).toLocaleDateString('vi-VN')}</td><td className="p-3"><button type="button" onClick={() => { setDetailUserId(user.id); setDetail(null); setDetailError(''); }} className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50">Xem chi tiết</button></td><td className="p-3">{user.role === 'admin' ? <span className="text-[10px] text-slate-400">Toàn quyền</span> : user.role === 'content_admin' ? <button type="button" disabled={roleUpdating === user.id} onClick={() => void updateContentRole(user.id, 'member')} className="rounded-xl border border-rose-200 px-2.5 py-1.5 text-[10px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50">{roleUpdating === user.id ? 'Đang cập nhật…' : 'Gỡ quyền biên tập'}</button> : <button type="button" disabled={roleUpdating === user.id} onClick={() => void updateContentRole(user.id, 'content_admin')} className="rounded-xl border border-indigo-200 px-2.5 py-1.5 text-[10px] font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50">{roleUpdating === user.id ? 'Đang cập nhật…' : 'Cấp quyền biên tập'}</button>}</td></tr>)}</tbody></table>}
           {activeTab === 'sessions' && <div className="space-y-3">{overview.sessions.length === 0 ? <p className="text-sm text-slate-500">Chưa có phiên nào.</p> : overview.sessions.map((session) => <div key={session.id} className="flex flex-col justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs sm:flex-row"><div><p className="font-semibold text-slate-900">{session.title}</p><p className="mt-1 text-slate-500">Bước: {labelStage(session.current_stage)} · Mã người dùng: {session.user_id.slice(0, 8)}…</p></div><span className="text-slate-400">{new Date(session.last_message_at).toLocaleString('vi-VN')}</span></div>)}</div>}
           {activeTab === 'errors' && <div className="space-y-3">{overview.errors.length === 0 ? <p className="text-sm text-slate-500">Chưa có lỗi được ghi nhận.</p> : overview.errors.map((item) => <div key={item.id} className="flex flex-col justify-between gap-2 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-xs sm:flex-row"><div><p className="font-bold text-rose-800">{item.error_code}</p><p className="mt-1 text-slate-600">{item.route} · request {item.request_id}</p></div><span className="text-slate-400">{new Date(item.created_at).toLocaleString('vi-VN')}</span></div>)}</div>}
           {activeTab === 'audit' && <div className="space-y-3">{overview.auditLogs.length === 0 ? <p className="text-sm text-slate-500">Chưa có nhật ký kiểm tra.</p> : overview.auditLogs.map((item) => <div key={item.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs"><p className="font-semibold text-slate-900">{labelAuditAction(item.action)} · {labelResourceType(item.resource_type)}</p><p className="mt-1 text-slate-600">{item.reason}</p><p className="mt-1 text-slate-400">{new Date(item.created_at).toLocaleString('vi-VN')} · quản trị viên {item.admin_id.slice(0, 8)}…</p></div>)}</div>}
