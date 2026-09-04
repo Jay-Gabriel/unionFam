@@ -146,7 +146,6 @@ export class GeminiConversationProvider {
       const lowerMsg = latestUserMessage.toLowerCase();
       const isReflectionIntent =
         lowerMsg.includes('đã làm') ||
-        lowerMsg.includes('làm thử') ||
         lowerMsg.includes('đã thử') ||
         lowerMsg.includes('thử xong') ||
         lowerMsg.includes('kết quả') ||
@@ -155,16 +154,32 @@ export class GeminiConversationProvider {
         lowerMsg.includes('bài học') ||
         lowerMsg.includes('ngày đầu') ||
         lowerMsg.includes('ngày thứ') ||
-        lowerMsg.includes('hôm nay đã');
+        lowerMsg.includes('hôm nay đã') ||
+        lowerMsg.includes('làm xong') ||
+        lowerMsg.includes('kết thúc thử');
 
       const isExperimentIntent =
         !isReflectionIntent &&
-        (lowerMsg.includes('muốn thử') ||
+        (lowerMsg.includes('thử nghiệm') ||
+         lowerMsg.includes('thí nghiệm') ||
+         lowerMsg.includes('đang thí nghiệm') ||
+         lowerMsg.includes('đang thử') ||
+         lowerMsg.includes('muốn thử') ||
+         lowerMsg.includes('làm thử') ||
+         lowerMsg.includes('thử làm') ||
+         lowerMsg.includes('sẽ thử') ||
+         lowerMsg.includes('sẽ làm') ||
+         lowerMsg.includes('thực hành') ||
          lowerMsg.includes('dự định') ||
          lowerMsg.includes('bắt đầu') ||
          lowerMsg.includes('kế hoạch') ||
          lowerMsg.includes('hành động') ||
-         lowerMsg.includes('thử '));
+         lowerMsg.includes('bước nhỏ') ||
+         lowerMsg.includes('thói quen') ||
+         lowerMsg.includes('thử sức') ||
+         lowerMsg.includes('test') ||
+         lowerMsg.includes('thử') ||
+         lowerMsg.includes('7 ngày'));
 
       let learningText = 'Khi bắt đầu với bước nhỏ rõ ràng, tâm trí nhẹ nhàng và tập trung hơn nhiều.';
       if (lowerMsg.includes('nhận ra')) {
@@ -177,11 +192,19 @@ export class GeminiConversationProvider {
 
       let expTitle = 'Thử nghiệm bước nhỏ 7 ngày';
       if (lowerMsg.includes('15 phút')) {
-        expTitle = 'Thử nghiệm 15 phút mỗi sáng';
+        expTitle = 'Thử nghiệm 15 phút mỗi ngày';
       } else if (lowerMsg.includes('dậy sớm')) {
         expTitle = 'Thử nghiệm dậy sớm';
       } else if (lowerMsg.includes('chạy bộ') || lowerMsg.includes('đi bộ')) {
-        expTitle = 'Thử nghiệm vận động buổi sáng';
+        expTitle = 'Thử nghiệm vận động mỗi ngày';
+      } else if (lowerMsg.includes('đọc sách')) {
+        expTitle = 'Thử nghiệm đọc sách 15 phút';
+      } else if (lowerMsg.includes('viết nhật ký') || lowerMsg.includes('ghi chép')) {
+        expTitle = 'Thử nghiệm viết nhật ký mỗi tối';
+      } else if (lowerMsg.includes('thiền')) {
+        expTitle = 'Thử nghiệm tĩnh tâm 10 phút';
+      } else if (lowerMsg.includes('thí nghiệm') || lowerMsg.includes('thử nghiệm')) {
+        expTitle = 'Thử nghiệm hành động vi mô 7 ngày';
       }
 
       const mockResponseText = buildMockResponse(
@@ -197,9 +220,9 @@ export class GeminiConversationProvider {
         nextQuestionId: allowedQuestionIds[0],
         experimentProposal: isExperimentIntent ? {
           title: expTitle,
-          hypothesis: 'Nếu dành 15 phút mỗi ngày làm bước nhỏ này, mình sẽ có thêm tự tin và sự rõ ràng.',
+          hypothesis: 'Nếu kiên trì với bước nhỏ này trong 7 ngày, mình sẽ xây dựng được sự tự tin và nhịp điệu tích cực.',
           smallestStep: 'Chuẩn bị không gian và thực hiện đúng 15 phút đầu tiên vào ngày mai.',
-          successSignal: 'Hoàn thành 3 ngày liên tiếp mà không bị ngắt quãng.',
+          successSignal: 'Duy trì đều đặn 3 ngày liên tiếp mà không bỏ dở.',
           targetDays: 7,
           dimension: 'my_life',
         } : undefined,

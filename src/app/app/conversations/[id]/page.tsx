@@ -383,18 +383,20 @@ export default function ConversationPage() {
   useEffect(() => {
     if (isLoadingConversation) return;
 
-    // Keep the latest turn visible while Gemini streams or when messages change.
+    // Keep the latest turn and any auto-extracted cards visible on mobile/desktop
     const frame = window.requestAnimationFrame(() => {
       scrollToBottom(!isStreaming);
     });
 
-    const timer = setTimeout(() => {
-      scrollToBottom(false);
-    }, 60);
+    const timer1 = setTimeout(() => scrollToBottom(false), 50);
+    const timer2 = setTimeout(() => scrollToBottom(false), 180);
+    const timer3 = setTimeout(() => scrollToBottom(false), 400);
 
     return () => {
       window.cancelAnimationFrame(frame);
-      clearTimeout(timer);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
     };
   }, [isLoadingConversation, isStreaming, messages, scrollToBottom]);
 
@@ -1175,7 +1177,39 @@ export default function ConversationPage() {
         </div>
       )}
 
-      <div className="shrink-0 pt-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+      <div className="shrink-0 pt-1.5 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+        {/* Quick Suggestion Pills for easy 1-tap testing on Mobile & Desktop */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none text-[11px]">
+          <button
+            type="button"
+            onClick={() => setInputContent('Tôi muốn làm thử nghiệm 15 phút mỗi sáng để tạo nhịp điệu mới')}
+            className="shrink-0 rounded-full border border-calm-pollen/30 bg-calm-pollen/10 px-2.5 py-1 font-medium text-calm-pollen transition hover:bg-calm-pollen/20"
+          >
+            🧪 Thử nghiệm 15 phút
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputContent('Hôm nay tôi đã làm thử và nhận ra bài học là bước nhỏ giúp tâm trí nhẹ nhàng hơn')}
+            className="shrink-0 rounded-full border border-calm-fern/30 bg-calm-fern/10 px-2.5 py-1 font-medium text-[#c9e2cf] transition hover:bg-calm-fern/20"
+          >
+            🌱 Ghi nhận & Bài học
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputContent('Tôi đang có khoản tiết kiệm 6 tháng và kinh nghiệm chuyên môn 5 năm')}
+            className="shrink-0 rounded-full border border-calm-lichen/30 bg-calm-lichen/10 px-2.5 py-1 font-medium text-calm-lichen transition hover:bg-calm-lichen/20"
+          >
+            💼 Nguồn lực & Tài chính
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputContent('Tôi mong muốn một cuộc sống tự do thời gian và dành cho gia đình')}
+            className="shrink-0 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 font-medium text-calm-warm-ivory transition hover:bg-white/10"
+          >
+            🧭 Bản đồ cuộc sống
+          </button>
+        </div>
+
         <form
           onSubmit={handleSendMessage}
           className="flex items-center gap-1.5 sm:gap-2 rounded-[24px] sm:rounded-[28px] border border-white/15 bg-calm-deep-moss p-1.5 sm:p-2.5 shadow-[0_18px_55px_rgba(10,18,12,0.28)]"
