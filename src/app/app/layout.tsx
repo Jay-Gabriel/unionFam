@@ -151,6 +151,18 @@ function useVisualViewportHeight() {
         '--app-viewport-height',
         `${height}px`
       );
+
+      // Prevent iOS Safari from scrolling window/document.body when keyboard opens
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+      if (document.body.scrollTop !== 0) {
+        document.body.scrollTop = 0;
+      }
+      if (document.documentElement.scrollTop !== 0) {
+        document.documentElement.scrollTop = 0;
+      }
+
       const keyboardActive = (window.innerHeight - height) > 100;
       setIsKeyboardOpen(keyboardActive);
     };
@@ -159,11 +171,13 @@ function useVisualViewportHeight() {
     viewport?.addEventListener('resize', update);
     viewport?.addEventListener('scroll', update);
     window.addEventListener('resize', update);
+    window.addEventListener('scroll', update);
 
     return () => {
       viewport?.removeEventListener('resize', update);
       viewport?.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update);
     };
   }, []);
 
@@ -228,8 +242,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="app-calm-scope relative isolate min-h-[var(--app-viewport-height,100dvh)] h-[var(--app-viewport-height,100dvh)] flex flex-col bg-calm-deep-moss text-calm-paper-white overflow-hidden"
-      style={{ backgroundColor: '#263128' }}
+      className="app-calm-scope fixed inset-0 z-0 flex flex-col bg-calm-deep-moss text-calm-paper-white overflow-hidden w-full"
+      style={{
+        backgroundColor: '#263128',
+        height: 'var(--app-viewport-height, 100dvh)',
+        maxHeight: 'var(--app-viewport-height, 100dvh)',
+      }}
     >
       {/* Immediate 2.5D atmosphere plus a lazy WebGL progressive enhancement. */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-calm-deep-moss" aria-hidden="true">
@@ -360,7 +378,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="relative md:pl-[272px] z-20 flex-1 flex flex-col min-h-0 h-full overflow-hidden">
+      <div className="relative md:pl-[272px] z-20 flex-1 flex flex-col min-h-0 h-full overflow-hidden w-full">
         <header className="shrink-0 sticky top-0 z-20 hidden h-[86px] items-center justify-between border-b border-white/5 bg-calm-deep-moss/92 px-7 md:flex lg:px-10">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-calm-fog/70">Không gian của bạn</p>
@@ -440,7 +458,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <main className={`relative mx-auto w-full max-w-[1480px] flex-1 min-h-0 flex flex-col ${
           isConversationRoom
-            ? 'h-[calc(var(--app-viewport-height,100dvh)-57px)] md:h-[calc(100vh-86px)] p-2 sm:px-6 md:py-6 overflow-hidden'
+            ? 'p-2 sm:px-6 md:py-6 overflow-hidden'
             : 'overflow-y-auto px-4 pb-28 pt-5 sm:px-6 md:pb-10 md:pt-7 lg:px-10'
         }`}>
           {children}

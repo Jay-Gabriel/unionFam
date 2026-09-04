@@ -813,6 +813,21 @@ export default function ConversationPage() {
             rows={1}
             placeholder="Trả lời Life Lab..."
             value={inputContent}
+            onFocus={() => {
+              if (typeof window !== 'undefined') {
+                window.scrollTo(0, 0);
+                document.body.scrollTop = 0;
+                document.documentElement.scrollTop = 0;
+                setTimeout(() => {
+                  window.scrollTo(0, 0);
+                  document.body.scrollTop = 0;
+                  document.documentElement.scrollTop = 0;
+                  if (messagesScrollRef.current) {
+                    messagesScrollRef.current.scrollTop = messagesScrollRef.current.scrollHeight;
+                  }
+                }, 150);
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -835,7 +850,7 @@ export default function ConversationPage() {
             <Send size={13} />
           </button>
         </form>
-        <p className="mt-1 text-center text-[10px] text-calm-fog/45">
+        <p className="mt-1 text-center text-[10px] text-calm-fog/45 hidden sm:block">
           Life Lab không phán xét. Bạn có thể sửa hoặc không lưu bất kỳ gợi ý nào.
         </p>
       </div>
