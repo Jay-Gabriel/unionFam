@@ -247,29 +247,69 @@ export default function ConversationPage() {
     data: Record<string, unknown>;
     demoMode: boolean;
   }> | null>(null);
+  const scrollToBottom = useCallback((smooth = false) => {
+    if (typeof window === 'undefined') return;
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    const container = messagesScrollRef.current;
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+      return;
+    }
+    messagesEndRef.current?.scrollIntoView({
+      behavior: smooth ? 'smooth' : 'auto',
+      block: 'end',
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const viewport = window.visualViewport;
+
+    const handleViewportChange = () => {
+      scrollToBottom(false);
+      const t1 = setTimeout(() => scrollToBottom(false), 80);
+      const t2 = setTimeout(() => scrollToBottom(false), 250);
+      const t3 = setTimeout(() => scrollToBottom(false), 450);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    };
+
+    viewport?.addEventListener('resize', handleViewportChange);
+    viewport?.addEventListener('scroll', handleViewportChange);
+    window.addEventListener('resize', handleViewportChange);
+
+    return () => {
+      viewport?.removeEventListener('resize', handleViewportChange);
+      viewport?.removeEventListener('scroll', handleViewportChange);
+      window.removeEventListener('resize', handleViewportChange);
+    };
+  }, [scrollToBottom]);
+
   useEffect(() => {
     if (isLoadingConversation) return;
 
-    // Keep the latest turn visible while Gemini streams. `auto` avoids
-    // queueing dozens of smooth animations for each small delta; once the
-    // response is complete, a smooth settle makes the final position gentle.
+    // Keep the latest turn visible while Gemini streams or when messages change.
     const frame = window.requestAnimationFrame(() => {
-      const container = messagesScrollRef.current;
-      if (container) {
-        container.scrollTo({
-          top: container.scrollHeight,
-          behavior: isStreaming ? 'auto' : 'smooth',
-        });
-        return;
-      }
-      messagesEndRef.current?.scrollIntoView({
-        behavior: isStreaming ? 'auto' : 'smooth',
-        block: 'end',
-      });
+      scrollToBottom(!isStreaming);
     });
 
-    return () => window.cancelAnimationFrame(frame);
-  }, [isLoadingConversation, isStreaming, messages]);
+    const timer = setTimeout(() => {
+      scrollToBottom(false);
+    }, 60);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, [isLoadingConversation, isStreaming, messages, scrollToBottom]);
 
   useEffect(() => {
     let cancelled = false;
@@ -814,19 +854,10 @@ export default function ConversationPage() {
             placeholder="Trả lời Life Lab..."
             value={inputContent}
             onFocus={() => {
-              if (typeof window !== 'undefined') {
-                window.scrollTo(0, 0);
-                document.body.scrollTop = 0;
-                document.documentElement.scrollTop = 0;
-                setTimeout(() => {
-                  window.scrollTo(0, 0);
-                  document.body.scrollTop = 0;
-                  document.documentElement.scrollTop = 0;
-                  if (messagesScrollRef.current) {
-                    messagesScrollRef.current.scrollTop = messagesScrollRef.current.scrollHeight;
-                  }
-                }, 150);
-              }
+              scrollToBottom(false);
+              setTimeout(() => scrollToBottom(false), 80);
+              setTimeout(() => scrollToBottom(false), 200);
+              setTimeout(() => scrollToBottom(false), 350);
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
