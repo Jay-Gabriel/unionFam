@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   BookOpen,
@@ -207,7 +208,7 @@ async function consumeMessageStream(
           targetDays: typeof data.targetDays === 'number' ? data.targetDays : 7,
           dimension: typeof data.dimension === 'string' ? data.dimension : undefined,
           dimensionLabel: typeof data.dimensionLabel === 'string' ? data.dimensionLabel : (data.dimension ? labelDimension(String(data.dimension)) : undefined),
-          status: 'pending',
+          status: 'accepted',
         };
       }
       if (eventType === 'reflection.created' && typeof data.result === 'string' && typeof data.learningCandidate === 'string') {
@@ -218,7 +219,7 @@ async function consumeMessageStream(
           nextAction: String(data.nextAction || ''),
           rating: typeof data.rating === 'number' ? data.rating : 5,
           experimentTitle: typeof data.experimentTitle === 'string' ? data.experimentTitle : undefined,
-          status: 'pending',
+          status: 'accepted',
         };
       }
       if (eventType === 'resource.created' && typeof data.name === 'string') {
@@ -228,7 +229,7 @@ async function consumeMessageStream(
           dimension: typeof data.dimension === 'string' ? data.dimension : 'other',
           dimensionLabel: typeof data.dimensionLabel === 'string' ? data.dimensionLabel : (data.dimension ? labelDimension(String(data.dimension)) : undefined),
           description: typeof data.description === 'string' ? data.description : undefined,
-          status: 'pending',
+          status: 'accepted',
         };
       }
     } catch {
@@ -1038,11 +1039,11 @@ export default function ConversationPage() {
                           <div className="flex items-center gap-1.5">
                             <FlaskConical size={16} className="text-calm-pollen" />
                             <span className="text-xs font-semibold text-calm-paper-white">
-                              Đề xuất thử nghiệm ({message.experimentProposal.targetDays || 7} ngày)
+                              Thử nghiệm ({message.experimentProposal.targetDays || 7} ngày)
                             </span>
                           </div>
                           <span className="rounded-full border border-calm-pollen/25 bg-calm-pollen/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-pollen">
-                            Tự động trích xuất
+                            Tự động trích xuất từ cuộc trò chuyện
                           </span>
                         </div>
 
@@ -1063,49 +1064,14 @@ export default function ConversationPage() {
                           </div>
                         </div>
 
-                        {message.experimentProposal.status === 'pending' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                            <p className="text-[11px] font-medium leading-5 text-calm-fog/75">
-                              Lưu ngay vào mục Thử nghiệm để theo dõi tiến độ.
-                            </p>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleExperimentDecision(message.id, 'rejected', message.experimentProposal!)}
-                                disabled={isSubmitting}
-                                className="flex items-center gap-1 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3 py-1.5 text-xs font-medium text-calm-fog transition hover:border-calm-danger-clay/35 hover:text-[#e7bbb5] disabled:opacity-50"
-                              >
-                                <XCircle size={13} /> Bỏ qua
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleExperimentDecision(message.id, 'accepted', message.experimentProposal!)}
-                                disabled={isSubmitting}
-                                className="flex items-center gap-1.5 rounded-full bg-calm-pollen px-3.5 py-1.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-warm-ivory disabled:opacity-50"
-                              >
-                                <FlaskConical size={13} /> Nhận thử nghiệm này
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {message.experimentProposal.status === 'accepted' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3 py-2 text-xs font-semibold text-[#c9e2cf]">
-                            <span className="flex items-center gap-1.5">
-                              <CheckCircle2 size={15} /> Đã kích hoạt và thêm vào danh sách Thử nghiệm đang chạy
-                            </span>
-                            <span className="text-[9px] uppercase tracking-[0.12em]">Đã lưu</span>
-                          </div>
-                        )}
-
-                        {message.experimentProposal.status === 'rejected' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-calm-deep-moss/25 px-3 py-2 text-xs font-medium text-calm-fog/75">
-                            <span className="flex items-center gap-1.5">
-                              <XCircle size={15} /> Đã bỏ qua đề xuất thử nghiệm
-                            </span>
-                            <span className="text-[9px] uppercase tracking-[0.12em]">Không lưu</span>
-                          </div>
-                        )}
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2 text-xs font-semibold text-[#c9e2cf]">
+                          <span className="flex items-center gap-1.5">
+                            <CheckCircle2 size={15} /> Đã tự động tạo & kích hoạt trong Thử nghiệm
+                          </span>
+                          <Link href="/app/experiments" className="text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
+                            Xem trong Thử nghiệm →
+                          </Link>
+                        </div>
                       </div>
                     )}
 
@@ -1120,7 +1086,7 @@ export default function ConversationPage() {
                             </span>
                           </div>
                           <span className="rounded-full border border-calm-fern/30 bg-calm-fern/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#c9e2cf]">
-                            Tự động trích xuất
+                            Tự động trích xuất từ cuộc trò chuyện
                           </span>
                         </div>
 
@@ -1141,49 +1107,19 @@ export default function ConversationPage() {
                           </div>
                         </div>
 
-                        {message.reflectionProposal.status === 'pending' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                            <p className="text-[11px] font-medium leading-5 text-calm-fog/75">
-                              Tự động lưu vào mục Ghi nhận và chuyển thành Bài học.
-                            </p>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleReflectionDecision(message.id, 'rejected', message.reflectionProposal!)}
-                                disabled={isSubmitting}
-                                className="flex items-center gap-1 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3 py-1.5 text-xs font-medium text-calm-fog transition hover:border-calm-danger-clay/35 hover:text-[#e7bbb5] disabled:opacity-50"
-                              >
-                                <XCircle size={13} /> Bỏ qua
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleReflectionDecision(message.id, 'accepted', message.reflectionProposal!)}
-                                disabled={isSubmitting}
-                                className="flex items-center gap-1.5 rounded-full bg-calm-lichen px-3.5 py-1.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
-                              >
-                                <BookOpen size={13} /> Lưu ghi nhận & bài học
-                              </button>
-                            </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2 text-xs font-semibold text-[#c9e2cf]">
+                          <span className="flex items-center gap-1.5">
+                            <CheckCircle2 size={15} /> Đã tự động lưu Ghi nhận & tạo Bài học mới
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <Link href="/app/reflections" className="text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
+                              Ghi nhận →
+                            </Link>
+                            <Link href="/app/learnings" className="text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
+                              Bài học →
+                            </Link>
                           </div>
-                        )}
-
-                        {message.reflectionProposal.status === 'accepted' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3 py-2 text-xs font-semibold text-[#c9e2cf]">
-                            <span className="flex items-center gap-1.5">
-                              <CheckCircle2 size={15} /> Đã lưu vào Ghi nhận và tạo Bài học mới
-                            </span>
-                            <span className="text-[9px] uppercase tracking-[0.12em]">Đã lưu</span>
-                          </div>
-                        )}
-
-                        {message.reflectionProposal.status === 'rejected' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-calm-deep-moss/25 px-3 py-2 text-xs font-medium text-calm-fog/75">
-                            <span className="flex items-center gap-1.5">
-                              <XCircle size={15} /> Đã bỏ qua ghi nhận này
-                            </span>
-                            <span className="text-[9px] uppercase tracking-[0.12em]">Không lưu</span>
-                          </div>
-                        )}
+                        </div>
                       </div>
                     )}
 
@@ -1198,7 +1134,7 @@ export default function ConversationPage() {
                             </span>
                           </div>
                           <span className="rounded-full border border-calm-lichen/25 bg-calm-lichen/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen">
-                            Tự động trích xuất
+                            Tự động trích xuất từ cuộc trò chuyện
                           </span>
                         </div>
 
@@ -1211,49 +1147,14 @@ export default function ConversationPage() {
                           )}
                         </div>
 
-                        {message.resourceProposal.status === 'pending' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                            <p className="text-[11px] font-medium leading-5 text-calm-fog/75">
-                              Lưu vào danh mục Tài nguyên & Nguồn lực của bạn.
-                            </p>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleResourceDecision(message.id, 'rejected', message.resourceProposal!)}
-                                disabled={isSubmitting}
-                                className="flex items-center gap-1 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3 py-1.5 text-xs font-medium text-calm-fog transition hover:border-calm-danger-clay/35 hover:text-[#e7bbb5] disabled:opacity-50"
-                              >
-                                <XCircle size={13} /> Bỏ qua
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleResourceDecision(message.id, 'accepted', message.resourceProposal!)}
-                                disabled={isSubmitting}
-                                className="flex items-center gap-1.5 rounded-full bg-calm-lichen px-3.5 py-1.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
-                              >
-                                <Wallet size={13} /> Lưu vào nguồn lực
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {message.resourceProposal.status === 'accepted' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3 py-2 text-xs font-semibold text-[#c9e2cf]">
-                            <span className="flex items-center gap-1.5">
-                              <CheckCircle2 size={15} /> Đã lưu vào Tài nguyên & Nguồn lực
-                            </span>
-                            <span className="text-[9px] uppercase tracking-[0.12em]">Đã lưu</span>
-                          </div>
-                        )}
-
-                        {message.resourceProposal.status === 'rejected' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-calm-deep-moss/25 px-3 py-2 text-xs font-medium text-calm-fog/75">
-                            <span className="flex items-center gap-1.5">
-                              <XCircle size={15} /> Đã bỏ qua nguồn lực này
-                            </span>
-                            <span className="text-[9px] uppercase tracking-[0.12em]">Không lưu</span>
-                          </div>
-                        )}
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2 text-xs font-semibold text-[#c9e2cf]">
+                          <span className="flex items-center gap-1.5">
+                            <CheckCircle2 size={15} /> Đã tự động lưu vào Tài nguyên & Nguồn lực
+                          </span>
+                          <Link href="/app/resources" className="text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
+                            Xem trong Tài nguyên →
+                          </Link>
+                        </div>
                       </div>
                     )}
                   </div>

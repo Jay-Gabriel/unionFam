@@ -764,6 +764,123 @@ export async function POST(request: Request) {
       }
     }
 
+    // 1. Auto-persist Experiment Proposal into database
+    if (!opening && aiData.experimentProposal && aiData.safety.isSafe) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const targetDays = aiData.experimentProposal.targetDays || 7;
+        const targetDate = new Date(Date.now() + targetDays * 86400000).toISOString().split('T')[0];
+        const { data: savedExp } = await supabase.from('experiments').insert({
+          user_id: user.id,
+          title: aiData.experimentProposal.title.slice(0, 240),
+          hypothesis: aiData.experimentProposal.hypothesis.slice(0, 2000),
+          smallest_step: aiData.experimentProposal.smallestStep.slice(0, 2000),
+          success_signal: aiData.experimentProposal.successSignal.slice(0, 2000),
+          start_date: today,
+          target_date: targetDate,
+          progress_percent: 0,
+          status: 'active',
+        }).select('id').single();
+
+        if (savedExp) {
+          await supabase.from('activity_events').insert({
+            user_id: user.id,
+            event_type: 'experiment_created',
+            metadata: { experiment_id: savedExp.id, source: 'ai_chat_auto' },
+          });
+        }
+      } catch (expErr) {
+        console.error('Auto-persist experiment error', expErr);
+      }
+    }
+
+    // 2. Auto-persist Reflection & Learning Proposal into database
+    if (!opening && aiData.reflectionProposal && aiData.safety.isSafe) {
+      try {
+        const { data: latestExp } = await supabase
+          .from('experiments')
+          .select('id, status')
+          .eq('user_id', user.id)
+          .is('deleted_at', null)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        let expId = latestExp?.id;
+        if (latestExp) {
+          if (latestExp.status !== 'completed') {
+            await supabase.from('experiments').update({
+              status: 'completed',
+              progress_percent: 100,
+              updated_at: new Date().toISOString(),
+            }).eq('id', expId).eq('user_id', user.id);
+          }
+        } else {
+          const today = new Date().toISOString().split('T')[0];
+          const { data: createdExp } = await supabase.from('experiments').insert({
+            user_id: user.id,
+            title: aiData.reflectionProposal.experimentTitle || 'Thử nghiệm thực tế từ trò chuyện',
+            hypothesis: 'Thực hiện hành động nhỏ và quan sát phản hồi thực tế.',
+            smallest_step: aiData.reflectionProposal.nextAction || 'Bắt đầu bước nhỏ đầu tiên.',
+            success_signal: 'Thu nhận được bài học và cảm nhận rõ ràng hơn.',
+            start_date: today,
+            target_date: today,
+            progress_percent: 100,
+            status: 'completed',
+          }).select('id').single();
+          if (createdExp) expId = createdExp.id;
+        }
+
+        if (expId) {
+          const { data: savedRef } = await supabase.from('reflections').upsert({
+            user_id: user.id,
+            experiment_id: expId,
+            result: aiData.reflectionProposal.result.slice(0, 4000),
+            learning_candidate: aiData.reflectionProposal.learningCandidate.slice(0, 2000),
+            feeling: aiData.reflectionProposal.feeling.slice(0, 2000),
+            next_action: aiData.reflectionProposal.nextAction.slice(0, 2000),
+            rating: aiData.reflectionProposal.rating || 5,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'experiment_id' }).select('id').single();
+
+          if (savedRef) {
+            await supabase.from('learning_records').insert({
+              user_id: user.id,
+              source_reflection_id: savedRef.id,
+              content: aiData.reflectionProposal.learningCandidate.slice(0, 2000),
+              status: 'confirmed',
+            });
+            await supabase.from('activity_events').insert({
+              user_id: user.id,
+              event_type: 'reflection_saved',
+              metadata: { experiment_id: expId, reflection_id: savedRef.id, source: 'ai_chat_auto' },
+            });
+          }
+        }
+      } catch (refErr) {
+        console.error('Auto-persist reflection error', refErr);
+      }
+    }
+
+    // 3. Auto-persist Resource Proposal into database
+    if (!opening && aiData.resourceProposal && aiData.safety.isSafe) {
+      try {
+        const RESOURCE_TYPES = ['person', 'skill', 'time', 'money', 'community', 'tool', 'other'];
+        const rawType = (aiData.resourceProposal.resourceType || 'other').toLowerCase();
+        const resourceType = RESOURCE_TYPES.includes(rawType) ? rawType : 'other';
+        await supabase.from('resources').insert({
+          user_id: user.id,
+          dimension: (aiData.resourceProposal.dimension || 'other').slice(0, 64),
+          resource_type: resourceType,
+          name: aiData.resourceProposal.name.slice(0, 240),
+          description: aiData.resourceProposal.description ? aiData.resourceProposal.description.slice(0, 2000) : null,
+          confidence: 1,
+        });
+      } catch (resErr) {
+        console.error('Auto-persist resource error', resErr);
+      }
+    }
+
     await Promise.all([
       supabase
         .from('conversations')
