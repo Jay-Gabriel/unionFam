@@ -144,8 +144,45 @@ export class GeminiConversationProvider {
       }
 
       const lowerMsg = latestUserMessage.toLowerCase();
-      const isExperimentIntent = lowerMsg.includes('thử') || lowerMsg.includes('hành động') || lowerMsg.includes('bắt đầu');
-      const isReflectionIntent = lowerMsg.includes('làm xong') || lowerMsg.includes('kết quả') || lowerMsg.includes('rút ra');
+      const isReflectionIntent =
+        lowerMsg.includes('đã làm') ||
+        lowerMsg.includes('làm thử') ||
+        lowerMsg.includes('đã thử') ||
+        lowerMsg.includes('thử xong') ||
+        lowerMsg.includes('kết quả') ||
+        lowerMsg.includes('rút ra') ||
+        lowerMsg.includes('nhận ra') ||
+        lowerMsg.includes('bài học') ||
+        lowerMsg.includes('ngày đầu') ||
+        lowerMsg.includes('ngày thứ') ||
+        lowerMsg.includes('hôm nay đã');
+
+      const isExperimentIntent =
+        !isReflectionIntent &&
+        (lowerMsg.includes('muốn thử') ||
+         lowerMsg.includes('dự định') ||
+         lowerMsg.includes('bắt đầu') ||
+         lowerMsg.includes('kế hoạch') ||
+         lowerMsg.includes('hành động') ||
+         lowerMsg.includes('thử '));
+
+      let learningText = 'Khi bắt đầu với bước nhỏ rõ ràng, tâm trí nhẹ nhàng và tập trung hơn nhiều.';
+      if (lowerMsg.includes('nhận ra')) {
+        const after = latestUserMessage.slice(lowerMsg.indexOf('nhận ra') + 7).trim().replace(/^[,\s:]+/, '');
+        if (after.length > 5) learningText = after.charAt(0).toUpperCase() + after.slice(1);
+      } else if (lowerMsg.includes('bài học')) {
+        const after = latestUserMessage.slice(lowerMsg.indexOf('bài học') + 7).trim().replace(/^[,\s:]+/, '');
+        if (after.length > 5) learningText = after.charAt(0).toUpperCase() + after.slice(1);
+      }
+
+      let expTitle = 'Thử nghiệm bước nhỏ 7 ngày';
+      if (lowerMsg.includes('15 phút')) {
+        expTitle = 'Thử nghiệm 15 phút mỗi sáng';
+      } else if (lowerMsg.includes('dậy sớm')) {
+        expTitle = 'Thử nghiệm dậy sớm';
+      } else if (lowerMsg.includes('chạy bộ') || lowerMsg.includes('đi bộ')) {
+        expTitle = 'Thử nghiệm vận động buổi sáng';
+      }
 
       const mockResponseText = buildMockResponse(
         latestUserMessage,
@@ -154,12 +191,12 @@ export class GeminiConversationProvider {
       );
       const mockRawJSON = JSON.stringify({
         responseText: mockResponseText,
-        nextStage: isExperimentIntent ? 'experiment' : isReflectionIntent ? 'reflection' : 'discovery',
+        nextStage: isReflectionIntent ? 'reflection' : isExperimentIntent ? 'experiment' : 'discovery',
         requiresPermission: false,
         safety: { isSafe: true },
         nextQuestionId: allowedQuestionIds[0],
         experimentProposal: isExperimentIntent ? {
-          title: 'Thử nghiệm bước nhỏ 7 ngày',
+          title: expTitle,
           hypothesis: 'Nếu dành 15 phút mỗi ngày làm bước nhỏ này, mình sẽ có thêm tự tin và sự rõ ràng.',
           smallestStep: 'Chuẩn bị không gian và thực hiện đúng 15 phút đầu tiên vào ngày mai.',
           successSignal: 'Hoàn thành 3 ngày liên tiếp mà không bị ngắt quãng.',
@@ -167,15 +204,15 @@ export class GeminiConversationProvider {
           dimension: 'my_life',
         } : undefined,
         reflectionProposal: isReflectionIntent ? {
-          result: 'Đã hoàn thành các bước hành động ban đầu.',
-          learningCandidate: 'Khi chia nhỏ mục tiêu, áp lực giảm đáng kể và dễ bắt đầu hơn.',
-          feeling: 'Nhẹ nhõm và có động lực hơn.',
-          nextAction: 'Duy trì thêm 3 ngày tiếp theo.',
+          result: 'Đã hoàn thành ngày đầu tiên và quan sát thấy kết quả rõ rệt.',
+          learningCandidate: learningText,
+          feeling: 'Nhẹ nhõm, tập trung và có động lực hơn.',
+          nextAction: 'Tiếp tục duy trì bước nhỏ này vào ngày mai.',
           rating: 5,
         } : undefined,
         conversationState: {
-          userSignal: lowerMsg.includes('áp lực') || lowerMsg.includes('stress') || lowerMsg.includes('nghỉ việc') ? 'escape' : isExperimentIntent ? 'experiment_result' : 'desire',
-          currentFocus: isExperimentIntent ? 'design_experiment' : isReflectionIntent ? 'reflect_on_experiment' : 'discover_life_vision',
+          userSignal: isReflectionIntent ? 'reflection' : lowerMsg.includes('áp lực') || lowerMsg.includes('stress') || lowerMsg.includes('nghỉ việc') ? 'escape' : isExperimentIntent ? 'experiment_result' : 'desire',
+          currentFocus: isReflectionIntent ? 'reflect_on_experiment' : isExperimentIntent ? 'design_experiment' : 'discover_life_vision',
           answeredTopics: ['primary_emotional_state', 'pressure_source'],
           nextInformationNeed: 'desired_life_after_pressure_removed',
         },

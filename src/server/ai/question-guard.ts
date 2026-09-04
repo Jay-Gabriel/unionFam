@@ -181,7 +181,20 @@ export function buildMockResponse(
   state?: ConversationSemanticState
 ): string {
   const text = latestUserMessage.toLowerCase();
-  const asked = collectAskedQuestions(recentMessages);
+
+  // Reflection / Completed experiment results
+  if (
+    text.includes('làm thử') ||
+    text.includes('đã làm') ||
+    text.includes('đã thử') ||
+    text.includes('nhận ra') ||
+    text.includes('kết quả') ||
+    text.includes('rút ra') ||
+    text.includes('bài học') ||
+    text.includes('ngày đầu')
+  ) {
+    return 'Tuyệt vời! Chúc mừng bạn đã hoàn thành bước thử nghiệm đầu tiên và rút ra được bài học rất giá trị. Mình đã tự động lưu ghi nhận và bài học này vào nhật ký của bạn. Bạn muốn tiếp tục duy trì bước này vào ngày mai hay muốn điều chỉnh thêm điều gì không?';
+  }
 
   // Turn 1: Short vague stress/pressure
   if ((text.includes('stress') || text.includes('áp lực') || text.includes('mệt')) && !text.includes('công việc') && !text.includes('tiền')) {
@@ -191,16 +204,6 @@ export function buildMockResponse(
   // Turn 2: Work & Money pressure (Escape) -> Move to Life Vision
   if (text.includes('công việc') || text.includes('tiền') || text.includes('nghỉ việc')) {
     return 'Có vẻ thứ làm bạn mệt không chỉ là công việc, mà còn là cảm giác phải liên tục chạy theo áp lực kiếm tiền. Nếu áp lực này tạm thời không còn, bạn muốn thời gian và năng lượng của mình được dành cho điều gì?';
-  }
-
-  // Contradiction: Freedom vs fixed income
-  if (text.includes('tự do') && (text.includes('thu nhập') || text.includes('tiền') || text.includes('ổn định'))) {
-    return 'Bạn chia sẻ tự do thời gian rất quan trọng, đồng thời cũng cần thu nhập hoàn toàn ổn định. Nếu hai điều này đôi lúc kéo theo hai hướng khác nhau, điều nào bạn ít sẵn sàng đánh đổi hơn?';
-  }
-
-  // Desire / Values
-  if (text.includes('gia đình') || text.includes('con') || text.includes('bản thân')) {
-    return 'Thời gian dành cho những người và giá trị quan trọng đó thật sự rất ý nghĩa. Trong một ngày bình thường, khoảnh khắc nào bên họ khiến bạn thấy trọn vẹn nhất?';
   }
 
   // Progression question
