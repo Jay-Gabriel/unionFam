@@ -5,6 +5,12 @@
 :root {
   --background: #EEF1EA;
   --foreground: #222A23;
+  --app-viewport-height: 100dvh;
+}
+
+html, body {
+  height: 100%;
+  overscroll-behavior-y: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

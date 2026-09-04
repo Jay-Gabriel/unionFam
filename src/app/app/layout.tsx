@@ -138,14 +138,50 @@ function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: (
   );
 }
 
+function useVisualViewportHeight() {
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const viewport = window.visualViewport;
+
+    const update = () => {
+      const height = viewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty(
+        '--app-viewport-height',
+        `${height}px`
+      );
+      const keyboardActive = (window.innerHeight - height) > 100;
+      setIsKeyboardOpen(keyboardActive);
+    };
+
+    update();
+    viewport?.addEventListener('resize', update);
+    viewport?.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+
+    return () => {
+      viewport?.removeEventListener('resize', update);
+      viewport?.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+
+  return { isKeyboardOpen };
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isKeyboardOpen } = useVisualViewportHeight();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [currentRole, setCurrentRole] = useState<'member' | 'admin' | 'content_admin'>('member');
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = React.useRef<HTMLDivElement>(null);
+
+  const isConversationRoom = pathname.startsWith('/app/conversations/') && pathname !== '/app/conversations';
+  const hideBottomNav = isConversationRoom || isKeyboardOpen;
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
@@ -192,7 +228,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="app-calm-scope relative isolate min-h-screen bg-calm-deep-moss text-calm-paper-white"
+      className="app-calm-scope relative isolate min-h-[var(--app-viewport-height,100dvh)] h-[var(--app-viewport-height,100dvh)] flex flex-col bg-calm-deep-moss text-calm-paper-white overflow-hidden"
       style={{ backgroundColor: '#263128' }}
     >
       {/* Immediate 2.5D atmosphere plus a lazy WebGL progressive enhancement. */}
@@ -222,7 +258,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/5 bg-calm-deep-moss/95 px-4 py-3 md:hidden">
+      <header className="shrink-0 sticky top-0 z-40 flex items-center justify-between border-b border-white/5 bg-calm-deep-moss/95 px-4 py-3 md:hidden">
         <Brand />
         <button
           type="button"
@@ -324,8 +360,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="relative md:pl-[272px] z-20">
-        <header className="sticky top-0 z-20 hidden h-[86px] items-center justify-between border-b border-white/5 bg-calm-deep-moss/92 px-7 md:flex lg:px-10">
+      <div className="relative md:pl-[272px] z-20 flex-1 flex flex-col min-h-0 h-full overflow-hidden">
+        <header className="shrink-0 sticky top-0 z-20 hidden h-[86px] items-center justify-between border-b border-white/5 bg-calm-deep-moss/92 px-7 md:flex lg:px-10">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-calm-fog/70">Không gian của bạn</p>
             <h1 className="mt-1 text-[19px] font-medium tracking-[-0.02em] text-calm-paper-white">
@@ -402,29 +438,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="relative mx-auto min-h-[calc(100vh-86px)] w-full max-w-[1480px] px-4 pb-28 pt-5 sm:px-6 md:pb-10 md:pt-7 lg:px-10">
+        <main className={`relative mx-auto w-full max-w-[1480px] flex-1 min-h-0 flex flex-col ${
+          isConversationRoom
+            ? 'h-[calc(var(--app-viewport-height,100dvh)-57px)] md:h-[calc(100vh-86px)] p-2 sm:px-6 md:py-6 overflow-hidden'
+            : 'overflow-y-auto px-4 pb-28 pt-5 sm:px-6 md:pb-10 md:pt-7 lg:px-10'
+        }`}>
           {children}
         </main>
       </div>
 
-      <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-[24px] border border-white/10 bg-calm-deep-moss/95 p-1.5 shadow-glass md:hidden">
-        {mobileNavigation.map((item) => {
-          const active = isRouteActive(pathname, item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-[18px] text-[9px] font-medium ${
-                active ? 'bg-white/15 text-calm-warm-ivory' : 'text-calm-fog/70'
-              }`}
-            >
-              <Icon className={`h-[18px] w-[18px] ${active ? 'text-calm-warm-ivory' : 'text-calm-fog/70'}`} />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {!hideBottomNav && (
+        <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-[24px] border border-white/10 bg-calm-deep-moss/95 p-1.5 shadow-glass md:hidden">
+          {mobileNavigation.map((item) => {
+            const active = isRouteActive(pathname, item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-[18px] text-[9px] font-medium ${
+                  active ? 'bg-white/15 text-calm-warm-ivory' : 'text-calm-fog/70'
+                }`}
+              >
+                <Icon className={`h-[18px] w-[18px] ${active ? 'text-calm-warm-ivory' : 'text-calm-fog/70'}`} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 }

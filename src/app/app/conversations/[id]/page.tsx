@@ -581,7 +581,7 @@ export default function ConversationPage() {
 
   if (isLoadingConversation) {
     return (
-      <div className="grid min-h-[420px] place-items-center rounded-[34px] border border-white/10 bg-calm-deep-moss/35 text-calm-fog">
+      <div className="grid h-full min-h-[360px] flex-1 place-items-center rounded-[34px] border border-white/10 bg-calm-deep-moss/35 text-calm-fog">
         <div className="flex items-center gap-3 text-sm">
           <Loader2 size={18} className="animate-spin text-calm-lichen" />
           Đang mở khoảng lặng của bạn…
@@ -592,7 +592,7 @@ export default function ConversationPage() {
 
   if (conversationError) {
     return (
-      <div className="mx-auto grid min-h-[420px] max-w-2xl place-items-center rounded-[34px] border border-calm-danger-clay/30 bg-calm-deep-moss/35 p-8 text-center text-calm-paper-white">
+      <div className="mx-auto grid h-full min-h-[360px] max-w-2xl flex-1 place-items-center rounded-[34px] border border-calm-danger-clay/30 bg-calm-deep-moss/35 p-8 text-center text-calm-paper-white">
         <div className="space-y-4">
           <p className="text-sm text-[#e7bbb5]">{conversationError}</p>
           <button
@@ -608,30 +608,27 @@ export default function ConversationPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-12 text-calm-paper-white">
-      <section className="flex flex-col gap-4 rounded-[30px] border border-white/10 bg-calm-deep-moss/80 px-5 py-5 shadow-[0_20px_60px_rgba(10,18,12,0.14)] sm:flex-row sm:items-center sm:justify-between sm:px-7">
-        <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-full border border-calm-lichen/25 bg-calm-lichen/10 text-calm-lichen">
-            <Sprout size={19} />
+    <div className="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col min-h-0 text-calm-paper-white">
+      <section className="shrink-0 flex flex-col gap-2 rounded-[20px] sm:rounded-[28px] border border-white/10 bg-calm-deep-moss/80 px-4 py-2.5 sm:px-6 sm:py-3.5 shadow-[0_12px_35px_rgba(10,18,12,0.12)] sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-9 w-9 sm:h-10 sm:w-10 shrink-0 place-items-center rounded-full border border-calm-lichen/25 bg-calm-lichen/10 text-calm-lichen">
+            <Sprout size={17} />
           </span>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-calm-lichen/80">
-              Một khoảng lặng của riêng bạn
-            </p>
-            <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-calm-paper-white sm:text-xl">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-semibold tracking-[-0.02em] text-calm-paper-white sm:text-lg">
               Trò chuyện cùng Life Lab
             </h2>
-            <p className="mt-1 text-[11px] text-calm-fog/60">Phiên: {conversationId}</p>
+            <p className="truncate text-[10px] text-calm-fog/60">Phiên: {conversationId}</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto sm:justify-end">
           {isDemoConversation && (
-            <div className="rounded-full border border-calm-pollen/25 bg-calm-pollen/10 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-calm-pollen">
-              Bản thử · lưu trên thiết bị
+            <div className="rounded-full border border-calm-pollen/25 bg-calm-pollen/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-calm-pollen">
+              Bản thử thiết bị
             </div>
           )}
-          <div className="flex items-center gap-2 rounded-full border border-calm-lichen/20 bg-calm-lichen/10 px-3.5 py-2 text-[11px] font-medium text-calm-lichen">
-            <ShieldCheck size={14} />
+          <div className="flex items-center gap-1.5 rounded-full border border-calm-lichen/20 bg-calm-lichen/10 px-2.5 py-1 text-[10px] font-medium text-calm-lichen">
+            <ShieldCheck size={13} />
             Bạn giữ quyền quyết định
           </div>
         </div>
@@ -639,31 +636,31 @@ export default function ConversationPage() {
 
       <section
         ref={messagesScrollRef}
-        className="min-h-[380px] max-h-[calc(100svh-260px)] overflow-y-auto overscroll-contain rounded-[34px] border border-white/10 bg-calm-deep-moss/35 px-4 py-6 sm:px-7 sm:py-8"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-[24px] sm:rounded-[32px] border border-white/10 bg-calm-deep-moss/35 px-3 py-4 sm:px-6 sm:py-6"
         aria-label="Nội dung cuộc trò chuyện"
       >
-        <div className="space-y-7" aria-live="polite">
+        <div className="space-y-5 sm:space-y-6" aria-live="polite">
           {messages.map((message) => (
-            <div key={message.id} className="space-y-3">
+            <div key={message.id} className="space-y-2.5">
               {message.role === 'user' ? (
-                <div className="ml-auto flex max-w-[88%] items-start justify-end gap-3 sm:max-w-[78%]">
+                <div className="ml-auto flex max-w-[90%] items-start justify-end gap-2 sm:max-w-[78%] sm:gap-3">
                   <div className="space-y-1 text-right">
-                    <div className="rounded-[24px] rounded-tr-md border border-calm-lichen/25 bg-calm-lichen/20 px-4 py-3.5 text-left text-sm leading-6 text-calm-paper-white shadow-[0_12px_30px_rgba(15,26,18,0.12)] sm:px-5 sm:text-[15px]">
+                    <div className="break-words rounded-[22px] rounded-tr-md border border-calm-lichen/25 bg-calm-lichen/20 px-3.5 py-2.5 text-left text-sm leading-6 text-calm-paper-white shadow-[0_12px_30px_rgba(15,26,18,0.12)] sm:px-5 sm:py-3.5 sm:text-[15px]">
                       {message.content}
                     </div>
                     <span className="block px-2 text-[10px] text-calm-fog/55">{message.timestamp}</span>
                   </div>
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-calm-forest-dusk text-calm-lichen">
-                    <UserRound size={16} />
+                  <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-calm-forest-dusk text-calm-lichen">
+                    <UserRound size={15} />
                   </div>
                 </div>
               ) : (
-                <div className="flex max-w-[92%] items-start gap-3 sm:max-w-[82%]">
-                  <div className="mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-calm-lichen/20 bg-calm-lichen/10 text-calm-lichen">
-                    <Sprout size={16} />
+                <div className="flex max-w-[94%] items-start gap-2 sm:max-w-[82%] sm:gap-3">
+                  <div className="mt-0.5 grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-calm-lichen/20 bg-calm-lichen/10 text-calm-lichen">
+                    <Sprout size={15} />
                   </div>
-                  <div className="min-w-0 flex-1 space-y-3">
-                    <div className="rounded-[24px] rounded-tl-md border border-white/10 bg-calm-forest-dusk/90 px-4 py-3.5 text-sm leading-6 text-calm-paper-white shadow-[0_12px_30px_rgba(15,26,18,0.12)] sm:px-5 sm:text-[15px]">
+                  <div className="min-w-0 flex-1 space-y-2.5">
+                    <div className="break-words rounded-[22px] rounded-tl-md border border-white/10 bg-calm-forest-dusk/90 px-3.5 py-2.5 text-sm leading-6 text-calm-paper-white shadow-[0_12px_30px_rgba(15,26,18,0.12)] sm:px-5 sm:py-3.5 sm:text-[15px]">
                       {message.content ||
                         (isStreaming && <Loader2 size={17} className="animate-spin text-calm-lichen" />)}
                     </div>
@@ -672,32 +669,32 @@ export default function ConversationPage() {
                     </div>
 
                     {message.observation && (
-                      <div className="space-y-4 rounded-[28px] border border-calm-lichen/25 bg-calm-moss/60 p-4 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
+                      <div className="space-y-3 rounded-[24px] border border-calm-lichen/25 bg-calm-moss/60 p-3.5 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <ShieldCheck size={16} className="text-calm-lichen" />
+                          <div className="flex items-center gap-1.5">
+                            <ShieldCheck size={15} className="text-calm-lichen" />
                             <span className="text-xs font-semibold text-calm-paper-white">
                               {message.observation.dimensionLabel}
                             </span>
                           </div>
-                          <span className="rounded-full border border-calm-lichen/20 bg-calm-deep-moss/35 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen">
+                          <span className="rounded-full border border-calm-lichen/20 bg-calm-deep-moss/35 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen">
                             Gợi ý từ AI
                           </span>
                         </div>
 
                         {editingObsId === message.observation.id ? (
-                          <div className="space-y-3">
+                          <div className="space-y-2.5">
                             <textarea
                               value={editText}
                               onChange={(event) => setEditText(event.target.value)}
                               rows={3}
-                              className="w-full resize-none rounded-2xl border border-calm-lichen/25 bg-calm-deep-moss/65 p-3 text-sm leading-6 text-calm-paper-white outline-none focus:border-calm-lichen/55 focus:ring-2 focus:ring-calm-lichen/15"
+                              className="w-full resize-none rounded-2xl border border-calm-lichen/25 bg-calm-deep-moss/65 p-3 text-[16px] sm:text-sm leading-6 text-calm-paper-white outline-none focus:border-calm-lichen/55 focus:ring-2 focus:ring-calm-lichen/15"
                             />
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 type="button"
                                 onClick={() => setEditingObsId(null)}
-                                className="rounded-full border border-white/10 bg-calm-deep-moss/30 px-3.5 py-2 text-xs font-medium text-calm-fog transition hover:bg-calm-deep-moss/50"
+                                className="rounded-full border border-white/10 bg-calm-deep-moss/30 px-3 py-1.5 text-xs font-medium text-calm-fog transition hover:bg-calm-deep-moss/50"
                               >
                                 Hủy
                               </button>
@@ -707,14 +704,14 @@ export default function ConversationPage() {
                                   handleDecision(message.id, message.observation!.id, 'accepted', editText)
                                 }
                                 disabled={isSubmitting}
-                                className="rounded-full bg-calm-lichen px-4 py-2 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
+                                className="rounded-full bg-calm-lichen px-3.5 py-1.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
                               >
                                 Xác nhận bản sửa
                               </button>
                             </div>
                           </div>
                         ) : (
-                          <div className="rounded-2xl border border-white/10 bg-calm-deep-moss/45 p-4 text-sm font-medium leading-6 text-calm-paper-white">
+                          <div className="rounded-2xl border border-white/10 bg-calm-deep-moss/45 p-3 sm:p-4 text-xs sm:text-sm font-medium leading-6 text-calm-paper-white break-words">
                             {message.observation.status === 'accepted' &&
                             message.observation.contentEdited
                               ? message.observation.contentEdited
@@ -724,20 +721,20 @@ export default function ConversationPage() {
 
                         {message.observation.status === 'pending' &&
                           editingObsId !== message.observation.id && (
-                            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
                               <p className="text-[11px] font-medium leading-5 text-calm-fog/75">
                                 Chỉ lưu vào bản đồ cuộc sống khi điều này đúng với bạn.
                               </p>
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() =>
                                     handleDecision(message.id, message.observation!.id, 'rejected')
                                   }
                                   disabled={isSubmitting}
-                                  className="flex items-center gap-1.5 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3.5 py-2 text-xs font-medium text-calm-fog transition hover:border-calm-danger-clay/35 hover:text-[#e7bbb5] disabled:opacity-50"
+                                  className="flex items-center gap-1 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3 py-1.5 text-xs font-medium text-calm-fog transition hover:border-calm-danger-clay/35 hover:text-[#e7bbb5] disabled:opacity-50"
                                 >
-                                  <XCircle size={14} /> Chưa đúng
+                                  <XCircle size={13} /> Chưa đúng
                                 </button>
                                 <button
                                   type="button"
@@ -745,9 +742,9 @@ export default function ConversationPage() {
                                     setEditingObsId(message.observation!.id);
                                     setEditText(message.observation!.contentOriginal);
                                   }}
-                                  className="flex items-center gap-1.5 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3.5 py-2 text-xs font-medium text-calm-fog transition hover:border-calm-lichen/30 hover:text-calm-paper-white"
+                                  className="flex items-center gap-1 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3 py-1.5 text-xs font-medium text-calm-fog transition hover:border-calm-lichen/30 hover:text-calm-paper-white"
                                 >
-                                  <Edit3 size={14} /> Sửa lại
+                                  <Edit3 size={13} /> Sửa lại
                                 </button>
                                 <button
                                   type="button"
@@ -755,27 +752,27 @@ export default function ConversationPage() {
                                     handleDecision(message.id, message.observation!.id, 'accepted')
                                   }
                                   disabled={isSubmitting}
-                                  className="flex items-center gap-1.5 rounded-full bg-calm-lichen px-4 py-2 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
+                                  className="flex items-center gap-1 rounded-full bg-calm-lichen px-3.5 py-1.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
                                 >
-                                  <CheckCircle2 size={14} /> Đúng với mình
+                                  <CheckCircle2 size={13} /> Đúng với mình
                                 </button>
                               </div>
                             </div>
                           )}
 
                         {message.observation.status === 'accepted' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2.5 text-xs font-semibold text-[#c9e2cf]">
+                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3 py-2 text-xs font-semibold text-[#c9e2cf]">
                             <span className="flex items-center gap-1.5">
-                              <CheckCircle2 size={16} /> Đã xác nhận và thêm vào bản đồ cuộc sống
+                              <CheckCircle2 size={15} /> Đã xác nhận và thêm vào bản đồ cuộc sống
                             </span>
                             <span className="text-[9px] uppercase tracking-[0.12em]">Đã lưu</span>
                           </div>
                         )}
 
                         {message.observation.status === 'rejected' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-calm-deep-moss/25 px-3.5 py-2.5 text-xs font-medium text-calm-fog/75">
+                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-calm-deep-moss/25 px-3 py-2 text-xs font-medium text-calm-fog/75">
                             <span className="flex items-center gap-1.5">
-                              <XCircle size={16} /> Đã từ chối đề xuất này
+                              <XCircle size={15} /> Đã từ chối đề xuất này
                             </span>
                             <span className="text-[9px] uppercase tracking-[0.12em]">Không lưu</span>
                           </div>
@@ -791,37 +788,54 @@ export default function ConversationPage() {
         </div>
       </section>
 
-      {sendError && <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-calm-danger-clay/30 bg-calm-danger-clay/10 px-4 py-3 text-xs text-[#e7bbb5]" role="alert"><span>{sendError}</span><button type="button" onClick={() => { setInputContent(retryContent); setSendError(''); }} className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-calm-warm-ivory">Giữ lại để gửi lại</button></div>}
+      {sendError && (
+        <div className="shrink-0 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-danger-clay/30 bg-calm-danger-clay/10 px-3.5 py-2 text-xs text-[#e7bbb5]" role="alert">
+          <span>{sendError}</span>
+          <button type="button" onClick={() => { setInputContent(retryContent); setSendError(''); }} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 font-semibold text-calm-warm-ivory">
+            Giữ lại để gửi lại
+          </button>
+        </div>
+      )}
 
-      <div className="sticky bottom-4 z-10 pt-1">
+      <div className="shrink-0 pt-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
         <form
           onSubmit={handleSendMessage}
-          className="flex items-center gap-2 rounded-[28px] border border-white/15 bg-calm-deep-moss p-2.5 shadow-[0_18px_55px_rgba(10,18,12,0.28)]"
+          className="flex items-center gap-1.5 sm:gap-2 rounded-[24px] sm:rounded-[28px] border border-white/15 bg-calm-deep-moss p-1.5 sm:p-2.5 shadow-[0_18px_55px_rgba(10,18,12,0.28)]"
         >
           <button
             type="button"
-            className="rounded-full p-2.5 text-calm-fog/55 transition hover:bg-white/5 hover:text-calm-lichen"
+            className="rounded-full p-2 text-calm-fog/55 transition hover:bg-white/5 hover:text-calm-lichen"
             aria-label="Đính kèm tệp"
           >
-            <Paperclip size={18} />
+            <Paperclip size={17} />
           </button>
-          <input
-            type="text"
+          <textarea
+            rows={1}
             placeholder="Trả lời Life Lab..."
             value={inputContent}
-            onChange={(event) => setInputContent(event.target.value)}
-            className="min-w-0 flex-1 bg-transparent px-2 text-sm text-calm-paper-white outline-none placeholder:text-calm-fog/45 sm:text-[15px]"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage(e);
+              }
+            }}
+            onChange={(event) => {
+              setInputContent(event.target.value);
+              event.target.style.height = 'auto';
+              event.target.style.height = `${Math.min(event.target.scrollHeight, 120)}px`;
+            }}
+            className="min-w-0 flex-1 max-h-28 resize-none bg-transparent px-2 py-1.5 text-[16px] leading-5 text-calm-paper-white outline-none placeholder:text-calm-fog/45 sm:text-[15px]"
           />
           <button
             type="submit"
             disabled={isStreaming || !inputContent.trim()}
-            className="flex items-center gap-1.5 rounded-full bg-calm-lichen px-5 py-2.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex shrink-0 items-center gap-1 sm:gap-1.5 rounded-full bg-calm-lichen px-4 py-2 sm:px-5 sm:py-2.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:cursor-not-allowed disabled:opacity-40"
           >
             <span>{isStreaming ? 'Đang trả lời…' : 'Gửi'}</span>
-            <Send size={14} />
+            <Send size={13} />
           </button>
         </form>
-        <p className="mt-2 text-center text-[10px] text-calm-fog/45">
+        <p className="mt-1 text-center text-[10px] text-calm-fog/45">
           Life Lab không phán xét. Bạn có thể sửa hoặc không lưu bất kỳ gợi ý nào.
         </p>
       </div>
