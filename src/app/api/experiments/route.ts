@@ -34,9 +34,16 @@ export async function POST(request: Request) {
     const hypothesis = typeof body.hypothesis === 'string' ? body.hypothesis.trim() : '';
     const smallestStep = typeof body.smallestStep === 'string' ? body.smallestStep.trim() : '';
     const successSignal = typeof body.successSignal === 'string' ? body.successSignal.trim() : '';
-    const startDate = typeof body.startDate === 'string' ? body.startDate : '';
-    const targetDate = typeof body.targetDate === 'string' ? body.targetDate : '';
-    if (!title || !hypothesis || !smallestStep || !successSignal || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate) || targetDate < startDate) {
+    const targetDays = typeof body.targetDays === 'number' && body.targetDays > 0 ? body.targetDays : 7;
+    const defaultStart = new Date().toISOString().split('T')[0];
+    const defaultTarget = new Date(Date.now() + targetDays * 86400000).toISOString().split('T')[0];
+    const startDate = typeof body.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.startDate)
+      ? body.startDate
+      : defaultStart;
+    const targetDate = typeof body.targetDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.targetDate)
+      ? body.targetDate
+      : defaultTarget;
+    if (!title || !hypothesis || !smallestStep || !successSignal || targetDate < startDate) {
       return NextResponse.json({ error: 'INVALID_EXPERIMENT' }, { status: 422 });
     }
 
@@ -52,8 +59,8 @@ export async function POST(request: Request) {
         observation_focus: Array.isArray(body.observationFocus) ? body.observationFocus.slice(0, 20) : [],
         start_date: startDate,
         target_date: targetDate,
-        progress_percent: 0,
-        status: 'draft',
+        progress_percent: typeof body.progressPercent === 'number' ? body.progressPercent : 0,
+        status: body.status === 'draft' ? 'draft' : 'active',
       })
       .select('id, gap_id, title, hypothesis, smallest_step, success_signal, observation_focus, start_date, target_date, progress_percent, status, created_at, updated_at')
       .single();

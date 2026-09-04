@@ -37,6 +37,37 @@ export const ObservationProposalSchema = z.object({
   evidenceMessageIds: z.array(z.string().uuid()).max(10).optional(),
 });
 
+export const ExperimentProposalSchema = z.object({
+  title: z.string().min(3).max(255),
+  hypothesis: z.string().min(5).max(1000),
+  smallestStep: z.string().min(3).max(500),
+  successSignal: z.string().min(3).max(500),
+  targetDays: z.number().int().min(1).max(90).default(7),
+  dimension: DimensionEnum.optional(),
+});
+
+export type ExperimentProposal = z.infer<typeof ExperimentProposalSchema>;
+
+export const ReflectionProposalSchema = z.object({
+  result: z.string().min(3).max(2000),
+  learningCandidate: z.string().min(3).max(2000),
+  feeling: z.string().min(2).max(500),
+  nextAction: z.string().min(2).max(1000),
+  rating: z.number().int().min(1).max(5).default(4),
+  experimentTitle: z.string().max(255).optional(),
+});
+
+export type ReflectionProposal = z.infer<typeof ReflectionProposalSchema>;
+
+export const ResourceProposalSchema = z.object({
+  dimension: DimensionEnum.default('other'),
+  resourceType: z.string().min(2).max(64).default('skill'),
+  name: z.string().min(2).max(255),
+  description: z.string().max(1000).optional(),
+});
+
+export type ResourceProposal = z.infer<typeof ResourceProposalSchema>;
+
 export const SafetySchema = z.object({
   isSafe: z.boolean().default(true),
   safetyFlag: z.string().max(64).optional(),
@@ -91,6 +122,9 @@ export const AIStructuredOutputSchema = z.object({
   safety: SafetySchema.default({ isSafe: true }),
   nextQuestionId: z.string().min(1).max(128).optional(),
   observationProposal: ObservationProposalSchema.optional(),
+  experimentProposal: ExperimentProposalSchema.optional(),
+  reflectionProposal: ReflectionProposalSchema.optional(),
+  resourceProposal: ResourceProposalSchema.optional(),
   conversationState: ConversationStateSchema.optional(),
   errorMetadata: z.string().max(2000).optional(),
 });
@@ -111,6 +145,22 @@ function normalizeProviderPayload(raw: unknown) {
   const observation = observationValue && typeof observationValue === 'object'
     ? observationValue as Record<string, unknown>
     : undefined;
+  
+  const experimentValue = value.experiment || value.experimentProposal;
+  const experiment = experimentValue && typeof experimentValue === 'object'
+    ? experimentValue as Record<string, unknown>
+    : undefined;
+
+  const reflectionValue = value.reflectionProposal || value.reflection_entry;
+  const reflection = reflectionValue && typeof reflectionValue === 'object'
+    ? reflectionValue as Record<string, unknown>
+    : undefined;
+
+  const resourceValue = value.resource || value.resourceProposal;
+  const resource = resourceValue && typeof resourceValue === 'object'
+    ? resourceValue as Record<string, unknown>
+    : undefined;
+
   const safety = (value.safety || {}) as Record<string, unknown>;
   const responseCandidate = value.responseText ?? value.assistant_message ?? value.reflection ?? value.message ?? value.answer;
   const followUpQuestion = value.nextQuestion ?? value.question;
@@ -132,6 +182,34 @@ function normalizeProviderPayload(raw: unknown) {
           contentOriginal: observation.contentOriginal ?? observation.content,
           confidence: observation.confidence,
           evidenceMessageIds: observation.evidenceMessageIds ?? observation.evidence_message_ids,
+        }
+      : undefined,
+    experimentProposal: experiment
+      ? {
+          title: experiment.title,
+          hypothesis: experiment.hypothesis,
+          smallestStep: experiment.smallestStep ?? experiment.smallest_step,
+          successSignal: experiment.successSignal ?? experiment.success_signal,
+          targetDays: Number(experiment.targetDays ?? experiment.target_days ?? 7),
+          dimension: experiment.dimension,
+        }
+      : undefined,
+    reflectionProposal: reflection
+      ? {
+          result: reflection.result,
+          learningCandidate: reflection.learningCandidate ?? reflection.learning_candidate ?? reflection.learning,
+          feeling: reflection.feeling,
+          nextAction: reflection.nextAction ?? reflection.next_action,
+          rating: Number(reflection.rating ?? 4),
+          experimentTitle: reflection.experimentTitle ?? reflection.experiment_title,
+        }
+      : undefined,
+    resourceProposal: resource
+      ? {
+          dimension: resource.dimension ?? 'other',
+          resourceType: resource.resourceType ?? resource.resource_type ?? 'skill',
+          name: resource.name,
+          description: resource.description,
         }
       : undefined,
     safety: {

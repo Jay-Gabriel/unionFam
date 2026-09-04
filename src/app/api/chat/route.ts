@@ -63,6 +63,28 @@ function toMessageEvents(params: {
     contentOriginal: string;
     status: string;
   };
+  experimentProposal?: {
+    title: string;
+    hypothesis: string;
+    smallestStep: string;
+    successSignal: string;
+    targetDays: number;
+    dimension?: string;
+  };
+  reflectionProposal?: {
+    result: string;
+    learningCandidate: string;
+    feeling: string;
+    nextAction: string;
+    rating: number;
+    experimentTitle?: string;
+  };
+  resourceProposal?: {
+    dimension: string;
+    resourceType: string;
+    name: string;
+    description?: string;
+  };
   idempotencyKey: string | null;
 }) {
   const chunks = params.responseText.match(/[\s\S]{1,32}/g) || [params.responseText];
@@ -87,6 +109,33 @@ function toMessageEvents(params: {
         dimensionLabel: labelDimension(params.observation.dimension),
         contentOriginal: params.observation.contentOriginal,
         status: params.observation.status,
+      },
+    });
+  }
+
+  if (params.experimentProposal) {
+    events.push({
+      event: 'experiment.created',
+      data: {
+        ...params.experimentProposal,
+        dimensionLabel: params.experimentProposal.dimension ? labelDimension(params.experimentProposal.dimension) : undefined,
+      },
+    });
+  }
+
+  if (params.reflectionProposal) {
+    events.push({
+      event: 'reflection.created',
+      data: params.reflectionProposal,
+    });
+  }
+
+  if (params.resourceProposal) {
+    events.push({
+      event: 'resource.created',
+      data: {
+        ...params.resourceProposal,
+        dimensionLabel: params.resourceProposal.dimension ? labelDimension(params.resourceProposal.dimension) : undefined,
       },
     });
   }
@@ -175,9 +224,10 @@ async function handleDemoChat(body: unknown, requestId: string) {
       assistantMessageId: `demo-ai-${crypto.randomUUID()}`,
       responseText: result.data.responseText,
       nextStage: result.data.nextStage || 'discovery',
-      // Demo mode has no cloud-backed Life Map, so never render a proposal
-      // that would invite the user to persist it through a disabled API.
       requiresPermission: false,
+      experimentProposal: result.data.experimentProposal,
+      reflectionProposal: result.data.reflectionProposal,
+      resourceProposal: result.data.resourceProposal,
       idempotencyKey: idempotencyKey || null,
     })
   );
@@ -735,6 +785,9 @@ export async function POST(request: Request) {
         nextStage,
         requiresPermission: aiData.requiresPermission,
         observation,
+        experimentProposal: aiData.experimentProposal,
+        reflectionProposal: aiData.reflectionProposal,
+        resourceProposal: aiData.resourceProposal,
         idempotencyKey: idempotencyKey || null,
       })
     );

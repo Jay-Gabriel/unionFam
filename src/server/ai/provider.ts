@@ -50,6 +50,46 @@ const GEMINI_RESPONSE_SCHEMA: ResponseSchema = {
       },
       required: ['dimension', 'contentOriginal'],
     },
+    experimentProposal: {
+      type: SchemaType.OBJECT,
+      properties: {
+        title: { type: SchemaType.STRING, description: 'Tên thử nghiệm hành động vi mô' },
+        hypothesis: { type: SchemaType.STRING, description: 'Giả thuyết cần kiểm chứng' },
+        smallestStep: { type: SchemaType.STRING, description: 'Bước hành động nhỏ nhất có thể bắt đầu ngay' },
+        successSignal: { type: SchemaType.STRING, description: 'Dấu hiệu thành công sau thử nghiệm' },
+        targetDays: { type: SchemaType.INTEGER, description: 'Số ngày thực hiện thử nghiệm (mặc định 7)' },
+        dimension: {
+          type: SchemaType.STRING,
+          enum: ['my_life', 'what_matters', 'my_ideal_day', 'what_it_takes', 'my_trade_offs', 'the_question', 'financial_life', 'other'],
+        },
+      },
+      required: ['title', 'hypothesis', 'smallestStep', 'successSignal'],
+    },
+    reflectionProposal: {
+      type: SchemaType.OBJECT,
+      properties: {
+        result: { type: SchemaType.STRING, description: 'Điều đã diễn ra sau thử nghiệm' },
+        learningCandidate: { type: SchemaType.STRING, description: 'Bài học đúc kết được' },
+        feeling: { type: SchemaType.STRING, description: 'Cảm xúc/trải nghiệm nhận được' },
+        nextAction: { type: SchemaType.STRING, description: 'Hành động tiếp theo' },
+        rating: { type: SchemaType.INTEGER, description: 'Đánh giá hữu ích 1-5' },
+        experimentTitle: { type: SchemaType.STRING },
+      },
+      required: ['result', 'learningCandidate', 'feeling', 'nextAction'],
+    },
+    resourceProposal: {
+      type: SchemaType.OBJECT,
+      properties: {
+        dimension: {
+          type: SchemaType.STRING,
+          enum: ['my_life', 'what_matters', 'my_ideal_day', 'what_it_takes', 'my_trade_offs', 'the_question', 'financial_life', 'other'],
+        },
+        resourceType: { type: SchemaType.STRING },
+        name: { type: SchemaType.STRING, description: 'Tên nguồn lực hoặc kỹ năng/tài sản' },
+        description: { type: SchemaType.STRING },
+      },
+      required: ['dimension', 'name'],
+    },
     conversationState: {
       type: SchemaType.OBJECT,
       properties: {
@@ -103,6 +143,10 @@ export class GeminiConversationProvider {
         return parseStrictAIOutput(mockOpeningJSON, allowedQuestionIds);
       }
 
+      const lowerMsg = latestUserMessage.toLowerCase();
+      const isExperimentIntent = lowerMsg.includes('thử') || lowerMsg.includes('hành động') || lowerMsg.includes('bắt đầu');
+      const isReflectionIntent = lowerMsg.includes('làm xong') || lowerMsg.includes('kết quả') || lowerMsg.includes('rút ra');
+
       const mockResponseText = buildMockResponse(
         latestUserMessage,
         contextParams.recentMessages,
@@ -110,13 +154,28 @@ export class GeminiConversationProvider {
       );
       const mockRawJSON = JSON.stringify({
         responseText: mockResponseText,
-        nextStage: 'discovery',
+        nextStage: isExperimentIntent ? 'experiment' : isReflectionIntent ? 'reflection' : 'discovery',
         requiresPermission: false,
         safety: { isSafe: true },
         nextQuestionId: allowedQuestionIds[0],
+        experimentProposal: isExperimentIntent ? {
+          title: 'Thử nghiệm bước nhỏ 7 ngày',
+          hypothesis: 'Nếu dành 15 phút mỗi ngày làm bước nhỏ này, mình sẽ có thêm tự tin và sự rõ ràng.',
+          smallestStep: 'Chuẩn bị không gian và thực hiện đúng 15 phút đầu tiên vào ngày mai.',
+          successSignal: 'Hoàn thành 3 ngày liên tiếp mà không bị ngắt quãng.',
+          targetDays: 7,
+          dimension: 'my_life',
+        } : undefined,
+        reflectionProposal: isReflectionIntent ? {
+          result: 'Đã hoàn thành các bước hành động ban đầu.',
+          learningCandidate: 'Khi chia nhỏ mục tiêu, áp lực giảm đáng kể và dễ bắt đầu hơn.',
+          feeling: 'Nhẹ nhõm và có động lực hơn.',
+          nextAction: 'Duy trì thêm 3 ngày tiếp theo.',
+          rating: 5,
+        } : undefined,
         conversationState: {
-          userSignal: latestUserMessage.toLowerCase().includes('áp lực') || latestUserMessage.toLowerCase().includes('stress') || latestUserMessage.toLowerCase().includes('nghỉ việc') ? 'escape' : 'desire',
-          currentFocus: 'discover_life_vision',
+          userSignal: lowerMsg.includes('áp lực') || lowerMsg.includes('stress') || lowerMsg.includes('nghỉ việc') ? 'escape' : isExperimentIntent ? 'experiment_result' : 'desire',
+          currentFocus: isExperimentIntent ? 'design_experiment' : isReflectionIntent ? 'reflect_on_experiment' : 'discover_life_vision',
           answeredTopics: ['primary_emotional_state', 'pressure_source'],
           nextInformationNeed: 'desired_life_after_pressure_removed',
         },
@@ -149,7 +208,7 @@ export class GeminiConversationProvider {
       const antiRepeatInstruction = askedQuestions.length
         ? `\n\nDo not repeat or lightly paraphrase any question in ALREADY_ASKED_QUESTIONS or any topic in KNOWN_FACTS_AND_ANSWERED_TOPICS. Advance the conversation forward.`
         : '';
-      const prompt = `${LIFE_LAB_BLUEPRINT_PROMPT}\n\nSYSTEM CONTEXT:\n${contextText}\n\nTURN INSTRUCTION:\n${turnInstruction}${antiRepeatInstruction}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nReturn ONLY one JSON object with these field names: responseText (string), nextStage (one of onboarding/discovery/clarify/permission/synthesis/design/experiment/reflection/completed), requiresPermission (boolean), safety ({isSafe:boolean}), optional nextQuestionId (only from allowlist), optional observationProposal ({dimension, observationType, contentOriginal, confidence, evidenceMessageIds}), and optional conversationState ({userSignal, currentFocus, answeredTopics, newFacts, nextInformationNeed}). Do not use aliases such as reflection, question, answer, or assistant_message. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}. For the opening turn, responseText must contain the exact canonical opening question, observationProposal must be omitted, and requiresPermission must be false. For a regular turn, responseText must contain 2–4 natural Vietnamese sentences, no canned phrases, and at most one open progression question.`;
+      const prompt = `${LIFE_LAB_BLUEPRINT_PROMPT}\n\nSYSTEM CONTEXT:\n${contextText}\n\nTURN INSTRUCTION:\n${turnInstruction}${antiRepeatInstruction}\n\n<<<CURRENT_USER_MESSAGE>>>\n${latestUserMessage.slice(0, 4000)}\n<<<END_CURRENT_USER_MESSAGE>>>\n\nReturn ONLY one JSON object with these field names: responseText (string), nextStage (one of onboarding/discovery/clarify/permission/synthesis/design/experiment/reflection/completed), requiresPermission (boolean), safety ({isSafe:boolean}), optional nextQuestionId (only from allowlist), optional observationProposal ({dimension, observationType, contentOriginal, confidence}), optional experimentProposal ({title, hypothesis, smallestStep, successSignal, targetDays, dimension}), optional reflectionProposal ({result, learningCandidate, feeling, nextAction, rating, experimentTitle}), optional resourceProposal ({dimension, resourceType, name, description}), and optional conversationState ({userSignal, currentFocus, answeredTopics, newFacts, nextInformationNeed}). Do not use aliases such as reflection, question, answer, or assistant_message. Use only a nextQuestionId from this allowlist: ${JSON.stringify(allowedQuestionIds)}. For the opening turn, responseText must contain the exact canonical opening question, all proposal fields must be omitted, and requiresPermission must be false. For a regular turn, responseText must contain 2–4 natural Vietnamese sentences, no canned phrases, and at most one open progression question.`;
       const timeoutMs = Math.max(3000, Number(process.env.AI_TIMEOUT_MS || 15000));
       const result = await withTimeout(model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -157,7 +216,7 @@ export class GeminiConversationProvider {
           responseMimeType: 'application/json',
           responseSchema: GEMINI_RESPONSE_SCHEMA,
           temperature: 0.5,
-          maxOutputTokens: 1400,
+          maxOutputTokens: 1600,
         },
       }), timeoutMs);
       const text = result.response.text();

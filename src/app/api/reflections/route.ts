@@ -41,26 +41,75 @@ export async function POST(request: Request) {
   try {
     const user = await requireUser();
     const body = await request.json();
-    const experimentId = typeof body.experimentId === 'string' ? body.experimentId : '';
+    let experimentId = typeof body.experimentId === 'string' ? body.experimentId.trim() : '';
     const result = typeof body.result === 'string' ? body.result.trim() : '';
     const learningCandidate = typeof body.learningCandidate === 'string' ? body.learningCandidate.trim() : '';
     const feeling = typeof body.feeling === 'string' ? body.feeling.trim() : '';
     const nextAction = typeof body.nextAction === 'string' ? body.nextAction.trim() : '';
-    const rating = body.rating == null ? null : Number(body.rating);
-    if (!experimentId || !result || !learningCandidate || !feeling || !nextAction || (rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5))) {
+    const rating = body.rating == null ? 5 : Number(body.rating);
+    if (!result || !learningCandidate || !feeling || !nextAction || (rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5))) {
       return NextResponse.json({ error: 'INVALID_REFLECTION' }, { status: 422 });
     }
 
     const supabase = createClient();
-    const { data: experiment } = await supabase
-      .from('experiments')
-      .select('id, status')
-      .eq('id', experimentId)
-      .eq('user_id', user.id)
-      .is('deleted_at', null)
-      .maybeSingle();
-    if (!experiment) return NextResponse.json({ error: 'EXPERIMENT_NOT_FOUND' }, { status: 404 });
-    if (experiment.status !== 'completed') return NextResponse.json({ error: 'EXPERIMENT_NOT_COMPLETED' }, { status: 409 });
+    if (experimentId) {
+      const { data: experiment } = await supabase
+        .from('experiments')
+        .select('id, status')
+        .eq('id', experimentId)
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (!experiment) return NextResponse.json({ error: 'EXPERIMENT_NOT_FOUND' }, { status: 404 });
+      if (experiment.status !== 'completed') {
+        await supabase
+          .from('experiments')
+          .update({ status: 'completed', progress_percent: 100, updated_at: new Date().toISOString() })
+          .eq('id', experimentId)
+          .eq('user_id', user.id);
+      }
+    } else {
+      // Find latest active or completed experiment, or create one for this reflection
+      const { data: latestExperiment } = await supabase
+        .from('experiments')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestExperiment) {
+        experimentId = latestExperiment.id;
+        if (latestExperiment.status !== 'completed') {
+          await supabase
+            .from('experiments')
+            .update({ status: 'completed', progress_percent: 100, updated_at: new Date().toISOString() })
+            .eq('id', experimentId)
+            .eq('user_id', user.id);
+        }
+      } else {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: newExperiment, error: createExpErr } = await supabase
+          .from('experiments')
+          .insert({
+            user_id: user.id,
+            title: typeof body.experimentTitle === 'string' && body.experimentTitle.trim() ? body.experimentTitle.trim() : 'Thử nghiệm thực tế từ trò chuyện',
+            hypothesis: 'Thực hiện hành động nhỏ và quan sát phản hồi thực tế.',
+            smallest_step: nextAction || 'Bắt đầu bước nhỏ đầu tiên.',
+            success_signal: 'Thu nhận được bài học và cảm nhận rõ ràng hơn.',
+            start_date: today,
+            target_date: today,
+            progress_percent: 100,
+            status: 'completed',
+          })
+          .select('id')
+          .single();
+        if (createExpErr || !newExperiment) throw createExpErr || new Error('EXPERIMENT_AUTO_CREATE_FAILED');
+        experimentId = newExperiment.id;
+      }
+    }
 
     const { data, error } = await supabase
       .from('reflections')
@@ -92,8 +141,6 @@ export async function POST(request: Request) {
         status: 'pending',
       });
     } else {
-      // A pending candidate follows the latest reflection draft; confirmed or
-      // rejected learning is immutable and is never silently overwritten.
       await supabase
         .from('learning_records')
         .update({ content: learningCandidate.slice(0, 2000), updated_at: new Date().toISOString() })

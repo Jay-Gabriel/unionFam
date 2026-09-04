@@ -40,4 +40,42 @@ describe('AI Structured Output & Schema Validation', () => {
     expect(result.data?.responseText).toContain('ưu tiên gia đình');
     expect(result.data?.responseText).toContain('Điều gì đang cản trở');
   });
+
+  it('correctly parses and normalizes experiment, reflection, and resource proposals', () => {
+    const raw = JSON.stringify({
+      responseText: 'Mình cùng thử nghiệm bước nhỏ này nhé.',
+      nextStage: 'experiment',
+      experimentProposal: {
+        title: 'Thử nghiệm đi bộ 15 phút mỗi sáng',
+        hypothesis: 'Đi bộ sáng sớm giúp tăng năng lượng cho cả ngày.',
+        smallestStep: 'Đặt giày chạy cạnh cửa tối nay.',
+        successSignal: 'Thực hiện 3 ngày liên tiếp.',
+        targetDays: 7,
+        dimension: 'my_life',
+      },
+      reflectionProposal: {
+        result: 'Đã hoàn thành 3 ngày đi bộ.',
+        learningCandidate: 'Buổi sáng năng lượng hơn khi bắt đầu sớm.',
+        feeling: 'Sảng khoái và phấn chấn.',
+        nextAction: 'Tăng lên 20 phút tuần tới.',
+        rating: 5,
+        experimentTitle: 'Thử nghiệm đi bộ 15 phút',
+      },
+      resourceProposal: {
+        name: 'Thời gian tĩnh tâm 30 phút mỗi sáng',
+        resourceType: 'time',
+        dimension: 'my_ideal_day',
+        description: 'Khoảng thời gian riêng trước khi gia đình thức dậy.',
+      },
+    });
+
+    const result = parseStrictAIOutput(raw);
+    expect(result.success).toBe(true);
+    expect(result.data?.experimentProposal?.title).toBe('Thử nghiệm đi bộ 15 phút mỗi sáng');
+    expect(result.data?.experimentProposal?.targetDays).toBe(7);
+    expect(result.data?.reflectionProposal?.learningCandidate).toContain('Buổi sáng năng lượng hơn');
+    expect(result.data?.reflectionProposal?.rating).toBe(5);
+    expect(result.data?.resourceProposal?.name).toBe('Thời gian tĩnh tâm 30 phút mỗi sáng');
+    expect(result.data?.resourceProposal?.resourceType).toBe('time');
+  });
 });

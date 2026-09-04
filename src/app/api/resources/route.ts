@@ -33,10 +33,13 @@ export async function POST(request: Request) {
     const user = await requireUser();
     const body = await request.json();
     const name = typeof body.name === 'string' ? body.name.trim() : '';
-    const resourceType = typeof body.resourceType === 'string' ? body.resourceType : 'other';
+    const rawType = typeof body.resourceType === 'string' ? body.resourceType.toLowerCase().trim() : 'other';
+    const resourceType = RESOURCE_TYPES.includes(rawType as (typeof RESOURCE_TYPES)[number])
+      ? (rawType as (typeof RESOURCE_TYPES)[number])
+      : 'other';
     const dimension = typeof body.dimension === 'string' ? body.dimension : 'other';
     const confidence = typeof body.confidence === 'number' ? body.confidence : 1;
-    if (!name || name.length > 240 || !RESOURCE_TYPES.includes(resourceType as (typeof RESOURCE_TYPES)[number]) || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+    if (!name || name.length > 240 || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
       return NextResponse.json({ error: 'INVALID_RESOURCE' }, { status: 422 });
     }
 
