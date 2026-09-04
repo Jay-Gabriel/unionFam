@@ -36,6 +36,10 @@ export interface ContextBudgetParams {
   recentReflection?: string;
   rejectedObservations?: string[];
   approvedScripts?: ContextScript[];
+  knownFacts?: string[];
+  answeredTopics?: string[];
+  currentFocus?: string;
+  nextInformationNeed?: string;
   maxChars?: number;
 }
 
@@ -86,6 +90,15 @@ export function buildContextPayload(params: ContextBudgetParams): string {
         .slice(-12)
         .map((question, index) => `${index + 1}. ${clean(question, 500)}`)
         .join('\n') || '(none)'
+    ),
+    block(
+      'KNOWN_FACTS_AND_ANSWERED_TOPICS',
+      [
+        params.answeredTopics?.length ? `Answered topics (DO NOT RE-ASK): ${params.answeredTopics.join(', ')}` : '',
+        params.knownFacts?.length ? `Known facts: ${params.knownFacts.join(', ')}` : '',
+        params.currentFocus ? `Current focus: ${clean(params.currentFocus, 120)}` : '',
+        params.nextInformationNeed ? `Next info need: ${clean(params.nextInformationNeed, 240)}` : '',
+      ].filter(Boolean).join('\n') || '(none)'
     ),
   ];
 

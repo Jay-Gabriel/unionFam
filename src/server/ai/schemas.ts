@@ -43,6 +43,47 @@ export const SafetySchema = z.object({
   userMessage: z.string().max(2000).optional(),
 });
 
+export const UserSignalEnum = z.enum([
+  'desire',
+  'escape',
+  'life_vision',
+  'value',
+  'constraint',
+  'trade_off',
+  'contradiction',
+  'uncertainty',
+  'resource',
+  'experiment_result',
+  'reflection',
+  'neutral',
+]);
+
+export const ConversationFocusEnum = z.enum([
+  'understand_statement',
+  'clarify_desire',
+  'clarify_escape',
+  'discover_life_vision',
+  'discover_value',
+  'discover_constraint',
+  'explore_trade_off',
+  'resolve_contradiction',
+  'synthesize',
+  'request_permission',
+  'design_experiment',
+  'reflect_on_experiment',
+  'general_exploration',
+]);
+
+export const ConversationStateSchema = z.object({
+  userSignal: UserSignalEnum.optional(),
+  currentFocus: z.string().max(100).optional(),
+  answeredTopics: z.array(z.string().max(100)).max(50).optional(),
+  newFacts: z.array(z.string().max(500)).max(50).optional(),
+  nextInformationNeed: z.string().max(500).optional(),
+});
+
+export type ConversationState = z.infer<typeof ConversationStateSchema>;
+
 export const AIStructuredOutputSchema = z.object({
   responseText: z.string().min(1).max(6000),
   nextStage: StageEnum.default('discovery'),
@@ -50,6 +91,7 @@ export const AIStructuredOutputSchema = z.object({
   safety: SafetySchema.default({ isSafe: true }),
   nextQuestionId: z.string().min(1).max(128).optional(),
   observationProposal: ObservationProposalSchema.optional(),
+  conversationState: ConversationStateSchema.optional(),
   errorMetadata: z.string().max(2000).optional(),
 });
 
@@ -97,6 +139,9 @@ function normalizeProviderPayload(raw: unknown) {
       safetyFlag: safety.safetyFlag ?? safety.category,
       userMessage: safety.userMessage,
     },
+    conversationState: (value.conversationState || value.conversation_state || value.state) && typeof (value.conversationState || value.conversation_state || value.state) === 'object'
+      ? (value.conversationState || value.conversation_state || value.state) as Record<string, unknown>
+      : undefined,
     errorMetadata: value.errorMetadata,
   };
 }

@@ -599,6 +599,8 @@ export async function POST(request: Request) {
         recentReflection: reflectionRow ? JSON.stringify(reflectionRow) : undefined,
         rejectedObservations: (rejectedRows || []).map((row: { content_original: string }) => row.content_original),
         approvedScripts,
+        answeredTopics: Object.keys(answersByKey),
+        knownFacts: (insightRows || []).map((row: { dimension: string; content: string }) => `${row.dimension}: ${row.content}`),
       },
       opening
         ? BLUEPRINT_OPENING_QUESTION

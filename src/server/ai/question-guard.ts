@@ -1,9 +1,10 @@
 /**
- * Small, provider-agnostic guard for conversational questions.
+ * Guard for conversational questions preventing semantic repetition.
  *
- * The model is still responsible for the tone and meaning of a reply, but
- * this module enforces a product invariant: a user should not receive the
- * same (or almost the same) follow-up question twice in a row.
+ * Enforces product invariants:
+ * 1. A user must not receive duplicate or reworded questions on topics already answered.
+ * 2. Questions must create forward progression (e.g. ESCAPE -> LIFE VISION).
+ * 3. Generic question rotation is replaced with state-aware progression.
  */
 
 export interface QuestionHistoryMessage {
@@ -11,16 +12,12 @@ export interface QuestionHistoryMessage {
   content: string;
 }
 
-const FOLLOW_UP_QUESTIONS = [
-  'Điều đó đang hiện ra rõ nhất trong tình huống nào gần đây?',
-  'Khoảnh khắc nào khiến bạn cảm nhận điều này rõ nhất?',
-  'Bạn mong điều gì sẽ khác đi trong một ngày bình thường của mình?',
-  'Điều gì đang khiến bước tiếp theo trở nên khó khăn nhất với bạn?',
-  'Nếu chỉ thay đổi một điều nhỏ trong tuần này, bạn muốn bắt đầu từ đâu?',
-  'Bạn muốn giữ lại điều gì dù hoàn cảnh có thay đổi?',
-  'Nguồn lực hay ranh giới nào có thể giúp bạn tiến gần hơn tới điều đó?',
-  'Bạn nhận ra điều gì mới về mình sau khi nhìn lại chuyện này?',
-];
+export interface ConversationSemanticState {
+  answeredTopics?: string[];
+  knownFacts?: string[];
+  currentFocus?: string;
+  nextInformationNeed?: string;
+}
 
 /** Return the last sentence that is actually phrased as a question. */
 export function extractQuestion(text: string): string | null {
@@ -41,7 +38,7 @@ export function normalizeQuestion(text: string): string {
     .trim();
 }
 
-function similarity(left: string, right: string): number {
+export function tokenSimilarity(left: string, right: string): number {
   const leftTokens = new Set(left.split(' ').filter(Boolean));
   const rightTokens = new Set(right.split(' ').filter(Boolean));
   if (!leftTokens.size || !rightTokens.size) return 0;
@@ -54,18 +51,45 @@ function similarity(left: string, right: string): number {
   return union ? intersection / union : 0;
 }
 
-/** Exact duplicate or a lightly reworded duplicate. */
-export function isRepeatedQuestion(candidate: string, previousQuestions: string[]): boolean {
+/**
+ * Detects semantic duplicate questions (same target intent even with different phrasing).
+ */
+export function isRepeatedQuestion(
+  candidate: string,
+  previousQuestions: string[],
+  answeredTopics: string[] = []
+): boolean {
   const normalizedCandidate = normalizeQuestion(candidate);
   if (!normalizedCandidate) return false;
 
-  return previousQuestions.some((previous) => {
+  // Exact or near-duplicate string match
+  const stringMatch = previousQuestions.some((previous) => {
     const normalizedPrevious = normalizeQuestion(previous);
     return (
       normalizedPrevious === normalizedCandidate ||
-      similarity(normalizedPrevious, normalizedCandidate) >= 0.82
+      tokenSimilarity(normalizedPrevious, normalizedCandidate) >= 0.78
     );
   });
+  if (stringMatch) return true;
+
+  // Semantic intent checks
+  const candidateLower = candidate.toLowerCase();
+
+  // Intent: Asking about pressure source / situation when pressure source is already answered
+  const isAskingPressureSource =
+    (candidateLower.includes('áp lực') || candidateLower.includes('stress') || candidateLower.includes('mệt mỏi')) &&
+    (candidateLower.includes('tình huống') || candidateLower.includes('khoảnh khắc') || candidateLower.includes('điều gì tạo') || candidateLower.includes('từ đâu'));
+  
+  if (isAskingPressureSource) {
+    const alreadyAskedPressure = previousQuestions.some((q) => {
+      const ql = q.toLowerCase();
+      return (ql.includes('áp lực') || ql.includes('stress')) && (ql.includes('tình huống') || ql.includes('khoảnh khắc') || ql.includes('điều gì'));
+    });
+    const alreadyAnsweredPressure = answeredTopics.some((t) => t.includes('pressure') || t.includes('stress'));
+    if (alreadyAskedPressure || alreadyAnsweredPressure) return true;
+  }
+
+  return false;
 }
 
 export function collectAskedQuestions(messages: QuestionHistoryMessage[]): string[] {
@@ -79,39 +103,70 @@ export function collectAskedQuestions(messages: QuestionHistoryMessage[]): strin
   return questions;
 }
 
-/** Pick a short, warm question that has not appeared in the current context. */
-export function pickFreshQuestion(messages: QuestionHistoryMessage[]): string {
-  const askedQuestions = collectAskedQuestions(messages);
-  return (
-    FOLLOW_UP_QUESTIONS.find((question) => !isRepeatedQuestion(question, askedQuestions)) ||
-    FOLLOW_UP_QUESTIONS[askedQuestions.length % FOLLOW_UP_QUESTIONS.length]
-  );
+/**
+ * Generate an adaptive follow-up progression question based on conversation history.
+ */
+export function generateProgressionQuestion(
+  recentMessages: QuestionHistoryMessage[],
+  state?: ConversationSemanticState
+): string {
+  const userTexts = recentMessages
+    .filter((m) => m.role === 'user')
+    .map((m) => m.content.toLowerCase())
+    .join(' ');
+  const asked = collectAskedQuestions(recentMessages);
+
+  // If user mentioned stress/pressure, move to ESCAPE vs LIFE VISION
+  if (userTexts.includes('stress') || userTexts.includes('áp lực') || userTexts.includes('mệt') || userTexts.includes('nghỉ việc')) {
+    const q = 'Nếu áp lực hiện tại tạm thời không còn, bạn muốn thời gian và năng lượng của mình được dành cho điều gì?';
+    if (!isRepeatedQuestion(q, asked)) return q;
+  }
+
+  // If user mentioned wanting time/family/freedom, explore value or concrete day
+  if (userTexts.includes('gia đình') || userTexts.includes('tự do') || userTexts.includes('thời gian')) {
+    const q = 'Trong một ngày bạn cảm thấy trọn vẹn nhất, khoảnh khắc nào là điều bạn muốn giữ lại nhất?';
+    if (!isRepeatedQuestion(q, asked)) return q;
+  }
+
+  // Next information need from state if available
+  if (state?.nextInformationNeed && !isRepeatedQuestion(state.nextInformationNeed, asked)) {
+    return state.nextInformationNeed;
+  }
+
+  const fallbackProgression = [
+    'Nếu có một điều nhỏ bạn muốn bắt đầu thử nghiệm trong tuần này, đó sẽ là gì?',
+    'Điều gì là quan trọng nhất bạn muốn bảo vệ trong giai đoạn này?',
+    'Ranh giới hay sự hỗ trợ nào có thể giúp bạn tiến gần hơn tới mong muốn đó?',
+  ];
+
+  return fallbackProgression.find((q) => !isRepeatedQuestion(q, asked)) || fallbackProgression[0];
 }
 
 /**
- * Keep the model's acknowledgement, replacing only a repeated final question.
- * If the model forgot to ask a question, append one so the response contract
- * remains useful for the next turn.
+ * Ensure responseText does not repeat previous questions and advances the conversation.
  */
 export function ensureNonRepeatingQuestion(
   responseText: string,
-  recentMessages: QuestionHistoryMessage[]
+  recentMessages: QuestionHistoryMessage[],
+  state?: ConversationSemanticState
 ): string {
   const trimmed = responseText.replace(/\s+/g, ' ').trim();
   const existingQuestion = extractQuestion(trimmed);
   const askedQuestions = collectAskedQuestions(recentMessages);
+  const answeredTopics = state?.answeredTopics || [];
 
-  if (existingQuestion && !isRepeatedQuestion(existingQuestion, askedQuestions)) {
+  if (existingQuestion && !isRepeatedQuestion(existingQuestion, askedQuestions, answeredTopics)) {
     return trimmed;
   }
 
-  const replacement = pickFreshQuestion(recentMessages);
+  const replacement = generateProgressionQuestion(recentMessages, state);
   if (existingQuestion) {
     const questionIndex = trimmed.lastIndexOf(existingQuestion);
     const acknowledgement = trimmed
       .slice(0, questionIndex)
       .trim()
       .replace(/[.!?！？]+$/, '');
+    if (!acknowledgement) return replacement;
     return `${acknowledgement}. ${replacement}`.trim();
   }
 
@@ -119,16 +174,36 @@ export function ensureNonRepeatingQuestion(
   return `${acknowledgement}. ${replacement}`.trim();
 }
 
-/** Build a deterministic development response without repeating one sentence. */
+/** Build a natural, progressive mock response without canned templates. */
 export function buildMockResponse(
   latestUserMessage: string,
-  recentMessages: QuestionHistoryMessage[]
+  recentMessages: QuestionHistoryMessage[] = [],
+  state?: ConversationSemanticState
 ): string {
-  const excerpt = latestUserMessage
-    .replace(/\s+/g, ' ')
-    .replace(/["“”]/g, "'")
-    .trim()
-    .slice(0, 180);
-  const question = pickFreshQuestion(recentMessages);
-  return `Mình nghe bạn đang nhắc đến “${excerpt}”. Mình chưa muốn đoán thay bạn; mình muốn hiểu trải nghiệm ấy theo cách bạn cảm nhận. ${question}`;
+  const text = latestUserMessage.toLowerCase();
+  const asked = collectAskedQuestions(recentMessages);
+
+  // Turn 1: Short vague stress/pressure
+  if ((text.includes('stress') || text.includes('áp lực') || text.includes('mệt')) && !text.includes('công việc') && !text.includes('tiền')) {
+    return 'Nghe như hiện tại bạn đang chịu khá nhiều áp lực. Điều gì đang tạo áp lực cho bạn nhiều nhất lúc này?';
+  }
+
+  // Turn 2: Work & Money pressure (Escape) -> Move to Life Vision
+  if (text.includes('công việc') || text.includes('tiền') || text.includes('nghỉ việc')) {
+    return 'Có vẻ thứ làm bạn mệt không chỉ là công việc, mà còn là cảm giác phải liên tục chạy theo áp lực kiếm tiền. Nếu áp lực này tạm thời không còn, bạn muốn thời gian và năng lượng của mình được dành cho điều gì?';
+  }
+
+  // Contradiction: Freedom vs fixed income
+  if (text.includes('tự do') && (text.includes('thu nhập') || text.includes('tiền') || text.includes('ổn định'))) {
+    return 'Bạn chia sẻ tự do thời gian rất quan trọng, đồng thời cũng cần thu nhập hoàn toàn ổn định. Nếu hai điều này đôi lúc kéo theo hai hướng khác nhau, điều nào bạn ít sẵn sàng đánh đổi hơn?';
+  }
+
+  // Desire / Values
+  if (text.includes('gia đình') || text.includes('con') || text.includes('bản thân')) {
+    return 'Thời gian dành cho những người và giá trị quan trọng đó thật sự rất ý nghĩa. Trong một ngày bình thường, khoảnh khắc nào bên họ khiến bạn thấy trọn vẹn nhất?';
+  }
+
+  // Progression question
+  const followUp = generateProgressionQuestion([...recentMessages, { role: 'user', content: latestUserMessage }], state);
+  return `Cảm ơn bạn đã cởi mở chia sẻ điều này. ${followUp}`;
 }
