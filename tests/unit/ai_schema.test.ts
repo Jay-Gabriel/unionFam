@@ -78,4 +78,54 @@ describe('AI Structured Output & Schema Validation', () => {
     expect(result.data?.resourceProposal?.name).toBe('Thời gian tĩnh tâm 30 phút mỗi sáng');
     expect(result.data?.resourceProposal?.resourceType).toBe('time');
   });
+
+  it('Gemini Provider automatically extracts experiment proposal when user discusses testing actions', async () => {
+    const { GeminiConversationProvider } = await import('../../src/server/ai/provider');
+    const provider = new GeminiConversationProvider();
+    const expMsg = 'Mình muốn thử dành 15 phút mỗi sáng chạy bộ để nâng cao năng lượng.';
+    const res = await provider.generateResponse(
+      {
+        userId: 'test-user',
+        conversationId: 'test-conv',
+        currentStage: 'discovery',
+        methodologyVersion: 'mvp',
+        recentMessages: [{ role: 'user', content: expMsg }],
+        confirmedInsights: [],
+        userAnswersSummary: '',
+      },
+      expMsg,
+      [],
+      'message'
+    );
+
+    expect(res.success).toBe(true);
+    expect(res.data?.experimentProposal).toBeDefined();
+    expect(res.data?.experimentProposal?.title).toBeTruthy();
+    expect(res.data?.experimentProposal?.smallestStep).toBeTruthy();
+  });
+
+  it('Gemini Provider automatically extracts reflection proposal when user discusses results', async () => {
+    const { GeminiConversationProvider } = await import('../../src/server/ai/provider');
+    const provider = new GeminiConversationProvider();
+    const refMsg = 'Hôm nay mình đã làm xong 3 ngày, kết quả là tinh thần sảng khoái và nhận ra ngủ sớm giúp dậy dễ hơn.';
+    const res = await provider.generateResponse(
+      {
+        userId: 'test-user',
+        conversationId: 'test-conv',
+        currentStage: 'experiment',
+        methodologyVersion: 'mvp',
+        recentMessages: [{ role: 'user', content: refMsg }],
+        confirmedInsights: [],
+        userAnswersSummary: '',
+      },
+      refMsg,
+      [],
+      'message'
+    );
+
+    expect(res.success).toBe(true);
+    expect(res.data?.reflectionProposal).toBeDefined();
+    expect(res.data?.reflectionProposal?.result).toBeTruthy();
+    expect(res.data?.reflectionProposal?.learningCandidate).toBeTruthy();
+  });
 });
