@@ -754,12 +754,28 @@ export async function POST(request: Request) {
         content_original?: string;
         status?: string;
       } | null;
-      if (row?.id && row.dimension && row.content_original && row.status) {
+      if (row?.id && row.dimension && row.content_original) {
+        try {
+          await supabase.rpc('decide_observation_atomic', {
+            p_observation_id: row.id,
+            p_decision: 'accepted',
+            p_edited_content: null,
+            p_idempotency_key: `auto-${row.id}`,
+          });
+        } catch {
+          await supabase.from('ai_observations').update({ status: 'accepted', updated_at: new Date().toISOString() }).eq('id', row.id);
+          await supabase.from('confirmed_insights').insert({
+            user_id: user.id,
+            observation_id: row.id,
+            dimension: row.dimension,
+            content: row.content_original,
+          });
+        }
         observation = {
           id: row.id,
           dimension: row.dimension,
           contentOriginal: row.content_original,
-          status: row.status,
+          status: 'accepted',
         };
       }
     }

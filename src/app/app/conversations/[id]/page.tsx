@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   BookOpen,
   CheckCircle2,
+  Compass,
   Edit3,
   FlaskConical,
   GraduationCap,
@@ -190,13 +191,12 @@ async function consumeMessageStream(
         requiresPermission = data.requiresPermission === true;
       }
       if (eventType === 'observation.created' && typeof data.dimension === 'string' && typeof data.contentOriginal === 'string') {
-        const status = data.status === 'accepted' || data.status === 'rejected' ? data.status : 'pending';
         observation = {
           id: String(data.id || crypto.randomUUID()),
           dimension: data.dimension,
           dimensionLabel: typeof data.dimensionLabel === 'string' ? data.dimensionLabel : labelDimension(data.dimension),
           contentOriginal: data.contentOriginal,
-          status,
+          status: 'accepted',
         };
       }
       if (eventType === 'experiment.created' && typeof data.title === 'string' && typeof data.hypothesis === 'string') {
@@ -923,114 +923,31 @@ export default function ConversationPage() {
 
                     {/* 1. Life Map Insight Card */}
                     {message.observation && (
-                      <div className="space-y-3 rounded-[24px] border border-calm-lichen/25 bg-calm-moss/60 p-3.5 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
+                      <div className="space-y-3 rounded-[24px] border border-calm-lichen/30 bg-calm-moss/70 p-3.5 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">
-                            <ShieldCheck size={15} className="text-calm-lichen" />
+                            <Compass size={16} className="text-calm-lichen" />
                             <span className="text-xs font-semibold text-calm-paper-white">
-                              {message.observation.dimensionLabel}
+                              Bản đồ cuộc sống · {message.observation.dimensionLabel}
                             </span>
                           </div>
-                          <span className="rounded-full border border-calm-lichen/20 bg-calm-deep-moss/35 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen">
-                            Gợi ý từ AI · Bản đồ
+                          <span className="rounded-full border border-calm-lichen/25 bg-calm-lichen/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen">
+                            Tự động trích xuất từ cuộc trò chuyện
                           </span>
                         </div>
 
-                        {editingObsId === message.observation.id ? (
-                          <div className="space-y-2.5">
-                            <textarea
-                              value={editText}
-                              onChange={(event) => setEditText(event.target.value)}
-                              rows={3}
-                              className="w-full resize-none rounded-2xl border border-calm-lichen/25 bg-calm-deep-moss/65 p-3 text-[16px] sm:text-sm leading-6 text-calm-paper-white outline-none focus:border-calm-lichen/55 focus:ring-2 focus:ring-calm-lichen/15"
-                            />
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setEditingObsId(null)}
-                                className="rounded-full border border-white/10 bg-calm-deep-moss/30 px-3 py-1.5 text-xs font-medium text-calm-fog transition hover:bg-calm-deep-moss/50"
-                              >
-                                Hủy
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleDecision(message.id, message.observation!.id, 'accepted', editText)
-                                }
-                                disabled={isSubmitting}
-                                className="rounded-full bg-calm-lichen px-3.5 py-1.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
-                              >
-                                Xác nhận bản sửa
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="rounded-2xl border border-white/10 bg-calm-deep-moss/45 p-3 sm:p-4 text-xs sm:text-sm font-medium leading-6 text-calm-paper-white break-words">
-                            {message.observation.status === 'accepted' &&
-                            message.observation.contentEdited
-                              ? message.observation.contentEdited
-                              : message.observation.contentOriginal}
-                          </div>
-                        )}
+                        <div className="rounded-2xl border border-white/10 bg-calm-deep-moss/50 p-3.5 sm:p-4 text-xs sm:text-sm font-medium leading-6 text-calm-paper-white break-words">
+                          {message.observation.contentEdited || message.observation.contentOriginal}
+                        </div>
 
-                        {message.observation.status === 'pending' &&
-                          editingObsId !== message.observation.id && (
-                            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                              <p className="text-[11px] font-medium leading-5 text-calm-fog/75">
-                                Chỉ lưu vào bản đồ cuộc sống khi điều này đúng với bạn.
-                              </p>
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleDecision(message.id, message.observation!.id, 'rejected')
-                                  }
-                                  disabled={isSubmitting}
-                                  className="flex items-center gap-1 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3 py-1.5 text-xs font-medium text-calm-fog transition hover:border-calm-danger-clay/35 hover:text-[#e7bbb5] disabled:opacity-50"
-                                >
-                                  <XCircle size={13} /> Chưa đúng
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingObsId(message.observation!.id);
-                                    setEditText(message.observation!.contentOriginal);
-                                  }}
-                                  className="flex items-center gap-1 rounded-full border border-white/10 bg-calm-deep-moss/25 px-3 py-1.5 text-xs font-medium text-calm-fog transition hover:border-calm-lichen/30 hover:text-calm-paper-white"
-                                >
-                                  <Edit3 size={13} /> Sửa lại
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleDecision(message.id, message.observation!.id, 'accepted')
-                                  }
-                                  disabled={isSubmitting}
-                                  className="flex items-center gap-1 rounded-full bg-calm-lichen px-3.5 py-1.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:opacity-50"
-                                >
-                                  <CheckCircle2 size={13} /> Đúng với mình
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                        {message.observation.status === 'accepted' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3 py-2 text-xs font-semibold text-[#c9e2cf]">
-                            <span className="flex items-center gap-1.5">
-                              <CheckCircle2 size={15} /> Đã xác nhận và thêm vào bản đồ cuộc sống
-                            </span>
-                            <span className="text-[9px] uppercase tracking-[0.12em]">Đã lưu</span>
-                          </div>
-                        )}
-
-                        {message.observation.status === 'rejected' && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-calm-deep-moss/25 px-3 py-2 text-xs font-medium text-calm-fog/75">
-                            <span className="flex items-center gap-1.5">
-                              <XCircle size={15} /> Đã từ chối đề xuất này
-                            </span>
-                            <span className="text-[9px] uppercase tracking-[0.12em]">Không lưu</span>
-                          </div>
-                        )}
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2 text-xs font-semibold text-[#c9e2cf]">
+                          <span className="flex items-center gap-1.5">
+                            <CheckCircle2 size={15} /> Đã tự động cập nhật vào Bản đồ cuộc sống
+                          </span>
+                          <Link href="/app/life-map" className="text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
+                            Xem trong Bản đồ →
+                          </Link>
+                        </div>
                       </div>
                     )}
 
