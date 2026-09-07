@@ -912,26 +912,26 @@ export default function ConversationPage() {
                     <div className="break-words rounded-[24px] rounded-tr-[6px] border border-calm-lichen/35 bg-gradient-to-br from-[#3b4c3e] to-[#2d3b30] px-4 py-3 text-left text-sm leading-6 text-calm-paper-white shadow-[0_10px_28px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12)] sm:px-5 sm:py-3.5 sm:text-[15px]">
                       {message.content}
                     </div>
-                    <span className="block px-2 text-[10px] font-medium text-calm-fog/50">{message.timestamp}</span>
+                    <span className="block px-2 text-[10.5px] font-semibold text-calm-warm-ivory/85">{message.timestamp}</span>
                   </div>
-                  <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10 text-calm-warm-ivory shadow-sm">
+                  <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/15 text-white shadow-sm">
                     <UserRound size={15} />
                   </div>
                 </div>
               ) : (
                 <div className="flex max-w-[95%] items-start gap-2.5 sm:max-w-[84%] sm:gap-3.5">
-                  <div className="mt-0.5 grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-2xl border border-calm-lichen/25 bg-calm-lichen/15 text-calm-lichen shadow-[0_4px_12px_rgba(185,198,165,0.15)]">
+                  <div className="mt-0.5 grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-2xl border border-calm-lichen/35 bg-calm-lichen/20 text-calm-lichen shadow-[0_4px_14px_rgba(185,198,165,0.25)]">
                     <Sprout size={16} />
                   </div>
                   <div className="min-w-0 flex-1 space-y-3">
-                    <div className="break-words rounded-[26px] rounded-tl-[6px] border border-white/[0.12] bg-gradient-to-b from-[#2e3b31]/95 to-[#243026]/95 backdrop-blur-md px-4 py-3.5 text-sm leading-relaxed text-[#f4f3ee] shadow-[0_10px_35px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-5 sm:py-4 sm:text-[15.5px]">
+                    <div className="break-words rounded-[26px] rounded-tl-[6px] border border-white/[0.16] bg-gradient-to-b from-[#2e3b31]/98 to-[#243026]/98 backdrop-blur-md px-4 py-3.5 text-sm leading-relaxed text-white shadow-[0_10px_35px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] sm:px-5 sm:py-4 sm:text-[15.5px]">
                       {message.content ? (
-                        <div className="whitespace-pre-wrap">{message.content}</div>
+                        <div className="whitespace-pre-wrap text-white font-normal">{message.content}</div>
                       ) : (
                         isStreaming && <LeafLoader variant="inline" size="sm" label="Life Lab đang cảm nhận & suy ngẫm…" />
                       )}
                     </div>
-                    <div className="flex items-center gap-2 px-2 text-[10px] font-medium text-calm-fog/50">
+                    <div className="flex items-center gap-2 px-2 text-[10.5px] font-semibold text-calm-warm-ivory/85">
                       <span>{message.timestamp}</span>
                     </div>
 

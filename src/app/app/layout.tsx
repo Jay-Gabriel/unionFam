@@ -86,13 +86,13 @@ function isRouteActive(pathname: string, href: string) {
 function Brand() {
   return (
     <Link href="/app" className="group flex items-center gap-3">
-      <div className="relative grid h-11 w-11 place-items-center rounded-[17px] bg-white/10 text-calm-warm-ivory shadow-[0_10px_28px_rgba(0,0,0,0.18)] border border-white/10">
+      <div className="relative grid h-11 w-11 place-items-center rounded-[17px] bg-white/15 text-calm-warm-ivory shadow-[0_10px_28px_rgba(0,0,0,0.25)] border border-white/15">
         <Leaf className="h-5 w-5 -rotate-12 transition-transform duration-500 group-hover:rotate-6 text-calm-lichen" />
         <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-calm-forest-dusk bg-calm-pollen" />
       </div>
       <div>
-        <div className="text-[17px] font-semibold tracking-[-0.025em] text-calm-paper-white">Life Lab</div>
-        <div className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.17em] text-calm-fog/70">
+        <div className="text-[17px] font-semibold tracking-[-0.025em] text-white">Life Lab</div>
+        <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.17em] text-calm-lichen/90">
           Hiểu mình · Chọn hướng · Trở thành
         </div>
       </div>
@@ -105,7 +105,7 @@ function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: (
     <nav className="space-y-5" aria-label="Điều hướng chính">
       {navigation.map((group) => (
         <div key={group.label}>
-          <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-calm-fog/60">
+          <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-calm-lichen/80">
             {group.label}
           </p>
           <div className="space-y-1">
@@ -120,15 +120,15 @@ function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                   onClick={onNavigate}
                   className={`group relative flex items-center justify-between rounded-2xl px-3 py-2.5 text-[13px] transition-all duration-300 ${
                     active
-                      ? 'bg-gradient-to-r from-white/[0.14] to-white/[0.06] font-medium text-calm-warm-ivory shadow-[0_4px_20px_rgba(0,0,0,0.2)] border border-white/10 backdrop-blur-md'
-                      : 'text-calm-fog hover:bg-white/[0.07] hover:text-calm-paper-white hover:translate-x-0.5'
+                      ? 'bg-gradient-to-r from-white/[0.18] to-white/[0.08] font-semibold text-white shadow-[0_4px_20px_rgba(0,0,0,0.25)] border border-white/15 backdrop-blur-md'
+                      : 'text-calm-warm-ivory/90 hover:bg-white/[0.08] hover:text-white hover:translate-x-0.5 font-medium'
                   }`}
                 >
                   <span className="flex items-center gap-3">
                     <span className={`relative flex items-center justify-center transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-105'}`}>
-                      <Icon className={`h-[17px] w-[17px] ${active ? 'text-calm-lichen drop-shadow-[0_0_8px_rgba(185,198,165,0.5)]' : 'text-calm-fern/80 group-hover:text-calm-warm-ivory'}`} />
+                      <Icon className={`h-[17px] w-[17px] ${active ? 'text-calm-lichen drop-shadow-[0_0_8px_rgba(185,198,165,0.6)]' : 'text-calm-fern/90 group-hover:text-calm-warm-ivory'}`} />
                       {active && (
-                        <span className="absolute -left-1.5 h-1.5 w-1.5 rounded-full bg-calm-lichen shadow-[0_0_6px_#B9C6A5]" />
+                        <span className="absolute -left-1.5 h-1.5 w-1.5 rounded-full bg-calm-lichen shadow-[0_0_8px_#C6D6B4]" />
                       )}
                     </span>
                     {item.label}
@@ -136,7 +136,7 @@ function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                   {active ? (
                     <ChevronRight className="h-3.5 w-3.5 text-calm-lichen" />
                   ) : (
-                    <ChevronRight className="h-3.5 w-3.5 text-white/0 transition-all group-hover:text-white/40 group-hover:translate-x-0.5" />
+                    <ChevronRight className="h-3.5 w-3.5 text-white/0 transition-all group-hover:text-white/60 group-hover:translate-x-0.5" />
                   )}
                 </Link>
               );
@@ -388,16 +388,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           isConversationRoom ? 'h-[62px]' : 'h-[86px]'
         }`}>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-calm-fog/70">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-calm-lichen">
               {isConversationRoom ? 'Không gian phản chiếu' : 'Không gian của bạn'}
             </p>
-            <h1 className={`${isConversationRoom ? 'text-[16px]' : 'mt-1 text-[19px]'} font-medium tracking-[-0.02em] text-calm-paper-white`}>
+            <h1 className={`${isConversationRoom ? 'text-[16px]' : 'mt-1 text-[20px]'} font-semibold tracking-[-0.02em] text-white`}>
               {isConversationRoom ? 'Lắng nghe & đồng hành cùng AI' : 'Hôm nay, bạn muốn lắng nghe điều gì?'}
             </h1>
           </div>
           <div className="flex items-center gap-3">
             {process.env.NODE_ENV !== 'production' && (
-              <span className="rounded-full border border-calm-pollen/30 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-calm-pollen">
+              <span className="rounded-full border border-calm-pollen/40 bg-calm-pollen/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-calm-pollen shadow-[0_0_10px_rgba(238,213,150,0.2)]">
                 Xem thử nội bộ
               </span>
             )}
@@ -405,7 +405,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => setProfileMenuOpen((open) => !open)}
-                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-sm font-semibold text-calm-paper-white shadow-sm transition hover:bg-white/15"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/15 text-sm font-bold text-white shadow-md transition hover:bg-white/25 hover:border-calm-lichen/50"
                 title={displayName || 'Mở hồ sơ'}
                 aria-label="Mở menu hồ sơ"
                 aria-haspopup="menu"
@@ -418,11 +418,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <div
                   role="menu"
                   aria-label="Menu hồ sơ"
-                  className="absolute right-0 top-full z-50 mt-3 w-56 overflow-hidden rounded-2xl border border-white/10 bg-[#263128]/95 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+                  className="absolute right-0 top-full z-50 mt-3 w-56 overflow-hidden rounded-2xl border border-white/15 bg-[#263128]/98 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
                 >
-                  <div className="border-b border-white/10 px-3 py-2.5">
-                    <p className="truncate text-sm font-semibold text-calm-paper-white">{displayName || 'Bạn'}</p>
-                    <p className="mt-0.5 text-[11px] text-calm-fog/70">
+                  <div className="border-b border-white/15 px-3 py-2.5">
+                    <p className="truncate text-sm font-bold text-white">{displayName || 'Bạn'}</p>
+                    <p className="mt-0.5 text-[11px] font-medium text-calm-warm-ivory/90">
                       {currentRole === 'admin' ? 'Quản trị viên' : currentRole === 'content_admin' ? 'Biên tập viên AI' : 'Tài khoản Life Lab'}
                     </p>
                   </div>
@@ -431,7 +431,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       href="/content-admin"
                       role="menuitem"
                       onClick={() => setProfileMenuOpen(false)}
-                      className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-calm-fog transition hover:bg-white/10 hover:text-calm-paper-white"
+                      className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-calm-warm-ivory hover:bg-white/15 hover:text-white transition"
                     >
                       <FileText className="h-4 w-4 text-calm-lichen" />
                       Thư viện kịch bản AI

@@ -107,18 +107,18 @@ body {
  * admin and public/auth surfaces from being recolored by broad overrides.
  */
 .legacy-calm-page {
-  color: #FCFBF7;
+  color: #FFFFFF;
 }
 
 .legacy-calm-page .bg-white,
 .legacy-calm-page .bg-white\/90 {
-  background-color: rgba(38, 49, 40, 0.82) !important;
+  background-color: rgba(38, 49, 40, 0.88) !important;
 }
 
 .legacy-calm-page .bg-slate-50,
 .legacy-calm-page .bg-slate-100,
 .legacy-calm-page .bg-slate-200 {
-  background-color: rgba(185, 198, 165, 0.09) !important;
+  background-color: rgba(185, 198, 165, 0.12) !important;
 }
 
 .legacy-calm-page .bg-indigo-50,
@@ -126,60 +126,60 @@ body {
 .legacy-calm-page .bg-indigo-50\/70,
 .legacy-calm-page .bg-indigo-100,
 .legacy-calm-page .bg-purple-50\/50 {
-  background-color: rgba(185, 198, 165, 0.13) !important;
+  background-color: rgba(185, 198, 165, 0.16) !important;
 }
 
 .legacy-calm-page .bg-indigo-600,
 .legacy-calm-page .hover\:bg-indigo-700:hover {
-  background-color: #B9C6A5 !important;
+  background-color: #C6D6B4 !important;
   color: #263128 !important;
 }
 
 .legacy-calm-page .bg-emerald-50,
 .legacy-calm-page .bg-emerald-100 {
-  background-color: rgba(86, 129, 102, 0.18) !important;
+  background-color: rgba(86, 129, 102, 0.22) !important;
 }
 
 .legacy-calm-page .bg-orange-50,
 .legacy-calm-page .bg-amber-50 {
-  background-color: rgba(160, 120, 82, 0.17) !important;
+  background-color: rgba(160, 120, 82, 0.22) !important;
 }
 
 .legacy-calm-page .border-slate-100,
 .legacy-calm-page .border-slate-200,
 .legacy-calm-page .border-slate-300 {
-  border-color: rgba(255, 255, 255, 0.10) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 .legacy-calm-page .border-indigo-100,
 .legacy-calm-page .border-indigo-200,
 .legacy-calm-page .border-indigo-300 {
-  border-color: rgba(185, 198, 165, 0.22) !important;
+  border-color: rgba(198, 214, 180, 0.30) !important;
 }
 
 .legacy-calm-page .border-emerald-200,
 .legacy-calm-page .border-orange-100,
 .legacy-calm-page .border-amber-100 {
-  border-color: rgba(217, 203, 143, 0.20) !important;
+  border-color: rgba(238, 213, 150, 0.30) !important;
 }
 
 .legacy-calm-page .text-slate-900,
 .legacy-calm-page .text-slate-800 {
-  color: #FCFBF7 !important;
+  color: #FFFFFF !important;
 }
 
 .legacy-calm-page .text-slate-700,
 .legacy-calm-page .text-slate-600 {
-  color: rgba(238, 241, 234, 0.86) !important;
+  color: #FAF8F2 !important;
 }
 
 .legacy-calm-page .text-slate-500 {
-  color: rgba(221, 226, 216, 0.72) !important;
+  color: #EEF2EB !important;
 }
 
 .legacy-calm-page .text-slate-400,
 .legacy-calm-page .text-slate-300 {
-  color: rgba(221, 226, 216, 0.52) !important;
+  color: #E2E8DE !important;
 }
 
 .legacy-calm-page .text-indigo-950,
@@ -187,20 +187,20 @@ body {
 .legacy-calm-page .text-indigo-700,
 .legacy-calm-page .text-indigo-600,
 .legacy-calm-page .text-indigo-500 {
-  color: #B9C6A5 !important;
+  color: #C6D6B4 !important;
 }
 
 .legacy-calm-page .text-emerald-700,
 .legacy-calm-page .text-emerald-600,
 .legacy-calm-page .text-emerald-500 {
-  color: #9FC5A7 !important;
+  color: #B5E0BE !important;
 }
 
 .legacy-calm-page .text-amber-700,
 .legacy-calm-page .text-amber-600,
 .legacy-calm-page .text-orange-700,
 .legacy-calm-page .text-orange-500 {
-  color: #D9CB8F !important;
+  color: #EED596 !important;
 }
 
 .legacy-calm-page .bg-indigo-600.text-white,
@@ -232,14 +232,24 @@ body {
 .legacy-calm-page input,
 .legacy-calm-page textarea,
 .legacy-calm-page select {
-  color: #FCFBF7;
-  caret-color: #B9C6A5;
+  color: #FFFFFF !important;
+  caret-color: #C6D6B4;
 }
 
 .legacy-calm-page input::placeholder,
 .legacy-calm-page textarea::placeholder {
-  color: rgba(221, 226, 216, 0.48);
+  color: rgba(238, 242, 235, 0.70) !important;
 }
+
+/* Global Crisp Text Rules */
+body, input, textarea, select, button {
+  color: #FAF8F2;
+}
+
+p, span, li {
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
 
 /* Custom Animations */
 @keyframes float {
