@@ -23,6 +23,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { LeafLoader } from '@/components/calm/leaf-loader';
+import { SanctuaryAudioPlayer } from '@/components/calm/sanctuary-audio-player';
 import { labelDimension } from '@/lib/i18n';
 
 interface Observation {
@@ -886,6 +887,7 @@ export default function ConversationPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto sm:justify-end">
+          <SanctuaryAudioPlayer />
           {isDemoConversation && (
             <div className="rounded-full border border-calm-pollen/30 bg-calm-pollen/15 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-calm-pollen shadow-sm">
               Bản thử thiết bị
