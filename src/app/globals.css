@@ -40,6 +40,18 @@ body {
   overflow-x: hidden;
 }
 
+/* Route navigation & layout rendering optimization */
+.app-calm-scope {
+  contain: layout style;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.app-calm-scope main {
+  contain: content;
+}
+
+
 /* Glassmorphism & Premium Card Styles */
 .glass-panel {
   background: rgba(247, 245, 238, 0.7); /* warm-ivory semi-transparent */

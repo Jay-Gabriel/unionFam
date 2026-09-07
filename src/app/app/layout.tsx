@@ -116,6 +116,7 @@ function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={true}
                   onClick={onNavigate}
                   className={`group flex items-center justify-between rounded-2xl px-3 py-2.5 text-[13px] transition-all duration-300 ${
                     active
@@ -138,46 +139,36 @@ function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: (
   );
 }
 
+let cachedUserProfile: { displayName: string; role: 'member' | 'admin' | 'content_admin' } | null = null;
+
 function useVisualViewportHeight() {
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const viewport = window.visualViewport;
+    if (!viewport) return;
 
+    let rafId: number | null = null;
     const update = () => {
-      const height = viewport?.height ?? window.innerHeight;
-      document.documentElement.style.setProperty(
-        '--app-viewport-height',
-        `${height}px`
-      );
-
-      // Prevent iOS Safari from scrolling window/document.body when keyboard opens
-      if (window.scrollY !== 0) {
-        window.scrollTo(0, 0);
-      }
-      if (document.body.scrollTop !== 0) {
-        document.body.scrollTop = 0;
-      }
-      if (document.documentElement.scrollTop !== 0) {
-        document.documentElement.scrollTop = 0;
-      }
-
-      const keyboardActive = (window.innerHeight - height) > 100;
-      setIsKeyboardOpen(keyboardActive);
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        const height = viewport.height;
+        document.documentElement.style.setProperty(
+          '--app-viewport-height',
+          `${height}px`
+        );
+        const keyboardActive = (window.innerHeight - height) > 100;
+        setIsKeyboardOpen(keyboardActive);
+      });
     };
 
     update();
-    viewport?.addEventListener('resize', update);
-    viewport?.addEventListener('scroll', update);
-    window.addEventListener('resize', update);
-    window.addEventListener('scroll', update);
-
+    viewport.addEventListener('resize', update, { passive: true });
     return () => {
-      viewport?.removeEventListener('resize', update);
-      viewport?.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-      window.removeEventListener('scroll', update);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      viewport.removeEventListener('resize', update);
     };
   }, []);
 
@@ -189,8 +180,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isKeyboardOpen } = useVisualViewportHeight();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [displayName, setDisplayName] = useState('');
-  const [currentRole, setCurrentRole] = useState<'member' | 'admin' | 'content_admin'>('member');
+  const [displayName, setDisplayName] = useState(() => cachedUserProfile?.displayName || '');
+  const [currentRole, setCurrentRole] = useState<'member' | 'admin' | 'content_admin'>(() => cachedUserProfile?.role || 'member');
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = React.useRef<HTMLDivElement>(null);
 
@@ -198,23 +189,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const hideBottomNav = isConversationRoom || isKeyboardOpen;
 
   const handleLogout = async () => {
+    cachedUserProfile = null;
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
     router.push('/auth');
     router.refresh();
   };
 
   React.useEffect(() => {
+    if (cachedUserProfile) return;
     let cancelled = false;
     Promise.all([
-      fetch('/api/onboarding', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null),
-      fetch('/api/auth/me', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null),
+      fetch('/api/onboarding').then((response) => response.ok ? response.json() : null),
+      fetch('/api/auth/me').then((response) => response.ok ? response.json() : null),
     ])
       .then(([onboarding, auth]) => {
         if (cancelled) return;
-        if (typeof onboarding?.data?.display_name === 'string') setDisplayName(onboarding.data.display_name.trim());
-        if (auth?.data?.role === 'admin' || auth?.data?.role === 'content_admin' || auth?.data?.role === 'member') {
-          setCurrentRole(auth.data.role);
-        }
+        const name = typeof onboarding?.data?.display_name === 'string' ? onboarding.data.display_name.trim() : '';
+        const role = auth?.data?.role === 'admin' || auth?.data?.role === 'content_admin' || auth?.data?.role === 'member'
+          ? auth.data.role
+          : 'member';
+        cachedUserProfile = { displayName: name, role };
+        if (name) setDisplayName(name);
+        setCurrentRole(role);
       })
       .catch(() => undefined);
     return () => { cancelled = true; };
@@ -474,6 +470,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-[18px] text-[9px] font-medium ${
                   active ? 'bg-white/15 text-calm-warm-ivory' : 'text-calm-fog/70'
                 }`}
