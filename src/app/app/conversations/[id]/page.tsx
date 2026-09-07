@@ -934,6 +934,56 @@ export default function ConversationPage() {
                     <div className="flex items-center gap-2 px-2 text-[10.5px] font-semibold text-calm-warm-ivory/85">
                       <span>{message.timestamp}</span>
                     </div>
+
+                    {/* ONLY Micro-Experiment Card is displayed */}
+                    {message.experimentProposal && (
+                      <div className="space-y-3.5 rounded-[26px] border border-calm-pollen/40 bg-gradient-to-b from-[#353328]/95 to-[#242c23]/95 backdrop-blur-md p-4 sm:p-5 shadow-[0_18px_45px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.1)]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <span className="grid h-7 w-7 place-items-center rounded-xl bg-calm-pollen/20 text-calm-pollen shadow-[0_0_10px_rgba(238,213,150,0.25)] border border-calm-pollen/30">
+                              <FlaskConical size={15} />
+                            </span>
+                            <span className="text-xs font-bold tracking-tight text-white">
+                              Đề xuất thử nghiệm ({message.experimentProposal.targetDays || 7} ngày)
+                            </span>
+                          </div>
+                          <span className="rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.12em] text-calm-pollen shadow-sm">
+                            Thực hành ngay
+                          </span>
+                        </div>
+
+                        <div className="space-y-2.5 rounded-2xl border border-white/10 bg-black/25 p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed text-white">
+                          <p className="font-bold text-calm-warm-ivory text-sm sm:text-[15px] flex items-center gap-1.5">
+                            <Sparkles size={15} className="text-calm-pollen shrink-0" />
+                            {message.experimentProposal.title}
+                          </p>
+                          <p className="text-calm-fog text-xs leading-relaxed">
+                            <strong className="text-white">Giả thuyết:</strong> {message.experimentProposal.hypothesis}
+                          </p>
+                          <div className="pt-2 text-xs border-t border-white/10 space-y-1.5">
+                            <p className="text-[#bfe7cb] leading-relaxed">
+                              <strong className="text-white">Bước nhỏ nhất:</strong> {message.experimentProposal.smallestStep}
+                            </p>
+                            <p className="text-calm-fog/90 leading-relaxed">
+                              <strong className="text-white">Tín hiệu thành công:</strong> {message.experimentProposal.successSignal}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-3.5 py-2.5 text-xs font-semibold text-emerald-100 shadow-sm">
+                          <span className="flex items-center gap-1.5">
+                            <CheckCircle2 size={16} className="text-emerald-300 shrink-0" />
+                            Đã kích hoạt trong phòng Thử nghiệm
+                          </span>
+                          <Link
+                            href="/app/experiments"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.12em] text-calm-pollen underline hover:text-white transition"
+                          >
+                            Xem Thử nghiệm →
+                          </Link>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
