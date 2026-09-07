@@ -32,9 +32,9 @@ export const StageEnum = z.enum([
 export const ObservationProposalSchema = z.object({
   dimension: DimensionEnum,
   observationType: z.string().min(1).max(64).default('insight_candidate'),
-  contentOriginal: z.string().min(5).max(1200),
+  contentOriginal: z.string().min(1).max(2000),
   confidence: z.number().min(0).max(1).default(0.85),
-  evidenceMessageIds: z.array(z.string().uuid()).max(10).optional(),
+  evidenceMessageIds: z.array(z.string()).max(10).optional(),
 });
 
 export const ExperimentProposalSchema = z.object({
@@ -138,6 +138,70 @@ export interface SchemaParseResult {
   errorMessage?: string;
 }
 
+const VALID_DIMENSIONS = new Set([
+  'my_life', 'what_matters', 'my_ideal_day', 'what_it_takes',
+  'my_trade_offs', 'the_question', 'financial_life', 'other',
+]);
+
+function normalizeDimension(dim: unknown): string {
+  if (typeof dim !== 'string') return 'other';
+  const d = dim.trim().toLowerCase();
+  if (VALID_DIMENSIONS.has(d)) return d;
+  if (d.includes('life') && !d.includes('finan')) return 'my_life';
+  if (d.includes('matter') || d.includes('value')) return 'what_matters';
+  if (d.includes('ideal') || d.includes('day')) return 'my_ideal_day';
+  if (d.includes('take') || d.includes('need')) return 'what_it_takes';
+  if (d.includes('trade') || d.includes('cost')) return 'my_trade_offs';
+  if (d.includes('question')) return 'the_question';
+  if (d.includes('financ') || d.includes('money') || d.includes('resource')) return 'financial_life';
+  return 'other';
+}
+
+const VALID_STAGES = new Set([
+  'onboarding', 'discovery', 'clarify', 'permission', 'synthesis',
+  'design', 'experiment', 'reflection', 'completed',
+  'initial_exploration', 'ideal_day_exploration', 'trade_offs_evaluation', 'experiment_proposal',
+]);
+
+function normalizeStage(stage: unknown): string {
+  if (typeof stage !== 'string') return 'discovery';
+  const s = stage.trim().toLowerCase();
+  if (VALID_STAGES.has(s)) return s;
+  if (s.includes('onboard') || s.includes('greet') || s.includes('intro')) return 'onboarding';
+  if (s.includes('clarif')) return 'clarify';
+  if (s.includes('permiss')) return 'permission';
+  if (s.includes('synth')) return 'synthesis';
+  if (s.includes('design')) return 'design';
+  if (s.includes('experim')) return 'experiment';
+  if (s.includes('reflect')) return 'reflection';
+  if (s.includes('complet')) return 'completed';
+  return 'discovery';
+}
+
+const VALID_USER_SIGNALS = new Set([
+  'desire', 'escape', 'life_vision', 'value', 'constraint',
+  'trade_off', 'contradiction', 'uncertainty', 'resource',
+  'experiment_result', 'reflection', 'neutral',
+]);
+
+function normalizeUserSignal(signal: unknown): string | undefined {
+  if (typeof signal !== 'string' || !signal.trim()) return undefined;
+  const s = signal.trim().toLowerCase();
+  if (VALID_USER_SIGNALS.has(s)) return s;
+  if (s.includes('desire') || s.includes('want')) return 'desire';
+  if (s.includes('escape') || s.includes('stress') || s.includes('pressure') || s.includes('burnout')) return 'escape';
+  if (s.includes('vision') || s.includes('goal')) return 'life_vision';
+  if (s.includes('value')) return 'value';
+  if (s.includes('constraint') || s.includes('limit')) return 'constraint';
+  if (s.includes('trade')) return 'trade_off';
+  if (s.includes('contra')) return 'contradiction';
+  if (s.includes('uncert') || s.includes('confus')) return 'uncertainty';
+  if (s.includes('resourc')) return 'resource';
+  if (s.includes('experiment')) return 'experiment_result';
+  if (s.includes('reflect')) return 'reflection';
+  return 'neutral';
+}
+
 function normalizeProviderPayload(raw: unknown) {
   if (!raw || typeof raw !== 'object') return raw;
   const value = raw as Record<string, unknown>;
@@ -168,59 +232,67 @@ function normalizeProviderPayload(raw: unknown) {
     .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
     .join('\n\n');
 
+  const rawConvState = (value.conversationState || value.conversation_state || value.state);
+  const convStateObj = rawConvState && typeof rawConvState === 'object' ? (rawConvState as Record<string, unknown>) : undefined;
+
   return {
     responseText,
-    nextStage: value.nextStage ?? value.next_stage,
-    requiresPermission: value.requiresPermission ?? value.requires_permission,
+    nextStage: normalizeStage(value.nextStage ?? value.next_stage),
+    requiresPermission: Boolean(value.requiresPermission ?? value.requires_permission),
     nextQuestionId: typeof (value.nextQuestionId ?? value.next_question_id) === 'string'
       ? value.nextQuestionId ?? value.next_question_id
       : undefined,
-    observationProposal: observation
+    observationProposal: observation && observation.contentOriginal
       ? {
-          dimension: observation.dimension,
-          observationType: observation.observationType ?? observation.type ?? 'insight_candidate',
-          contentOriginal: observation.contentOriginal ?? observation.content,
-          confidence: observation.confidence,
-          evidenceMessageIds: observation.evidenceMessageIds ?? observation.evidence_message_ids,
+          dimension: normalizeDimension(observation.dimension),
+          observationType: String(observation.observationType ?? observation.type ?? 'insight_candidate'),
+          contentOriginal: String(observation.contentOriginal ?? observation.content ?? ''),
+          confidence: typeof observation.confidence === 'number' ? observation.confidence : 0.85,
+          evidenceMessageIds: Array.isArray(observation.evidenceMessageIds ?? observation.evidence_message_ids)
+            ? (observation.evidenceMessageIds ?? observation.evidence_message_ids)
+            : undefined,
         }
       : undefined,
-    experimentProposal: experiment
+    experimentProposal: experiment && experiment.title && experiment.hypothesis
       ? {
-          title: experiment.title,
-          hypothesis: experiment.hypothesis,
-          smallestStep: experiment.smallestStep ?? experiment.smallest_step,
-          successSignal: experiment.successSignal ?? experiment.success_signal,
+          title: String(experiment.title),
+          hypothesis: String(experiment.hypothesis),
+          smallestStep: String(experiment.smallestStep ?? experiment.smallest_step ?? ''),
+          successSignal: String(experiment.successSignal ?? experiment.success_signal ?? ''),
           targetDays: Number(experiment.targetDays ?? experiment.target_days ?? 7),
-          dimension: experiment.dimension,
+          dimension: experiment.dimension ? normalizeDimension(experiment.dimension) : undefined,
         }
       : undefined,
-    reflectionProposal: reflection
+    reflectionProposal: reflection && reflection.result && reflection.learningCandidate
       ? {
-          result: reflection.result,
-          learningCandidate: reflection.learningCandidate ?? reflection.learning_candidate ?? reflection.learning,
-          feeling: reflection.feeling,
-          nextAction: reflection.nextAction ?? reflection.next_action,
+          result: String(reflection.result),
+          learningCandidate: String(reflection.learningCandidate ?? reflection.learning_candidate ?? reflection.learning ?? ''),
+          feeling: String(reflection.feeling ?? 'Tốt'),
+          nextAction: String(reflection.nextAction ?? reflection.next_action ?? 'Tiếp tục'),
           rating: Number(reflection.rating ?? 4),
-          experimentTitle: reflection.experimentTitle ?? reflection.experiment_title,
+          experimentTitle: reflection.experimentTitle ? String(reflection.experimentTitle ?? reflection.experiment_title) : undefined,
         }
       : undefined,
-    resourceProposal: resource
+    resourceProposal: resource && resource.name
       ? {
-          dimension: resource.dimension ?? 'other',
-          resourceType: resource.resourceType ?? resource.resource_type ?? 'skill',
-          name: resource.name,
-          description: resource.description,
+          dimension: normalizeDimension(resource.dimension ?? 'other'),
+          resourceType: String(resource.resourceType ?? resource.resource_type ?? 'skill'),
+          name: String(resource.name),
+          description: resource.description ? String(resource.description) : undefined,
         }
       : undefined,
     safety: {
       isSafe: safety.isSafe ?? !Boolean(safety.triggered),
-      safetyFlag: safety.safetyFlag ?? safety.category,
-      userMessage: safety.userMessage,
+      safetyFlag: safety.safetyFlag ? String(safety.safetyFlag ?? safety.category) : undefined,
+      userMessage: safety.userMessage ? String(safety.userMessage) : undefined,
     },
-    conversationState: (value.conversationState || value.conversation_state || value.state) && typeof (value.conversationState || value.conversation_state || value.state) === 'object'
-      ? (value.conversationState || value.conversation_state || value.state) as Record<string, unknown>
+    conversationState: convStateObj
+      ? {
+          ...convStateObj,
+          userSignal: normalizeUserSignal(convStateObj.userSignal),
+        }
       : undefined,
-    errorMetadata: value.errorMetadata,
+    errorMetadata: value.errorMetadata ? String(value.errorMetadata) : undefined,
   };
 }
 

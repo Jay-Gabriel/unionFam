@@ -93,7 +93,10 @@ const GEMINI_RESPONSE_SCHEMA: ResponseSchema = {
     conversationState: {
       type: SchemaType.OBJECT,
       properties: {
-        userSignal: { type: SchemaType.STRING },
+        userSignal: {
+          type: SchemaType.STRING,
+          enum: ['desire', 'escape', 'life_vision', 'value', 'constraint', 'trade_off', 'contradiction', 'uncertainty', 'resource', 'experiment_result', 'reflection', 'neutral'],
+        },
         currentFocus: { type: SchemaType.STRING },
         answeredTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
         newFacts: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
@@ -323,6 +326,7 @@ export class GeminiConversationProvider {
       }
       return firstAttempt;
     } catch (error) {
+      console.error('[Gemini Provider Error]:', error);
       const errorMessage = error instanceof Error ? error.message : '';
       return {
         success: false,
