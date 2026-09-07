@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { Activity, FileText, Loader2, Lock, RefreshCw, ShieldAlert, Users } from 'lucide-react';
+import { LeafLoader } from '@/components/calm/leaf-loader';
 import { labelAuditAction, labelRole, labelStage, labelStatus, labelResourceType } from '@/lib/i18n';
 
 type AdminOverview = {
@@ -121,7 +122,7 @@ export default function AdminDashboardPage() {
 
       {error && <div className="rounded-2xl bg-rose-50 p-4 text-xs font-semibold text-rose-700">{error}</div>}
       {roleMessage && <div className="rounded-2xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-700">{roleMessage}</div>}
-      {loading && <div className="grid min-h-64 place-items-center"><Loader2 className="animate-spin text-indigo-600" /></div>}
+      {loading && <div className="grid min-h-64 place-items-center"><LeafLoader variant="bloom" size="md" label="Đang tải dữ liệu vận hành…" /></div>}
       {!loading && overview && <>
         <div className="grid gap-4 sm:grid-cols-3"><div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card"><p className="text-xs text-slate-500">Người dùng trong trang</p><p className="mt-2 text-3xl font-bold text-slate-900">{overview.users.length}</p></div><div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card"><p className="text-xs text-slate-500">Phiên gần nhất</p><p className="mt-2 text-3xl font-bold text-slate-900">{overview.sessions.length}</p></div><div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card"><p className="text-xs text-slate-500">Lỗi gần nhất</p><p className="mt-2 text-3xl font-bold text-slate-900">{overview.errors.length}</p></div></div>
         <div className="flex flex-wrap gap-2">{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => setActiveTab(id)} className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold uppercase transition ${activeTab === id ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}><Icon size={14} /> {label}</button>)}</div>

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, Loader2, Lock, Mail, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { LeafLoader } from '@/components/calm/leaf-loader';
 import { createClient } from '@/lib/supabase/client';
 
 const EMAIL_AUTH_ENABLED = process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH === 'true';
@@ -146,7 +147,7 @@ export function AuthForm({ mode = 'member' }: { mode?: AuthMode }) {
           disabled={isLoading}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-calm-paper-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isLoading ? <Loader2 className="animate-spin" size={18} /> : <span aria-hidden="true">G</span>}
+          {isLoading ? <LeafLoader variant="inline" size="sm" /> : <span aria-hidden="true">G</span>}
           <span>Tiếp tục với Google</span>
         </button>
       )}
@@ -213,7 +214,7 @@ export function AuthForm({ mode = 'member' }: { mode?: AuthMode }) {
               className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-calm-lichen py-3 text-xs font-bold text-calm-deep-moss shadow-md transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 md:text-sm"
             >
               <span>{isLoading ? 'Đang xác thực…' : isAdmin ? 'Vào khu vực quản trị' : isSignUp ? 'Đăng ký' : 'Đăng nhập'}</span>
-              {isLoading ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} />}
+              {isLoading ? <LeafLoader variant="inline" size="sm" /> : <ArrowRight size={16} />}
             </button>
           </form>
 

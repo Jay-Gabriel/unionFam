@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Loader2, ShieldCheck, Wallet } from 'lucide-react';
+import { LeafLoader } from '@/components/calm/leaf-loader';
 
 type FinancialData = {
   snapshot: { desire?: string; escape?: string; life_vision?: string; dimensions?: Record<string, { summary?: string }> };
@@ -29,7 +30,13 @@ export default function FinancialLifePage() {
     return () => { cancelled = true; };
   }, []);
 
-  if (loading) return <div className="grid min-h-[420px] place-items-center"><Loader2 className="animate-spin text-indigo-600" /></div>;
+  if (loading) {
+    return (
+      <div className="grid min-h-[420px] place-items-center">
+        <LeafLoader variant="bloom" size="md" label="Đang tổng hợp dữ liệu tài chính & nguồn lực…" />
+      </div>
+    );
+  }
 
   const financialSummary = data?.snapshot.dimensions?.what_it_takes?.summary;
   const moneyResources = data?.resources.filter((resource) => resource.resource_type === 'money') || [];

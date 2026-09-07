@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, CheckCircle2, Save, Sparkles, Loader2 } from 'lucide-react';
+import { LeafLoader } from '@/components/calm/leaf-loader';
 import { QuestionItem } from '@/server/domain/questions';
 
 export default function QuestionsPage() {
@@ -114,9 +115,8 @@ export default function QuestionsPage() {
 
   if (isLoading) {
     return (
-      <div className="legacy-calm-page flex flex-col items-center justify-center min-h-[400px] gap-3 text-slate-500">
-        <Loader2 size={32} className="animate-spin text-indigo-600" />
-        <span className="text-xs font-semibold">Đang tải bộ câu hỏi…</span>
+      <div className="legacy-calm-page flex flex-col items-center justify-center min-h-[400px]">
+        <LeafLoader variant="bloom" size="md" label="Đang tải bộ câu hỏi…" />
       </div>
     );
   }
