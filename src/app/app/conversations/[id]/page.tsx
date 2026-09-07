@@ -8,17 +8,21 @@ import {
   CheckCircle2,
   Compass,
   Edit3,
+  ExternalLink,
   FlaskConical,
   GraduationCap,
+  Leaf,
   Loader2,
   Paperclip,
   Send,
   ShieldCheck,
+  Sparkles,
   Sprout,
   UserRound,
   Wallet,
   XCircle,
 } from 'lucide-react';
+import { LeafLoader } from '@/components/calm/leaf-loader';
 import { labelDimension } from '@/lib/i18n';
 
 interface Observation {
@@ -834,11 +838,8 @@ export default function ConversationPage() {
 
   if (isLoadingConversation) {
     return (
-      <div className="grid h-full min-h-[360px] flex-1 place-items-center rounded-[34px] border border-white/10 bg-calm-deep-moss/35 text-calm-fog">
-        <div className="flex items-center gap-3 text-sm">
-          <Loader2 size={18} className="animate-spin text-calm-lichen" />
-          Đang mở khoảng lặng của bạn…
-        </div>
+      <div className="grid h-full min-h-[380px] flex-1 place-items-center rounded-[32px] border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent backdrop-blur-md text-calm-fog shadow-glass">
+        <LeafLoader variant="bloom" size="md" label="Đang mở khoảng lặng của bạn…" />
       </div>
     );
   }
@@ -862,26 +863,36 @@ export default function ConversationPage() {
 
   return (
     <div className="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col min-h-0 text-calm-paper-white">
-      <section className="shrink-0 flex flex-col gap-2 rounded-[20px] sm:rounded-[28px] border border-white/10 bg-calm-deep-moss/80 px-4 py-2.5 sm:px-6 sm:py-3.5 shadow-[0_12px_35px_rgba(10,18,12,0.12)] sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-9 w-9 sm:h-10 sm:w-10 shrink-0 place-items-center rounded-full border border-calm-lichen/25 bg-calm-lichen/10 text-calm-lichen">
-            <Sprout size={17} />
-          </span>
+      <section className="shrink-0 flex flex-col gap-2.5 rounded-[24px] sm:rounded-[28px] border border-white/10 bg-gradient-to-r from-calm-moss/80 via-calm-deep-moss/85 to-calm-moss/80 backdrop-blur-xl px-4 py-3 sm:px-6 sm:py-3.5 shadow-[0_12px_36px_rgba(0,0,0,0.18)] sm:flex-row sm:items-center sm:justify-between mb-2.5 sm:mb-3">
+        <div className="flex items-center gap-3">
+          <div className="relative grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-2xl border border-calm-lichen/30 bg-calm-lichen/15 text-calm-warm-ivory shadow-[0_4px_16px_rgba(185,198,165,0.2)]">
+            <Sprout size={19} className="text-calm-lichen animate-leaf-wave-1" />
+            <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+          </div>
           <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold tracking-[-0.02em] text-calm-paper-white sm:text-lg">
-              Trò chuyện cùng Life Lab
-            </h2>
-            <p className="truncate text-[10px] text-calm-fog/60">Phiên: {conversationId}</p>
+            <div className="flex items-center gap-2">
+              <h2 className="truncate text-base font-semibold tracking-[-0.02em] text-calm-paper-white sm:text-[17px]">
+                Trò chuyện cùng Life Lab
+              </h2>
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-medium text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                Đang lắng nghe
+              </span>
+            </div>
+            <p className="truncate text-[10.5px] font-mono text-calm-fog/60">Phiên: {conversationId}</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto sm:justify-end">
           {isDemoConversation && (
-            <div className="rounded-full border border-calm-pollen/25 bg-calm-pollen/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-calm-pollen">
+            <div className="rounded-full border border-calm-pollen/30 bg-calm-pollen/15 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-calm-pollen shadow-sm">
               Bản thử thiết bị
             </div>
           )}
-          <div className="flex items-center gap-1.5 rounded-full border border-calm-lichen/20 bg-calm-lichen/10 px-2.5 py-1 text-[10px] font-medium text-calm-lichen">
-            <ShieldCheck size={13} />
+          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] backdrop-blur-sm px-3 py-1 text-[10.5px] font-medium text-calm-lichen shadow-sm">
+            <ShieldCheck size={13} className="text-calm-lichen" />
             Bạn giữ quyền quyết định
           </div>
         </div>
@@ -889,62 +900,67 @@ export default function ConversationPage() {
 
       <section
         ref={messagesScrollRef}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-[24px] sm:rounded-[32px] border border-white/10 bg-calm-deep-moss/35 px-3 py-4 sm:px-6 sm:py-6"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-[28px] sm:rounded-[36px] border border-white/10 bg-gradient-to-b from-[#212c23]/60 via-[#1c261e]/40 to-[#18211a]/70 backdrop-blur-xl px-3.5 py-4 sm:px-6 sm:py-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
         aria-label="Nội dung cuộc trò chuyện"
       >
-        <div className="space-y-5 sm:space-y-6" aria-live="polite">
+        <div className="space-y-6 sm:space-y-7" aria-live="polite">
           {messages.map((message) => (
-            <div key={message.id} className="space-y-2.5">
+            <div key={message.id} className="space-y-3">
               {message.role === 'user' ? (
-                <div className="ml-auto flex max-w-[90%] items-start justify-end gap-2 sm:max-w-[78%] sm:gap-3">
+                <div className="ml-auto flex max-w-[90%] items-start justify-end gap-2.5 sm:max-w-[76%] sm:gap-3">
                   <div className="space-y-1 text-right">
-                    <div className="break-words rounded-[22px] rounded-tr-md border border-calm-lichen/25 bg-calm-lichen/20 px-3.5 py-2.5 text-left text-sm leading-6 text-calm-paper-white shadow-[0_12px_30px_rgba(15,26,18,0.12)] sm:px-5 sm:py-3.5 sm:text-[15px]">
+                    <div className="break-words rounded-[24px] rounded-tr-[6px] border border-calm-lichen/35 bg-gradient-to-br from-[#3b4c3e] to-[#2d3b30] px-4 py-3 text-left text-sm leading-6 text-calm-paper-white shadow-[0_10px_28px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12)] sm:px-5 sm:py-3.5 sm:text-[15px]">
                       {message.content}
                     </div>
-                    <span className="block px-2 text-[10px] text-calm-fog/55">{message.timestamp}</span>
+                    <span className="block px-2 text-[10px] font-medium text-calm-fog/50">{message.timestamp}</span>
                   </div>
-                  <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-calm-forest-dusk text-calm-lichen">
+                  <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10 text-calm-warm-ivory shadow-sm">
                     <UserRound size={15} />
                   </div>
                 </div>
               ) : (
-                <div className="flex max-w-[94%] items-start gap-2 sm:max-w-[82%] sm:gap-3">
-                  <div className="mt-0.5 grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-calm-lichen/20 bg-calm-lichen/10 text-calm-lichen">
-                    <Sprout size={15} />
+                <div className="flex max-w-[95%] items-start gap-2.5 sm:max-w-[84%] sm:gap-3.5">
+                  <div className="mt-0.5 grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-2xl border border-calm-lichen/25 bg-calm-lichen/15 text-calm-lichen shadow-[0_4px_12px_rgba(185,198,165,0.15)]">
+                    <Sprout size={16} />
                   </div>
-                  <div className="min-w-0 flex-1 space-y-2.5">
-                    <div className="break-words rounded-[22px] rounded-tl-md border border-white/10 bg-calm-forest-dusk/90 px-3.5 py-2.5 text-sm leading-6 text-calm-paper-white shadow-[0_12px_30px_rgba(15,26,18,0.12)] sm:px-5 sm:py-3.5 sm:text-[15px]">
-                      {message.content ||
-                        (isStreaming && <Loader2 size={17} className="animate-spin text-calm-lichen" />)}
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="break-words rounded-[26px] rounded-tl-[6px] border border-white/[0.12] bg-gradient-to-b from-[#2e3b31]/95 to-[#243026]/95 backdrop-blur-md px-4 py-3.5 text-sm leading-relaxed text-[#f4f3ee] shadow-[0_10px_35px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-5 sm:py-4 sm:text-[15.5px]">
+                      {message.content ? (
+                        <div className="whitespace-pre-wrap">{message.content}</div>
+                      ) : (
+                        isStreaming && <LeafLoader variant="inline" size="sm" label="Life Lab đang cảm nhận & suy ngẫm…" />
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 px-2 text-[10px] text-calm-fog/55">
+                    <div className="flex items-center gap-2 px-2 text-[10px] font-medium text-calm-fog/50">
                       <span>{message.timestamp}</span>
                     </div>
 
                     {/* 1. Life Map Insight Card */}
                     {message.observation && (
-                      <div className="space-y-3 rounded-[24px] border border-calm-lichen/30 bg-calm-moss/70 p-3.5 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
+                      <div className="space-y-3 rounded-[26px] border border-calm-lichen/35 bg-gradient-to-b from-[#2e3c31]/90 to-[#222e25]/90 backdrop-blur-md p-4 shadow-[0_18px_45px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <Compass size={16} className="text-calm-lichen" />
-                            <span className="text-xs font-semibold text-calm-paper-white">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-6 w-6 place-items-center rounded-lg bg-calm-lichen/20 text-calm-lichen">
+                              <Compass size={14} />
+                            </span>
+                            <span className="text-xs font-semibold tracking-tight text-calm-paper-white">
                               Bản đồ cuộc sống · {message.observation.dimensionLabel}
                             </span>
                           </div>
-                          <span className="rounded-full border border-calm-lichen/25 bg-calm-lichen/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen">
-                            Tự động trích xuất từ cuộc trò chuyện
+                          <span className="rounded-full border border-calm-lichen/30 bg-calm-lichen/10 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen shadow-sm">
+                            Tự động trích xuất
                           </span>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-calm-deep-moss/50 p-3.5 sm:p-4 text-xs sm:text-sm font-medium leading-6 text-calm-paper-white break-words">
+                        <div className="rounded-2xl border border-white/10 bg-black/20 p-3.5 sm:p-4 text-xs sm:text-sm font-medium leading-relaxed text-calm-paper-white break-words">
                           {message.observation.contentEdited || message.observation.contentOriginal}
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2 text-xs font-semibold text-[#c9e2cf]">
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-200 shadow-sm">
                           <span className="flex items-center gap-1.5">
-                            <CheckCircle2 size={15} /> Đã tự động cập nhật vào Bản đồ cuộc sống
+                            <CheckCircle2 size={15} className="text-emerald-400" /> Đã tự động cập nhật vào Bản đồ cuộc sống
                           </span>
-                          <Link href="/app/life-map" className="text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
+                          <Link href="/app/life-map" className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
                             Xem trong Bản đồ →
                           </Link>
                         </div>
@@ -953,41 +969,43 @@ export default function ConversationPage() {
 
                     {/* 2. Experiment Proposal Card */}
                     {message.experimentProposal && (
-                      <div className="space-y-3 rounded-[24px] border border-calm-pollen/30 bg-calm-moss/70 p-3.5 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
+                      <div className="space-y-3 rounded-[26px] border border-calm-pollen/35 bg-gradient-to-b from-[#353328]/90 to-[#262c24]/90 backdrop-blur-md p-4 shadow-[0_18px_45px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <FlaskConical size={16} className="text-calm-pollen" />
-                            <span className="text-xs font-semibold text-calm-paper-white">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-6 w-6 place-items-center rounded-lg bg-calm-pollen/20 text-calm-pollen">
+                              <FlaskConical size={14} />
+                            </span>
+                            <span className="text-xs font-semibold tracking-tight text-calm-paper-white">
                               Thử nghiệm ({message.experimentProposal.targetDays || 7} ngày)
                             </span>
                           </div>
-                          <span className="rounded-full border border-calm-pollen/25 bg-calm-pollen/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-pollen">
-                            Tự động trích xuất từ cuộc trò chuyện
+                          <span className="rounded-full border border-calm-pollen/30 bg-calm-pollen/10 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-pollen shadow-sm">
+                            Tự động trích xuất
                           </span>
                         </div>
 
-                        <div className="space-y-2 rounded-2xl border border-white/10 bg-calm-deep-moss/50 p-3.5 sm:p-4 text-xs sm:text-sm leading-6 text-calm-paper-white">
-                          <p className="font-semibold text-calm-warm-ivory text-sm sm:text-base">
-                            🧪 {message.experimentProposal.title}
+                        <div className="space-y-2 rounded-2xl border border-white/10 bg-black/20 p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed text-calm-paper-white">
+                          <p className="font-semibold text-calm-warm-ivory text-sm sm:text-base flex items-center gap-1.5">
+                            <Sparkles size={14} className="text-calm-pollen" /> {message.experimentProposal.title}
                           </p>
                           <p className="text-calm-fog text-xs">
                             <span className="font-medium text-calm-paper-white">Giả thuyết:</span> {message.experimentProposal.hypothesis}
                           </p>
-                          <div className="pt-1 text-xs border-t border-white/10">
+                          <div className="pt-2 text-xs border-t border-white/10 space-y-1">
                             <p className="text-[#c9e2cf]">
                               <span className="font-medium">Bước nhỏ nhất:</span> {message.experimentProposal.smallestStep}
                             </p>
-                            <p className="text-calm-fog/80 mt-1">
+                            <p className="text-calm-fog/80">
                               <span className="font-medium text-calm-paper-white">Tín hiệu thành công:</span> {message.experimentProposal.successSignal}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2 text-xs font-semibold text-[#c9e2cf]">
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-200 shadow-sm">
                           <span className="flex items-center gap-1.5">
-                            <CheckCircle2 size={15} /> Đã tự động tạo & kích hoạt trong Thử nghiệm
+                            <CheckCircle2 size={15} className="text-emerald-400" /> Đã tự động tạo & kích hoạt trong Thử nghiệm
                           </span>
-                          <Link href="/app/experiments" className="text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
+                          <Link href="/app/experiments" className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
                             Xem trong Thử nghiệm →
                           </Link>
                         </div>
@@ -996,29 +1014,31 @@ export default function ConversationPage() {
 
                     {/* 3. Reflection & Learning Proposal Card */}
                     {message.reflectionProposal && (
-                      <div className="space-y-3 rounded-[24px] border border-calm-fern/35 bg-calm-moss/70 p-3.5 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
+                      <div className="space-y-3 rounded-[26px] border border-calm-fern/40 bg-gradient-to-b from-[#2d3a2f]/90 to-[#222e25]/90 backdrop-blur-md p-4 shadow-[0_18px_45px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <BookOpen size={16} className="text-calm-fern" />
-                            <span className="text-xs font-semibold text-calm-paper-white">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-6 w-6 place-items-center rounded-lg bg-calm-fern/20 text-[#c9e2cf]">
+                              <BookOpen size={14} />
+                            </span>
+                            <span className="text-xs font-semibold tracking-tight text-calm-paper-white">
                               Ghi nhận & Bài học đúc kết
                             </span>
                           </div>
-                          <span className="rounded-full border border-calm-fern/30 bg-calm-fern/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#c9e2cf]">
-                            Tự động trích xuất từ cuộc trò chuyện
+                          <span className="rounded-full border border-calm-fern/30 bg-calm-fern/10 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#c9e2cf] shadow-sm">
+                            Tự động trích xuất
                           </span>
                         </div>
 
-                        <div className="space-y-2 rounded-2xl border border-white/10 bg-calm-deep-moss/50 p-3.5 sm:p-4 text-xs sm:text-sm leading-6 text-calm-paper-white">
+                        <div className="space-y-2 rounded-2xl border border-white/10 bg-black/20 p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed text-calm-paper-white">
                           <p className="text-xs">
                             <span className="font-semibold text-calm-warm-ivory">Kết quả:</span> {message.reflectionProposal.result}
                           </p>
-                          <div className="p-2.5 rounded-xl bg-calm-lichen/10 border border-calm-lichen/20">
-                            <p className="text-xs text-calm-warm-ivory font-medium flex items-center gap-1.5">
+                          <div className="p-3 rounded-xl bg-calm-lichen/15 border border-calm-lichen/25">
+                            <p className="text-xs text-calm-warm-ivory font-semibold flex items-center gap-1.5">
                               <GraduationCap size={15} className="text-calm-lichen" />
                               Bài học rút ra:
                             </p>
-                            <p className="text-xs text-calm-paper-white mt-0.5">{message.reflectionProposal.learningCandidate}</p>
+                            <p className="text-xs text-calm-paper-white mt-1 leading-relaxed">{message.reflectionProposal.learningCandidate}</p>
                           </div>
                           <div className="text-xs text-calm-fog flex flex-wrap gap-x-4 gap-y-1 pt-1">
                             <span><strong className="text-calm-paper-white">Cảm xúc:</strong> {message.reflectionProposal.feeling}</span>
@@ -1026,9 +1046,9 @@ export default function ConversationPage() {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2 text-xs font-semibold text-[#c9e2cf]">
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-200 shadow-sm">
                           <span className="flex items-center gap-1.5">
-                            <CheckCircle2 size={15} /> Đã tự động lưu Ghi nhận & tạo Bài học mới
+                            <CheckCircle2 size={15} className="text-emerald-400" /> Đã tự động lưu Ghi nhận & tạo Bài học mới
                           </span>
                           <div className="flex items-center gap-3">
                             <Link href="/app/reflections" className="text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
@@ -1044,20 +1064,22 @@ export default function ConversationPage() {
 
                     {/* 4. Resource Proposal Card */}
                     {message.resourceProposal && (
-                      <div className="space-y-3 rounded-[24px] border border-calm-lichen/30 bg-calm-moss/70 p-3.5 shadow-[0_18px_45px_rgba(15,26,18,0.15)] sm:p-5">
+                      <div className="space-y-3 rounded-[26px] border border-calm-lichen/35 bg-gradient-to-b from-[#2e3b31]/90 to-[#222e25]/90 backdrop-blur-md p-4 shadow-[0_18px_45px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <Wallet size={16} className="text-calm-lichen" />
-                            <span className="text-xs font-semibold text-calm-paper-white">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-6 w-6 place-items-center rounded-lg bg-calm-lichen/20 text-calm-lichen">
+                              <Wallet size={14} />
+                            </span>
+                            <span className="text-xs font-semibold tracking-tight text-calm-paper-white">
                               Nguồn lực & Tài chính ({message.resourceProposal.resourceType})
                             </span>
                           </div>
-                          <span className="rounded-full border border-calm-lichen/25 bg-calm-lichen/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen">
-                            Tự động trích xuất từ cuộc trò chuyện
+                          <span className="rounded-full border border-calm-lichen/30 bg-calm-lichen/10 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-calm-lichen shadow-sm">
+                            Tự động trích xuất
                           </span>
                         </div>
 
-                        <div className="space-y-1.5 rounded-2xl border border-white/10 bg-calm-deep-moss/50 p-3.5 sm:p-4 text-xs sm:text-sm leading-6 text-calm-paper-white">
+                        <div className="space-y-1.5 rounded-2xl border border-white/10 bg-black/20 p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed text-calm-paper-white">
                           <p className="font-semibold text-calm-warm-ivory text-sm">
                             💼 {message.resourceProposal.name}
                           </p>
@@ -1066,9 +1088,9 @@ export default function ConversationPage() {
                           )}
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-success-leaf/35 bg-calm-success-leaf/15 px-3.5 py-2 text-xs font-semibold text-[#c9e2cf]">
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-200 shadow-sm">
                           <span className="flex items-center gap-1.5">
-                            <CheckCircle2 size={15} /> Đã tự động lưu vào Tài nguyên & Nguồn lực
+                            <CheckCircle2 size={15} className="text-emerald-400" /> Đã tự động lưu vào Tài nguyên & Nguồn lực
                           </span>
                           <Link href="/app/resources" className="text-[10px] uppercase tracking-[0.12em] text-calm-warm-ivory underline hover:text-white transition">
                             Xem trong Tài nguyên →
@@ -1094,53 +1116,53 @@ export default function ConversationPage() {
         </div>
       )}
 
-      <div className="shrink-0 pt-1.5 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+      <div className="shrink-0 pt-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
         {/* Quick Suggestion Pills for easy 1-tap testing on Mobile & Desktop */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none text-[11px]">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-[11.5px]">
           <button
             type="button"
             onClick={() => setInputContent('Tôi muốn làm thử nghiệm 15 phút mỗi sáng để tạo nhịp điệu mới')}
-            className="shrink-0 rounded-full border border-calm-pollen/30 bg-calm-pollen/10 px-2.5 py-1 font-medium text-calm-pollen transition hover:bg-calm-pollen/20"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/30 bg-calm-pollen/10 hover:bg-calm-pollen/20 backdrop-blur-sm px-3.5 py-1.5 font-medium text-calm-pollen shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
           >
-            🧪 Thử nghiệm 15 phút
+            <span>🧪</span> Thử nghiệm 15 phút
           </button>
           <button
             type="button"
             onClick={() => setInputContent('Hôm nay tôi đã làm thử và nhận ra bài học là bước nhỏ giúp tâm trí nhẹ nhàng hơn')}
-            className="shrink-0 rounded-full border border-calm-fern/30 bg-calm-fern/10 px-2.5 py-1 font-medium text-[#c9e2cf] transition hover:bg-calm-fern/20"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-fern/35 bg-calm-fern/10 hover:bg-calm-fern/20 backdrop-blur-sm px-3.5 py-1.5 font-medium text-[#c9e2cf] shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
           >
-            🌱 Ghi nhận & Bài học
+            <span>🌱</span> Ghi nhận & Bài học
           </button>
           <button
             type="button"
             onClick={() => setInputContent('Tôi đang có khoản tiết kiệm 6 tháng và kinh nghiệm chuyên môn 5 năm')}
-            className="shrink-0 rounded-full border border-calm-lichen/30 bg-calm-lichen/10 px-2.5 py-1 font-medium text-calm-lichen transition hover:bg-calm-lichen/20"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-lichen/35 bg-calm-lichen/10 hover:bg-calm-lichen/20 backdrop-blur-sm px-3.5 py-1.5 font-medium text-calm-lichen shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
           >
-            💼 Nguồn lực & Tài chính
+            <span>💼</span> Nguồn lực & Tài chính
           </button>
           <button
             type="button"
             onClick={() => setInputContent('Tôi mong muốn một cuộc sống tự do thời gian và dành cho gia đình')}
-            className="shrink-0 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 font-medium text-calm-warm-ivory transition hover:bg-white/10"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/15 backdrop-blur-sm px-3.5 py-1.5 font-medium text-calm-warm-ivory shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
           >
-            🧭 Bản đồ cuộc sống
+            <span>🧭</span> Bản đồ cuộc sống
           </button>
         </div>
 
         <form
           onSubmit={handleSendMessage}
-          className="flex items-center gap-1.5 sm:gap-2 rounded-[24px] sm:rounded-[28px] border border-white/15 bg-calm-deep-moss p-1.5 sm:p-2.5 shadow-[0_18px_55px_rgba(10,18,12,0.28)]"
+          className="flex items-center gap-2 rounded-[28px] border border-white/20 bg-gradient-to-r from-[#2c392f]/95 via-[#233026]/95 to-[#2c392f]/95 backdrop-blur-xl p-2 sm:p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.35)] focus-within:border-calm-lichen/60 focus-within:shadow-[0_0_25px_rgba(185,198,165,0.25)] transition-all duration-300"
         >
           <button
             type="button"
-            className="rounded-full p-2 text-calm-fog/55 transition hover:bg-white/5 hover:text-calm-lichen"
+            className="rounded-full p-2 text-calm-fog/60 transition hover:bg-white/10 hover:text-calm-lichen"
             aria-label="Đính kèm tệp"
           >
-            <Paperclip size={17} />
+            <Paperclip size={18} />
           </button>
           <textarea
             rows={1}
-            placeholder="Trả lời Life Lab..."
+            placeholder="Gõ tâm tư hoặc trải nghiệm của bạn..."
             value={inputContent}
             onFocus={() => {
               scrollToBottom(false);
@@ -1164,14 +1186,20 @@ export default function ConversationPage() {
           <button
             type="submit"
             disabled={isStreaming || !inputContent.trim()}
-            className="flex shrink-0 items-center gap-1 sm:gap-1.5 rounded-full bg-calm-lichen px-4 py-2 sm:px-5 sm:py-2.5 text-xs font-semibold text-calm-deep-moss transition hover:bg-calm-fog disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-calm-lichen to-[#cde0b8] px-4 py-2 sm:px-5 sm:py-2.5 text-xs font-bold text-calm-deep-moss shadow-[0_4px_16px_rgba(185,198,165,0.3)] transition-all duration-200 hover:shadow-[0_6px_22px_rgba(185,198,165,0.45)] hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
           >
-            <span>{isStreaming ? 'Đang trả lời…' : 'Gửi'}</span>
-            <Send size={13} />
+            {isStreaming ? (
+              <LeafLoader variant="inline" size="sm" />
+            ) : (
+              <>
+                <span>Gửi</span>
+                <Send size={13} />
+              </>
+            )}
           </button>
         </form>
-        <p className="mt-1 text-center text-[10px] text-calm-fog/45 hidden sm:block">
-          Life Lab không phán xét. Bạn có thể sửa hoặc không lưu bất kỳ gợi ý nào.
+        <p className="mt-1.5 text-center text-[10.5px] text-calm-fog/50 hidden sm:block">
+          Life Lab luôn lắng nghe không phán xét. Mọi đề xuất đều do bạn làm chủ.
         </p>
       </div>
     </div>

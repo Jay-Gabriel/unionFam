@@ -21,6 +21,7 @@ import {
   Target,
   Loader2,
 } from 'lucide-react';
+import { LeafLoader } from '@/components/calm/leaf-loader';
 import { labelStage, labelStatus } from '@/lib/i18n';
 
 const mapItems = [
@@ -149,7 +150,11 @@ export default function DashboardOverviewPage() {
           </div>
 
           <div className="space-y-5 px-5 py-6 sm:px-7">
-            {loading && <div className="flex min-h-32 items-center justify-center text-calm-fog"><Loader2 className="h-5 w-5 animate-spin" /></div>}
+            {loading && (
+              <div className="flex min-h-32 items-center justify-center text-calm-fog">
+                <LeafLoader variant="inline" size="md" label="Đang tải dữ liệu không gian…" />
+              </div>
+            )}
             {!loading && latestConversation && (
               <Link
                 href={`/app/conversations/${latestConversation.id}`}

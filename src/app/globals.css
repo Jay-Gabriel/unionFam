@@ -243,6 +243,69 @@ body {
   animation: flyButterfly 15s ease-in-out infinite;
 }
 
+/* 3-Leaf Living Organic Animations */
+@keyframes leafWave {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(-4px) scale(1.15);
+    opacity: 1;
+    filter: drop-shadow(0 2px 8px rgba(185, 198, 165, 0.6));
+  }
+}
+
+@keyframes leafBreathe {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+    filter: drop-shadow(0 4px 14px rgba(185, 198, 165, 0.55));
+  }
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-leaf-wave-1 {
+  animation: leafWave 1.4s ease-in-out infinite 0s;
+}
+
+.animate-leaf-wave-2 {
+  animation: leafWave 1.4s ease-in-out infinite 0.22s;
+}
+
+.animate-leaf-wave-3 {
+  animation: leafWave 1.4s ease-in-out infinite 0.44s;
+}
+
+.animate-leaf-breathe-1 {
+  animation: leafBreathe 2.4s ease-in-out infinite 0s;
+}
+
+.animate-leaf-breathe-2 {
+  animation: leafBreathe 2.4s ease-in-out infinite 0.4s;
+}
+
+.animate-leaf-breathe-3 {
+  animation: leafBreathe 2.4s ease-in-out infinite 0.8s;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 18s linear infinite;
+}
+
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

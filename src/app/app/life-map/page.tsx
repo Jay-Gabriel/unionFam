@@ -13,6 +13,7 @@ import {
   History,
   Loader2,
 } from 'lucide-react';
+import { LeafLoader } from '@/components/calm/leaf-loader';
 import Link from 'next/link';
 
 const dimensions = [
@@ -119,7 +120,13 @@ export default function LifeMapPage() {
     dimensions: { ...(current.dimensions || {}), [key]: { ...(current.dimensions?.[key] || {}), summary: value } },
   }));
 
-  if (loading) return <div className="grid min-h-[420px] place-items-center text-slate-500"><Loader2 className="animate-spin text-indigo-600" /></div>;
+  if (loading) {
+    return (
+      <div className="grid min-h-[420px] place-items-center">
+        <LeafLoader variant="bloom" size="md" label="Đang tải Bản đồ cuộc sống…" />
+      </div>
+    );
+  }
   if (error && !profile) return <div className="rounded-3xl bg-rose-50 p-6 text-sm font-semibold text-rose-700">{error}</div>;
 
   return (

@@ -375,11 +375,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="relative md:pl-[272px] z-20 flex-1 flex flex-col min-h-0 h-full overflow-hidden w-full">
-        <header className="shrink-0 sticky top-0 z-20 hidden h-[86px] items-center justify-between border-b border-white/5 bg-calm-deep-moss/92 px-7 md:flex lg:px-10">
+        <header className={`shrink-0 sticky top-0 z-20 hidden items-center justify-between border-b border-white/5 bg-calm-deep-moss/92 px-7 md:flex lg:px-10 ${
+          isConversationRoom ? 'h-[62px]' : 'h-[86px]'
+        }`}>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-calm-fog/70">Không gian của bạn</p>
-            <h1 className="mt-1 text-[19px] font-medium tracking-[-0.02em] text-calm-paper-white">
-              Hôm nay, bạn muốn lắng nghe điều gì?
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-calm-fog/70">
+              {isConversationRoom ? 'Không gian phản chiếu' : 'Không gian của bạn'}
+            </p>
+            <h1 className={`${isConversationRoom ? 'text-[16px]' : 'mt-1 text-[19px]'} font-medium tracking-[-0.02em] text-calm-paper-white`}>
+              {isConversationRoom ? 'Lắng nghe & đồng hành cùng AI' : 'Hôm nay, bạn muốn lắng nghe điều gì?'}
             </h1>
           </div>
           <div className="flex items-center gap-3">
