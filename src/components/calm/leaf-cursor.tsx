@@ -13,6 +13,9 @@ interface Particle {
   vy: number;
   life: number;
   maxLife: number;
+  isLeafPetal?: boolean;
+  rotation?: number;
+  rotSpeed?: number;
 }
 
 export function LeafCursor() {
@@ -60,7 +63,30 @@ export function LeafCursor() {
       }
     };
 
-    const handlePointerDown = () => setClicking(true);
+    const handlePointerDown = (e: PointerEvent) => {
+      setClicking(true);
+      // Spawn burst of 6 glowing flower petals and pollen sparks on click
+      const colors = ['#E5C478', '#B9C6A5', '#F7F5EE', '#9FC5A7'];
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI * 2 * i) / 6;
+        const speed = Math.random() * 50 + 35;
+        particlesRef.current.push({
+          x: e.clientX,
+          y: e.clientY,
+          size: Math.random() * 4 + 3,
+          color: colors[i % colors.length],
+          alpha: 1,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 15,
+          life: 0,
+          maxLife: 0.55,
+          isLeafPetal: true,
+          rotation: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 8,
+        });
+      }
+    };
+
     const handlePointerUp = () => setClicking(false);
     const handlePointerLeave = () => {
       isVisible.current = false;
@@ -96,7 +122,7 @@ export function LeafCursor() {
       lastTime = time;
 
       // Smooth lerping
-      const lerpFactor = 0.22;
+      const lerpFactor = 0.24;
       const dx = targetPos.current.x - currentPos.current.x;
       const dy = targetPos.current.y - currentPos.current.y;
 
@@ -108,13 +134,13 @@ export function LeafCursor() {
 
       // Natural leaf tilt based on movement direction
       const speed = Math.sqrt(dx * dx + dy * dy);
-      if (speed > 1.5) {
+      if (speed > 1.2) {
         const targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI + 45;
         // Smooth angle rotation
         let angleDiff = (targetAngle - angleRef.current) % 360;
         if (angleDiff > 180) angleDiff -= 360;
         if (angleDiff < -180) angleDiff += 360;
-        angleRef.current += angleDiff * 0.15;
+        angleRef.current += angleDiff * 0.18;
       }
 
       // Update Cursor DOM
@@ -129,20 +155,20 @@ export function LeafCursor() {
         currentPos.current.y - lastTrailPos.current.y
       );
 
-      if (distFromLast > 12 && isVisible.current) {
+      if (distFromLast > 10 && isVisible.current) {
         lastTrailPos.current = { ...currentPos.current };
-        if (particlesRef.current.length < 35) {
-          const colors = ['#B9C6A5', '#E5C478', '#F7F5EE'];
+        if (particlesRef.current.length < 45) {
+          const colors = ['#B9C6A5', '#E5C478', '#F7F5EE', '#9FC5A7'];
           particlesRef.current.push({
             x: currentPos.current.x + (Math.random() - 0.5) * 8,
             y: currentPos.current.y + (Math.random() - 0.5) * 8,
-            size: Math.random() * 2.5 + 1.2,
+            size: Math.random() * 3 + 1.5,
             color: colors[Math.floor(Math.random() * colors.length)],
-            alpha: 0.8,
-            vx: (Math.random() - 0.5) * 20 - velocity.current.x * 0.05,
-            vy: (Math.random() - 0.5) * 20 - velocity.current.y * 0.05 + 10,
+            alpha: 0.85,
+            vx: (Math.random() - 0.5) * 22 - velocity.current.x * 0.06,
+            vy: (Math.random() - 0.5) * 22 - velocity.current.y * 0.06 + 12,
             life: 0,
-            maxLife: Math.random() * 0.6 + 0.4,
+            maxLife: Math.random() * 0.7 + 0.4,
           });
         }
       }
@@ -171,10 +197,21 @@ export function LeafCursor() {
             ctx.globalAlpha = currentAlpha;
             ctx.fillStyle = p.color;
             ctx.shadowColor = p.color;
-            ctx.shadowBlur = 6;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * (1 - progress * 0.5), 0, Math.PI * 2);
-            ctx.fill();
+            ctx.shadowBlur = 8;
+
+            if (p.isLeafPetal && p.rotation !== undefined && p.rotSpeed !== undefined) {
+              p.rotation += p.rotSpeed * dt;
+              ctx.translate(p.x, p.y);
+              ctx.rotate(p.rotation);
+              ctx.beginPath();
+              ctx.ellipse(0, 0, p.size * (1 - progress * 0.4), p.size * 0.5 * (1 - progress * 0.4), 0, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.size * (1 - progress * 0.5), 0, Math.PI * 2);
+              ctx.fill();
+            }
+
             ctx.restore();
           }
         }
@@ -216,7 +253,7 @@ export function LeafCursor() {
       >
         <div
           className={`relative flex items-center justify-center transition-transform duration-200 ease-out ${
-            clicking ? 'scale-75' : hovered ? 'scale-125' : typing ? 'scale-90 opacity-60' : 'scale-100'
+            clicking ? 'scale-75 rotate-12' : hovered ? 'scale-135 -rotate-6' : typing ? 'scale-90 opacity-60' : 'scale-100'
           }`}
           style={{
             transform: `rotate(${angleRef.current}deg)`,
@@ -224,28 +261,28 @@ export function LeafCursor() {
         >
           {/* Ambient organic aura around leaf */}
           <div
-            className={`absolute -inset-2 rounded-full blur-md transition-all duration-300 ${
+            className={`absolute -inset-3 rounded-full blur-md transition-all duration-300 ${
               hovered
-                ? 'bg-calm-pollen/40 scale-125 opacity-100'
-                : 'bg-calm-lichen/20 scale-100 opacity-60'
+                ? 'bg-calm-pollen/45 scale-130 opacity-100'
+                : 'bg-calm-lichen/25 scale-100 opacity-70'
             }`}
           />
 
           {/* Botanical Leaf Body */}
           <Leaf
-            className={`h-5 w-5 transition-colors duration-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.35)] ${
+            className={`h-5 w-5 transition-all duration-300 drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)] ${
               hovered
-                ? 'text-calm-pollen fill-calm-pollen/50 stroke-[2.2]'
-                : 'text-calm-lichen fill-calm-lichen/40 stroke-[2]'
+                ? 'text-calm-pollen fill-calm-pollen/60 stroke-[2.4] scale-110'
+                : 'text-calm-lichen fill-calm-lichen/45 stroke-[2]'
             }`}
           />
 
           {/* Golden Pollen Core Dot */}
           <span
-            className={`absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full border border-white/80 transition-all duration-300 ${
+            className={`absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full border border-white/90 transition-all duration-300 ${
               hovered
-                ? 'bg-calm-pollen scale-125 shadow-[0_0_8px_#E5C478]'
-                : 'bg-calm-warm-ivory scale-100 shadow-[0_0_4px_rgba(255,255,255,0.8)]'
+                ? 'bg-calm-pollen scale-150 shadow-[0_0_10px_#E5C478]'
+                : 'bg-calm-warm-ivory scale-100 shadow-[0_0_5px_rgba(255,255,255,0.9)]'
             }`}
           />
         </div>

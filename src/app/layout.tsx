@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import { LeafCursor } from "@/components/calm/leaf-cursor";
+import { FloatingSanctuaryAtmosphere } from "@/components/calm/floating-sanctuary-atmosphere";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -33,6 +34,7 @@ export default function RootLayout({
         style={{ backgroundColor: '#263128' }}
       >
         <LeafCursor />
+        <FloatingSanctuaryAtmosphere />
         {children}
       </body>
     </html>
