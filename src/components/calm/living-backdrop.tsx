@@ -10,7 +10,7 @@ interface LivingBackdropProps {
 
 export function LivingBackdrop({ children }: LivingBackdropProps) {
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-calm-forest-dusk text-calm-paper-white">
+    <div className="fixed inset-0 overflow-y-auto w-full bg-calm-forest-dusk text-calm-paper-white">
       {/* Three.js Environment with Fallback */}
       <SanctuaryCanvas 
         variant="landing-dusk" 

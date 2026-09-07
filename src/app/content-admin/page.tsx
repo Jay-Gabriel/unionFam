@@ -226,7 +226,7 @@ export default function ContentAdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-calm-deep-moss px-4 py-5 text-calm-paper-white sm:px-6 lg:px-10 lg:py-8">
+    <div className="fixed inset-0 overflow-y-auto bg-calm-deep-moss px-4 py-5 text-calm-paper-white sm:px-6 lg:px-10 lg:py-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-col justify-between gap-5 rounded-[30px] border border-white/10 bg-white/[0.06] p-5 shadow-glass backdrop-blur-xl sm:flex-row sm:items-center sm:p-7">
           <div className="flex items-start gap-4">
