@@ -105,7 +105,7 @@ function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: (
     <nav className="space-y-5" aria-label="Điều hướng chính">
       {navigation.map((group) => (
         <div key={group.label}>
-          <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-calm-fog/50">
+          <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-calm-fog/60">
             {group.label}
           </p>
           <div className="space-y-1">
@@ -118,17 +118,26 @@ function Navigation({ pathname, onNavigate }: { pathname: string; onNavigate?: (
                   href={item.href}
                   prefetch={true}
                   onClick={onNavigate}
-                  className={`group flex items-center justify-between rounded-2xl px-3 py-2.5 text-[13px] transition-all duration-300 ${
+                  className={`group relative flex items-center justify-between rounded-2xl px-3 py-2.5 text-[13px] transition-all duration-300 ${
                     active
-                      ? 'bg-white/10 font-medium text-calm-warm-ivory shadow-glass border border-white/5'
-                      : 'text-calm-fog hover:bg-white/5 hover:text-calm-paper-white'
+                      ? 'bg-gradient-to-r from-white/[0.14] to-white/[0.06] font-medium text-calm-warm-ivory shadow-[0_4px_20px_rgba(0,0,0,0.2)] border border-white/10 backdrop-blur-md'
+                      : 'text-calm-fog hover:bg-white/[0.07] hover:text-calm-paper-white hover:translate-x-0.5'
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className={`h-[17px] w-[17px] ${active ? 'text-calm-lichen' : 'text-calm-fern/80'}`} />
+                    <span className={`relative flex items-center justify-center transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-105'}`}>
+                      <Icon className={`h-[17px] w-[17px] ${active ? 'text-calm-lichen drop-shadow-[0_0_8px_rgba(185,198,165,0.5)]' : 'text-calm-fern/80 group-hover:text-calm-warm-ivory'}`} />
+                      {active && (
+                        <span className="absolute -left-1.5 h-1.5 w-1.5 rounded-full bg-calm-lichen shadow-[0_0_6px_#B9C6A5]" />
+                      )}
+                    </span>
                     {item.label}
                   </span>
-                  {active && <ChevronRight className="h-3.5 w-3.5 text-calm-lichen/80" />}
+                  {active ? (
+                    <ChevronRight className="h-3.5 w-3.5 text-calm-lichen" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 text-white/0 transition-all group-hover:text-white/40 group-hover:translate-x-0.5" />
+                  )}
                 </Link>
               );
             })}
@@ -356,19 +365,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4 pt-0">
           <Link
             href="/app/life-map"
-            className="group block overflow-hidden rounded-[26px] border border-white/10 bg-white/5 p-4 shadow-glass"
+            className="sanctuary-card group block p-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
           >
             <div className="mb-3 flex items-center justify-between">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-calm-warm-ivory shadow-sm border border-white/5">
+              <span className="grid h-9 w-9 place-items-center rounded-2xl bg-calm-lichen/15 text-calm-lichen shadow-[0_0_12px_rgba(185,198,165,0.2)] border border-calm-lichen/20 group-hover:scale-105 transition-transform">
                 <Sprout className="h-4 w-4" />
               </span>
-              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-calm-fog">Vòng lặp Life Lab</span>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-calm-fog/70">Vòng lặp Life Lab</span>
             </div>
             <p className="text-[12px] font-medium leading-relaxed text-calm-fog/90">
               Mỗi câu trả lời là một hạt giống để bạn hiểu mình rõ hơn.
             </p>
-            <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-calm-warm-ivory">
-              Mở bản đồ <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+            <span className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-calm-warm-ivory group-hover:text-calm-pollen transition-colors">
+              Mở bản đồ <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-1 text-calm-lichen" />
             </span>
           </Link>
         </div>

@@ -54,20 +54,52 @@ body {
 
 /* Glassmorphism & Premium Card Styles */
 .glass-panel {
-  background: rgba(247, 245, 238, 0.7); /* warm-ivory semi-transparent */
+  background: rgba(38, 49, 40, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 45px -10px rgba(0, 0, 0, 0.35);
+}
+
+.sanctuary-card {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(52, 65, 53, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 26px;
+  box-shadow: 0 16px 38px -8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sanctuary-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(185, 198, 165, 0.28);
+  box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.45), 0 0 24px -4px rgba(185, 198, 165, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .calm-card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .calm-card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px -4px rgba(52, 65, 53, 0.12);
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.32), 0 0 18px -4px rgba(185, 198, 165, 0.12);
+  border-color: rgba(185, 198, 165, 0.25) !important;
 }
+
+/* Organic Luminous Glow Utilities */
+.glow-lichen {
+  box-shadow: 0 0 20px -2px rgba(185, 198, 165, 0.35);
+}
+
+.glow-pollen {
+  box-shadow: 0 0 20px -2px rgba(229, 196, 120, 0.4);
+}
+
+.glow-ambient {
+  box-shadow: 0 12px 36px -6px rgba(0, 0, 0, 0.4), 0 0 30px -4px rgba(185, 198, 165, 0.12);
+}
+
 
 /*
  * Dark sanctuary migration layer for product pages that still use the

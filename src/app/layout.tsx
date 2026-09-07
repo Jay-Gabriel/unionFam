@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
+import { LeafCursor } from "@/components/calm/leaf-cursor";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -31,8 +32,10 @@ export default function RootLayout({
         className="min-h-screen bg-calm-deep-moss antialiased font-sans"
         style={{ backgroundColor: '#263128' }}
       >
+        <LeafCursor />
         {children}
       </body>
     </html>
   );
 }
+
