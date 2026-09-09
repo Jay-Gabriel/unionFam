@@ -58,6 +58,25 @@ export async function GET(request: Request) {
       reason: url.searchParams.get('reason')?.slice(0, 240) || 'Operational dashboard review',
     });
 
+    const authUserEmailMap = new Map((authUsers?.users || []).map((u) => [u.id, maskEmail(u.email)]));
+    const sessionUserIds = [...new Set((conversations || []).map((c: { user_id: string }) => c.user_id))];
+    const missingSessionUserIds = sessionUserIds.filter((uid) => !authUserEmailMap.has(uid));
+    
+    if (missingSessionUserIds.length > 0) {
+      await Promise.all(
+        missingSessionUserIds.map(async (uid) => {
+          try {
+            const { data: u } = await service.auth.admin.getUserById(uid);
+            if (u?.user?.email) {
+              authUserEmailMap.set(uid, maskEmail(u.user.email));
+            }
+          } catch {
+            // ignore missing user lookup errors
+          }
+        })
+      );
+    }
+
     return NextResponse.json({
       data: {
         users: (authUsers?.users || []).map((user) => ({
@@ -69,7 +88,11 @@ export async function GET(request: Request) {
           onboardingStatus: profileById.get(user.id)?.onboarding_status || 'not_started',
           answersCount: answerCounts.get(user.id) || 0,
         })),
-        sessions: conversations || [],
+        sessions: (conversations || []).map((session: { id: string; user_id: string; title: string; status: string; current_stage: string; last_message_at: string; created_at: string }) => ({
+          ...session,
+          user_display_name: profileById.get(session.user_id)?.display_name || 'Khách hàng',
+          user_email: authUserEmailMap.get(session.user_id) || '—',
+        })),
         errors: [...(errors || []), ...(aiErrors || []).map((error: { id: string; error_code: string | null; request_id: string; created_at: string; route?: string }) => ({
           id: error.id,
           error_code: error.error_code || 'AI_ERROR',
