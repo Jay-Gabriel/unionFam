@@ -14,6 +14,7 @@ import {
   Leaf,
   Loader2,
   Paperclip,
+  PhoneCall,
   Send,
   ShieldCheck,
   Sparkles,
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react';
 import { LeafLoader } from '@/components/calm/leaf-loader';
 import { SanctuaryAudioPlayer } from '@/components/calm/sanctuary-audio-player';
+import { LiveVoiceSanctuaryModal, IncomingVoiceCallBadge } from '@/components/calm/live-voice-sanctuary';
 import { labelDimension } from '@/lib/i18n';
 
 interface Observation {
@@ -330,6 +332,9 @@ export default function ConversationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendError, setSendError] = useState('');
   const [retryContent, setRetryContent] = useState('');
+  const [showIncomingCallBadge, setShowIncomingCallBadge] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [hasDismissedCall, setHasDismissedCall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLElement>(null);
   const openingStartedRef = useRef<string | null>(null);
@@ -674,6 +679,9 @@ export default function ConversationPage() {
       );
     } finally {
       setIsStreaming(false);
+      if (!hasDismissedCall) {
+        setTimeout(() => setShowIncomingCallBadge(true), 1500);
+      }
     }
   };
 
@@ -887,6 +895,15 @@ export default function ConversationPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto sm:justify-end">
+          <button
+            type="button"
+            onClick={() => setIsVoiceModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/20 to-calm-lichen/20 px-3 py-1 text-[11px] font-bold text-calm-pollen shadow-[0_0_12px_rgba(238,213,150,0.2)] hover:border-calm-pollen hover:scale-105 active:scale-95 transition"
+            title="Gọi thoại trực tiếp cùng Life Lab"
+          >
+            <PhoneCall size={12} className="text-calm-pollen animate-pulse" />
+            <span>Gọi thoại 1:1</span>
+          </button>
           <SanctuaryAudioPlayer />
           {isDemoConversation && (
             <div className="rounded-full border border-calm-pollen/30 bg-calm-pollen/15 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-calm-pollen shadow-sm">
@@ -905,6 +922,18 @@ export default function ConversationPage() {
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-[28px] sm:rounded-[36px] border border-white/10 bg-gradient-to-b from-[#212c23]/60 via-[#1c261e]/40 to-[#18211a]/70 backdrop-blur-xl px-3.5 py-4 sm:px-6 sm:py-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
         aria-label="Nội dung cuộc trò chuyện"
       >
+        {showIncomingCallBadge && (
+          <IncomingVoiceCallBadge
+            onAnswer={() => {
+              setShowIncomingCallBadge(false);
+              setIsVoiceModalOpen(true);
+            }}
+            onDismiss={() => {
+              setShowIncomingCallBadge(false);
+              setHasDismissedCall(true);
+            }}
+          />
+        )}
         <div className="space-y-6 sm:space-y-7" aria-live="polite">
           {messages.map((message) => (
             <div key={message.id} className="space-y-3">
@@ -1090,6 +1119,25 @@ export default function ConversationPage() {
           Life Lab luôn lắng nghe không phán xét. Mọi đề xuất đều do bạn làm chủ.
         </p>
       </div>
+
+      <LiveVoiceSanctuaryModal
+        isOpen={isVoiceModalOpen}
+        onClose={(callSummary) => {
+          setIsVoiceModalOpen(false);
+          if (callSummary) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `call-summary-${Date.now()}`,
+                role: 'assistant',
+                content: callSummary,
+                timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+              },
+            ]);
+          }
+        }}
+        conversationId={conversationId}
+      />
     </div>
   );
 }

@@ -21,9 +21,14 @@ import {
   SunMedium,
   Target,
   Trees,
+  Download,
+  Share2,
+  Zap,
 } from 'lucide-react';
 import { LeafLoader } from '@/components/calm/leaf-loader';
 import { labelStage, labelStatus } from '@/lib/i18n';
+import { LifeArchetypeCardModal } from '@/components/calm/life-archetype-card';
+import { DailyZenCardModal } from '@/components/calm/daily-zen-card';
 
 const mapItems = [
   { key: 'my_life', index: '01', title: 'ĐỜI SỐNG MONG MUỐN', detail: 'Cuộc đời tôi muốn sống', icon: Compass, tone: 'bg-calm-lichen/15 text-calm-lichen' },
@@ -58,6 +63,8 @@ type DashboardState = {
 export default function DashboardOverviewPage() {
   const [dashboard, setDashboard] = useState<DashboardState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isArchetypeOpen, setIsArchetypeOpen] = useState(false);
+  const [isZenCardOpen, setIsZenCardOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,6 +165,67 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
       </motion.section>
+
+      {/* 2 Strategic Growth Action Banners */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {/* Banner 1: Thẻ Căn Cước Tâm Lý 9:16 */}
+        <motion.div
+          variants={reveal}
+          onClick={() => setIsArchetypeOpen(true)}
+          className="cursor-pointer group relative overflow-hidden rounded-[28px] border border-calm-pollen/40 bg-gradient-to-r from-[#2c3d30]/90 via-[#223326]/90 to-[#18261c]/90 p-5 sm:p-6 backdrop-blur-xl shadow-[0_15px_35px_rgba(0,0,0,0.3)] hover:border-calm-pollen hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="pointer-events-none absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-calm-pollen/20 blur-2xl" />
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 max-w-[80%]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-calm-pollen">
+                <Sparkles size={12} /> Độc quyền LifeLab
+              </span>
+              <h3 className="text-lg font-bold text-white group-hover:text-calm-pollen transition">
+                Thẻ Căn Cước Tâm Lý (Story 9:16)
+              </h3>
+              <p className="text-xs text-calm-fog/90 leading-relaxed">
+                Khám phá nguyên mẫu, 3 điểm mù lớn nhất & xuất ảnh Story sang trọng để chia sẻ lên MXH.
+              </p>
+            </div>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-calm-pollen/20 text-calm-pollen border border-calm-pollen/30 group-hover:scale-110 transition-transform">
+              <Zap size={20} />
+            </span>
+          </div>
+          <div className="mt-4 flex items-center justify-between text-xs font-semibold text-calm-pollen border-t border-white/10 pt-3">
+            <span>Xuất thẻ ảnh 9:16</span>
+            <span className="group-hover:translate-x-1 transition-transform">Xem ngay →</span>
+          </div>
+        </motion.div>
+
+        {/* Banner 2: Rút Thẻ Bài Tĩnh Lặng Hôm Nay */}
+        <motion.div
+          variants={reveal}
+          onClick={() => setIsZenCardOpen(true)}
+          className="cursor-pointer group relative overflow-hidden rounded-[28px] border border-calm-lichen/40 bg-gradient-to-r from-[#243528]/90 via-[#1c2c20]/90 to-[#121d15]/90 p-5 sm:p-6 backdrop-blur-xl shadow-[0_15px_35px_rgba(0,0,0,0.3)] hover:border-calm-lichen hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="pointer-events-none absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-calm-lichen/20 blur-2xl" />
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 max-w-[80%]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-calm-lichen/40 bg-calm-lichen/15 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-calm-lichen">
+                <Leaf size={12} /> Mỗi ngày 1 lá bài
+              </span>
+              <h3 className="text-lg font-bold text-white group-hover:text-calm-lichen transition">
+                Rút Thẻ Bài Tĩnh Lặng Hôm Nay
+              </h3>
+              <p className="text-xs text-calm-fog/90 leading-relaxed">
+                Định tâm với 1 thông điệp giác ngộ & 1 câu hỏi coaching ngắn để bắt đầu ngày mới nhẹ nhõm.
+              </p>
+            </div>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-calm-lichen/20 text-calm-lichen border border-calm-lichen/30 group-hover:scale-110 transition-transform">
+              <Sparkles size={20} />
+            </span>
+          </div>
+          <div className="mt-4 flex items-center justify-between text-xs font-semibold text-calm-lichen border-t border-white/10 pt-3">
+            <span>Rút thẻ định tâm</span>
+            <span className="group-hover:translate-x-1 transition-transform">Lật bài ngay →</span>
+          </div>
+        </motion.div>
+      </div>
 
       {/* Main Sanctuary Grid */}
       <div className="grid gap-6 xl:grid-cols-[1.08fr_.92fr]">
@@ -380,6 +448,16 @@ export default function DashboardOverviewPage() {
           <ArrowRight className="h-4 w-4 text-calm-pollen transition-transform group-hover:translate-x-1.5" />
         </Link>
       </motion.div>
+
+      {/* Modals */}
+      <LifeArchetypeCardModal
+        isOpen={isArchetypeOpen}
+        onClose={() => setIsArchetypeOpen(false)}
+      />
+      <DailyZenCardModal
+        isOpen={isZenCardOpen}
+        onClose={() => setIsZenCardOpen(false)}
+      />
     </motion.div>
   );
 }

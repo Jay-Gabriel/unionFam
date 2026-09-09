@@ -20,6 +20,7 @@ import {
   MessageCircleHeart,
   Sprout,
   ShieldCheck,
+  Sparkles,
   TrendingUp,
   Wallet,
   X,
@@ -50,6 +51,7 @@ const navigation: Array<{ label: string; items: NavItem[] }> = [
   {
     label: 'Thiết kế cuộc sống',
     items: [
+      { label: 'Căn cước tâm lý 9:16', href: '/app/archetype', icon: Sparkles },
       { label: 'Bản đồ cuộc sống', href: '/app/life-map', icon: Compass },
       { label: 'Tài chính & nguồn lực', href: '/app/financial-life', icon: Wallet },
     ],
