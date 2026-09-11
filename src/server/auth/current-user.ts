@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/server/db/admin';
+import { isDemoMode, DEMO_USER_ID } from '@/lib/demo-mode';
 
 const PREVIEW_EMAIL = 'preview@lifelab.test';
 const PREVIEW_PASSWORD = 'LifeLabPreview-2026!';
@@ -61,6 +62,14 @@ export interface VerifiedUser {
 }
 
 export async function requireUser(): Promise<VerifiedUser> {
+  if (isDemoMode()) {
+    return {
+      id: DEMO_USER_ID,
+      email: PREVIEW_EMAIL,
+      role: 'admin',
+    };
+  }
+
   const supabase = createClient();
   let {
     data: { user },

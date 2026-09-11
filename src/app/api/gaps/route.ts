@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,10 @@ function fail(error: unknown, fallback: string) {
 }
 
 export async function GET() {
+  if (isDemoMode()) {
+    return NextResponse.json({ data: [] });
+  }
+
   try {
     const user = await requireUser();
     const { data, error } = await createClient()

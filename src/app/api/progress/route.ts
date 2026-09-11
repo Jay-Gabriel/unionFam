@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
 import { computeEligibleQuestions, type BranchRule, type QuestionItem } from '@/server/domain/questions';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,21 @@ function dateKey(date: Date) {
 }
 
 export async function GET() {
+  if (isDemoMode()) {
+    return NextResponse.json({
+      data: {
+        streak: 5,
+        answers: 6,
+        conversations: 3,
+        experiments: 2,
+        questionnaireProgress: 100,
+        activeDays: 5,
+        activeExperimentProgress: 60,
+        completedExperiments: 1,
+      },
+    });
+  }
+
   try {
     const user = await requireUser();
     const supabase = createClient();

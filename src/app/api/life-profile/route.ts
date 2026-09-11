@@ -6,6 +6,7 @@ import {
   LifeProfileSnapshotSchema,
   mergeInsightsIntoProfile,
 } from '@/server/domain/profile';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,17 @@ function responseError(error: unknown, fallback: string) {
 }
 
 export async function GET() {
+  if (isDemoMode()) {
+    return NextResponse.json({
+      data: {
+        current: null,
+        draft: null,
+        snapshot: emptyLifeProfileSnapshot(),
+        insights: [],
+      },
+    });
+  }
+
   try {
     const user = await requireUser();
     const supabase = createClient();

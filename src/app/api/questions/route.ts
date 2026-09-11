@@ -5,10 +5,12 @@ import {
   type BranchRule,
   type QuestionItem,
   validateAnswerPayload,
+  DefaultQuestionFlowFixture,
 } from '@/server/domain/questions';
 import { requireUser } from '@/server/auth/current-user';
 import { createClient } from '@/lib/supabase/server';
 import { consumeRateLimit } from '@/server/security/rate-limit';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,6 +86,19 @@ async function getFlowQuestions(supabase: ReturnType<typeof createClient>, flowV
 }
 
 export async function GET() {
+  if (isDemoMode()) {
+    return NextResponse.json({
+      data: {
+        flowVersion: 'Bộ câu hỏi khám phá bản thân',
+        questions: DefaultQuestionFlowFixture,
+        eligibleQuestionIds: DefaultQuestionFlowFixture.map((q) => q.id),
+        userAnswers: {},
+        resumeIndex: 0,
+        progressPercent: 0,
+      },
+    });
+  }
+
   try {
     const session = await requireUser();
     const supabase = createClient();
@@ -140,6 +155,15 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (isDemoMode()) {
+    return NextResponse.json({
+      data: {
+        success: true,
+        eligibleQuestionIds: DefaultQuestionFlowFixture.map((q) => q.id),
+      },
+    });
+  }
+
   try {
     const session = await requireUser();
     const rate = consumeRateLimit(`questions:${session.id}`, 60, 60_000);

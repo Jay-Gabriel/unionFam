@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,24 @@ function fail(error: unknown, fallback: string) {
 }
 
 export async function GET() {
+  if (isDemoMode()) {
+    return NextResponse.json({
+      data: [
+        {
+          id: 'demo-exp-1',
+          title: '15 phút đi dạo buổi sáng không điện thoại',
+          hypothesis: 'Tâm trí sẽ thoáng đãng và giảm áp lực công việc đầu ngày.',
+          smallest_step: 'Để điện thoại ở bàn, bước ra ngoài 15 phút.',
+          success_signal: 'Cảm thấy tỉnh táo và hít thở sâu.',
+          progress_percent: 60,
+          status: 'active',
+          start_date: new Date().toISOString().split('T')[0],
+          target_date: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+        },
+      ],
+    });
+  }
+
   try {
     const user = await requireUser();
     const { data, error } = await createClient()
