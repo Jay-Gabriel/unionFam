@@ -456,7 +456,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <main className={`relative mx-auto w-full max-w-[1480px] flex-1 min-h-0 flex flex-col ${
           isConversationRoom
-            ? 'p-2 sm:px-6 md:py-6 overflow-hidden'
+            ? 'p-1.5 sm:px-6 md:py-6 overflow-hidden'
             : 'overflow-y-auto px-4 pb-28 pt-5 sm:px-6 md:pb-10 md:pt-7 lg:px-10'
         }`}>
           {children}

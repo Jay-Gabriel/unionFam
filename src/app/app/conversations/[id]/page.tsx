@@ -981,18 +981,19 @@ function ConversationPageContent() {
   return (
     <div className="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col min-h-0 text-calm-paper-white">
       {/* Chat Room Top Bar */}
-      <section className="shrink-0 flex flex-col gap-2 rounded-[20px] sm:rounded-[28px] border border-white/10 bg-gradient-to-r from-calm-moss/80 via-calm-deep-moss/85 to-calm-moss/80 backdrop-blur-xl px-3.5 py-2.5 sm:px-6 sm:py-3.5 shadow-[0_12px_36px_rgba(0,0,0,0.18)] sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3">
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <div className="relative grid h-9 w-9 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-2xl border border-calm-lichen/30 bg-calm-lichen/15 text-calm-warm-ivory shadow-[0_4px_16px_rgba(185,198,165,0.2)]">
-            <Sprout size={18} className="text-calm-lichen animate-leaf-wave-1" />
-            <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+      <section className="shrink-0 flex items-center justify-between gap-2 rounded-[18px] sm:rounded-[28px] border border-white/10 bg-gradient-to-r from-calm-moss/80 via-calm-deep-moss/85 to-calm-moss/80 backdrop-blur-xl px-3 py-2 sm:px-6 sm:py-3.5 shadow-[0_12px_36px_rgba(0,0,0,0.18)] mb-1.5 sm:mb-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="relative grid h-8 w-8 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-xl sm:rounded-2xl border border-calm-lichen/30 bg-calm-lichen/15 text-calm-warm-ivory shadow-[0_4px_16px_rgba(185,198,165,0.2)]">
+            <Sprout size={16} className="sm:hidden text-calm-lichen animate-leaf-wave-1" />
+            <Sprout size={18} className="hidden sm:block text-calm-lichen animate-leaf-wave-1" />
+            <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2 sm:h-2.5 sm:w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              <span className="relative inline-flex rounded-full h-full w-full bg-emerald-500"></span>
             </span>
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <h2 className="truncate text-sm font-semibold tracking-[-0.02em] text-calm-paper-white sm:text-[17px]">
+              <h2 className="truncate text-[13px] sm:text-[17px] font-semibold tracking-[-0.02em] text-calm-paper-white">
                 Trò chuyện cùng Life Lab
               </h2>
               <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[8.5px] sm:text-[9px] font-medium text-emerald-300 shrink-0">
@@ -1000,18 +1001,18 @@ function ConversationPageContent() {
                 Đang lắng nghe
               </span>
             </div>
-            <p className="truncate text-[10px] font-mono text-calm-fog/60">Phiên: {conversationId}</p>
+            <p className="hidden sm:block truncate text-[10px] font-mono text-calm-fog/60">Phiên: {conversationId}</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => {
               setVoiceInitialConnected(true);
               setIsVoiceModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/20 to-calm-lichen/20 px-2.5 py-1 sm:px-3 sm:py-1 text-[10.5px] sm:text-[11px] font-bold text-calm-pollen shadow-[0_0_12px_rgba(238,213,150,0.2)] hover:border-calm-pollen hover:scale-105 active:scale-95 transition"
+            className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/20 to-calm-lichen/20 px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-[12px] font-bold text-calm-pollen shadow-[0_0_12px_rgba(238,213,150,0.2)] hover:border-calm-pollen hover:scale-105 active:scale-95 transition whitespace-nowrap"
             title="Gọi thoại trực tiếp cùng Life Lab"
           >
             <PhoneCall size={12} className="text-calm-pollen animate-pulse" />
@@ -1019,7 +1020,7 @@ function ConversationPageContent() {
           </button>
           <SanctuaryAudioPlayer />
           {isDemoConversation && (
-            <div className="rounded-full border border-calm-pollen/30 bg-calm-pollen/15 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[8.5px] sm:text-[9px] font-semibold uppercase tracking-[0.1em] text-calm-pollen shadow-sm">
+            <div className="rounded-full border border-calm-pollen/30 bg-calm-pollen/15 px-2 py-0.5 sm:px-3 sm:py-1 text-[8.5px] sm:text-[9px] font-semibold uppercase tracking-[0.1em] text-calm-pollen shadow-sm">
               Bản thử
             </div>
           )}
@@ -1033,7 +1034,7 @@ function ConversationPageContent() {
       {/* Messages Scroll Sanctuary */}
       <section
         ref={messagesScrollRef}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-[24px] sm:rounded-[36px] border border-white/10 bg-gradient-to-b from-[#212c23]/60 via-[#1c261e]/40 to-[#18211a]/70 backdrop-blur-xl px-3 py-3.5 sm:px-6 sm:py-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-[20px] sm:rounded-[36px] border border-white/10 bg-gradient-to-b from-[#212c23]/60 via-[#1c261e]/40 to-[#18211a]/70 backdrop-blur-xl px-3 py-3.5 sm:px-6 sm:py-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
         aria-label="Nội dung cuộc trò chuyện"
       >
         {showIncomingCallBadge && (
@@ -1051,14 +1052,14 @@ function ConversationPageContent() {
         )}
         <div className="space-y-4 sm:space-y-6" aria-live="polite">
           {messages.map((message) => (
-            <div key={message.id} className="space-y-2.5 sm:space-y-3">
+            <div key={message.id} className="space-y-2 sm:space-y-2.5">
               {message.role === 'user' ? (
-                <div className="ml-auto flex max-w-[92%] sm:max-w-[78%] items-start justify-end gap-2 sm:gap-3">
+                <div className="ml-auto flex max-w-[88%] sm:max-w-[78%] items-start justify-end gap-2 sm:gap-3">
                   <div className="space-y-1 text-right min-w-0">
-                    <div className="break-words rounded-[20px] rounded-tr-[4px] sm:rounded-[24px] sm:rounded-tr-[6px] border border-calm-lichen/35 bg-gradient-to-br from-[#3b4c3e] to-[#2d3b30] px-3.5 py-2.5 text-left text-xs leading-relaxed text-calm-paper-white shadow-[0_10px_28px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12)] sm:px-5 sm:py-3.5 sm:text-[15px]">
+                    <div className="break-words rounded-[20px] rounded-tr-[4px] sm:rounded-[24px] sm:rounded-tr-[6px] border border-calm-lichen/35 bg-gradient-to-br from-[#3b4c3e] to-[#2d3b30] px-4 py-2.5 sm:px-5 sm:py-3.5 text-left text-[14.5px] sm:text-[15.5px] leading-relaxed text-calm-paper-white shadow-[0_10px_28px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12)]">
                       {message.content}
                     </div>
-                    <span className="block px-2 text-[10px] sm:text-[10.5px] font-semibold text-calm-warm-ivory/85">{message.timestamp}</span>
+                    <span className="block px-2 text-[10px] sm:text-[11px] font-semibold text-calm-warm-ivory/80">{message.timestamp}</span>
                   </div>
                   <div className="grid h-7 w-7 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/15 text-white shadow-sm mt-0.5">
                     <UserRound size={13} className="sm:hidden" />
@@ -1066,22 +1067,22 @@ function ConversationPageContent() {
                   </div>
                 </div>
               ) : (
-                <div className="flex max-w-[96%] sm:max-w-[85%] items-start gap-2 sm:gap-3.5">
+                <div className="flex max-w-[94%] sm:max-w-[85%] items-start gap-2 sm:gap-3.5">
                   <div className="mt-0.5 grid h-7 w-7 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-2xl border border-calm-lichen/35 bg-calm-lichen/20 text-calm-lichen shadow-[0_4px_14px_rgba(185,198,165,0.25)]">
                     <Sprout size={14} className="sm:hidden" />
                     <Sprout size={16} className="hidden sm:block" />
                   </div>
-                  <div className="min-w-0 flex-1 space-y-2.5 sm:space-y-3">
-                    <div className="break-words rounded-[22px] rounded-tl-[4px] sm:rounded-[26px] sm:rounded-tl-[6px] border border-white/[0.16] bg-gradient-to-b from-[#2e3b31]/98 to-[#243026]/98 backdrop-blur-md px-3.5 py-3 text-xs sm:text-[15px] leading-relaxed text-white shadow-[0_10px_35px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] sm:px-5 sm:py-4">
+                  <div className="min-w-0 flex-1 space-y-2 sm:space-y-2.5">
+                    <div className="break-words rounded-[22px] rounded-tl-[4px] sm:rounded-[26px] sm:rounded-tl-[6px] border border-white/[0.16] bg-gradient-to-b from-[#2e3b31]/98 to-[#243026]/98 backdrop-blur-md px-4 py-3 sm:px-5 sm:py-4 text-[14.5px] sm:text-[15.5px] leading-relaxed text-white shadow-[0_10px_35px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]">
                       {message.content ? (
-                        <div className="whitespace-pre-wrap text-white font-normal">{message.content}</div>
+                        <div className="whitespace-pre-wrap text-white font-normal leading-relaxed">{message.content}</div>
                       ) : isStreaming ? (
                         <LeafLoader variant="inline" size="sm" label="Life Lab đang cảm nhận & suy ngẫm…" />
                       ) : (
-                        <div className="whitespace-pre-wrap text-white font-normal">{DEFAULT_OPENING_MESSAGE}</div>
+                        <div className="whitespace-pre-wrap text-white font-normal leading-relaxed">{DEFAULT_OPENING_MESSAGE}</div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 px-2 text-[10px] sm:text-[10.5px] font-semibold text-calm-warm-ivory/85">
+                    <div className="flex items-center gap-2 px-2 text-[10px] sm:text-[11px] font-semibold text-calm-warm-ivory/80">
                       <span>{message.timestamp}</span>
                     </div>
 
