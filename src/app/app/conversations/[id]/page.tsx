@@ -409,6 +409,7 @@ function ConversationPageContent() {
   const [hasDismissedCall, setHasDismissedCall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const openingStartedRef = useRef<string | null>(null);
   const openingPromiseRef = useRef<{ id: string; promise: Promise<StreamSummary> } | null>(null);
   const newConversationPromiseRef = useRef<Promise<{
@@ -416,6 +417,17 @@ function ConversationPageContent() {
     data: Record<string, unknown>;
     demoMode: boolean;
   }> | null>(null);
+
+  // Auto-grow textarea freely and smoothly on content change
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    const scrollH = textarea.scrollHeight;
+    if (scrollH > 0) {
+      textarea.style.height = `${Math.min(Math.max(scrollH, 44), 220)}px`;
+    }
+  }, [inputContent]);
 
   // Read preloaded prompt or call param from Mini-game or deep-links
   useEffect(() => {
@@ -1212,18 +1224,19 @@ function ConversationPageContent() {
 
         <form
           onSubmit={handleSendMessage}
-          className="flex items-center gap-1.5 sm:gap-2 rounded-[24px] sm:rounded-[28px] border border-white/20 bg-gradient-to-r from-[#2c392f]/95 via-[#233026]/95 to-[#2c392f]/95 backdrop-blur-xl p-1.5 sm:p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.35)] focus-within:border-calm-lichen/60 focus-within:shadow-[0_0_25px_rgba(185,198,165,0.25)] transition-all duration-300"
+          className="flex items-end gap-1.5 sm:gap-2 rounded-[24px] sm:rounded-[28px] border border-white/20 bg-gradient-to-r from-[#2c392f]/95 via-[#233026]/95 to-[#2c392f]/95 backdrop-blur-xl p-1.5 sm:p-2 shadow-[0_20px_50px_rgba(0,0,0,0.35)] focus-within:border-calm-lichen/60 focus-within:shadow-[0_0_25px_rgba(185,198,165,0.25)] transition-all duration-300"
         >
           <button
             type="button"
-            className="rounded-full p-1.5 sm:p-2 text-calm-fog/60 transition hover:bg-white/10 hover:text-calm-lichen active:scale-95 shrink-0"
+            className="h-10 w-10 flex items-center justify-center rounded-full text-calm-fog/70 transition hover:bg-white/10 hover:text-calm-lichen active:scale-95 shrink-0 mb-0.5"
             aria-label="Đính kèm tệp"
           >
-            <Paperclip size={17} />
+            <Paperclip size={18} />
           </button>
           <textarea
+            ref={textareaRef}
             rows={1}
-            placeholder="Gõ tâm tư hoặc trải nghiệm của bạn..."
+            placeholder="Gõ tâm tư hoặc câu hỏi của bạn..."
             value={inputContent}
             onFocus={() => {
               scrollToBottom(false);
@@ -1237,24 +1250,20 @@ function ConversationPageContent() {
                 handleSendMessage(e);
               }
             }}
-            onChange={(event) => {
-              setInputContent(event.target.value);
-              event.target.style.height = 'auto';
-              event.target.style.height = `${Math.min(event.target.scrollHeight, 120)}px`;
-            }}
-            className="min-w-0 flex-1 max-h-28 resize-none bg-transparent px-2 py-1 text-[16px] leading-5 text-calm-paper-white outline-none placeholder:text-calm-fog/45 sm:text-[15px]"
+            onChange={(event) => setInputContent(event.target.value)}
+            className="min-w-0 flex-1 max-h-56 resize-none bg-transparent px-2.5 py-2.5 text-[16px] leading-[1.5] text-calm-paper-white outline-none placeholder:text-calm-fog/50 overflow-y-auto scrollbar-none sm:text-[15.5px]"
           />
           <button
             type="submit"
             disabled={isStreaming || !inputContent.trim()}
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-calm-lichen to-[#cde0b8] px-3.5 py-2 sm:px-5 sm:py-2.5 text-xs font-bold text-calm-deep-moss shadow-[0_4px_16px_rgba(185,198,165,0.3)] transition-all duration-200 hover:shadow-[0_6px_22px_rgba(185,198,165,0.45)] hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+            className="h-10 px-4 sm:px-5 flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-calm-lichen to-[#cde0b8] text-xs sm:text-sm font-bold text-calm-deep-moss shadow-[0_4px_16px_rgba(185,198,165,0.3)] transition-all duration-200 hover:shadow-[0_6px_22px_rgba(185,198,165,0.45)] hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100 mb-0.5"
           >
             {isStreaming ? (
               <LeafLoader variant="inline" size="sm" />
             ) : (
               <>
                 <span>Gửi</span>
-                <Send size={13} />
+                <Send size={14} />
               </>
             )}
           </button>
