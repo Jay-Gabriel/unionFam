@@ -1064,33 +1064,31 @@ function ConversationPageContent() {
               {message.role === 'user' ? (
                 <div className="ml-auto flex max-w-[88%] sm:max-w-[78%] items-start justify-end gap-2 sm:gap-3">
                   <div className="space-y-1 text-right min-w-0">
-                    <div className="break-words rounded-[20px] rounded-tr-[4px] sm:rounded-[24px] sm:rounded-tr-[6px] border border-calm-lichen/35 bg-gradient-to-br from-[#3b4c3e] to-[#2d3b30] px-4 py-2.5 sm:px-5 sm:py-3.5 text-left text-[14.5px] sm:text-[15.5px] leading-relaxed text-calm-paper-white shadow-[0_10px_28px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12)]">
+                    <div className="break-words rounded-[20px] rounded-tr-[4px] sm:rounded-[24px] sm:rounded-tr-[6px] border border-calm-lichen/35 bg-gradient-to-br from-[#3c4e3f] to-[#2d3b30] px-4 py-3 sm:px-5 sm:py-3.5 text-left text-[15px] sm:text-[16px] leading-[1.6] text-calm-paper-white shadow-[0_10px_28px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12)]">
                       {message.content}
                     </div>
-                    <span className="block px-2 text-[10px] sm:text-[11px] font-semibold text-calm-warm-ivory/80">{message.timestamp}</span>
+                    <span className="block px-2 text-[10.5px] sm:text-[11px] font-semibold text-calm-warm-ivory/80">{message.timestamp}</span>
                   </div>
-                  <div className="grid h-7 w-7 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/15 text-white shadow-sm mt-0.5">
-                    <UserRound size={13} className="sm:hidden" />
-                    <UserRound size={15} className="hidden sm:block" />
+                  <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/15 text-white shadow-sm mt-0.5">
+                    <UserRound size={15} />
                   </div>
                 </div>
               ) : (
-                <div className="flex max-w-[94%] sm:max-w-[85%] items-start gap-2 sm:gap-3.5">
-                  <div className="mt-0.5 grid h-7 w-7 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-2xl border border-calm-lichen/35 bg-calm-lichen/20 text-calm-lichen shadow-[0_4px_14px_rgba(185,198,165,0.25)]">
-                    <Sprout size={14} className="sm:hidden" />
-                    <Sprout size={16} className="hidden sm:block" />
+                <div className="flex max-w-[94%] sm:max-w-[85%] items-start gap-2.5 sm:gap-3.5">
+                  <div className="mt-0.5 grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-2xl border border-calm-lichen/35 bg-calm-lichen/20 text-calm-lichen shadow-[0_4px_14px_rgba(185,198,165,0.25)]">
+                    <Sprout size={16} />
                   </div>
                   <div className="min-w-0 flex-1 space-y-2 sm:space-y-2.5">
-                    <div className="break-words rounded-[22px] rounded-tl-[4px] sm:rounded-[26px] sm:rounded-tl-[6px] border border-white/[0.16] bg-gradient-to-b from-[#2e3b31]/98 to-[#243026]/98 backdrop-blur-md px-4 py-3 sm:px-5 sm:py-4 text-[14.5px] sm:text-[15.5px] leading-relaxed text-white shadow-[0_10px_35px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]">
+                    <div className="break-words rounded-[22px] rounded-tl-[4px] sm:rounded-[26px] sm:rounded-tl-[6px] border border-white/[0.16] bg-gradient-to-b from-[#2a362c]/98 to-[#202c22]/98 backdrop-blur-md px-4 py-3.5 sm:px-5 sm:py-4 text-[15px] sm:text-[16px] leading-[1.65] text-white shadow-[0_10px_35px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]">
                       {message.content ? (
-                        <div className="whitespace-pre-wrap text-white font-normal leading-relaxed">{message.content}</div>
+                        <div className="whitespace-pre-wrap text-[#f4f5f2] font-normal leading-[1.65]">{message.content}</div>
                       ) : isStreaming ? (
                         <LeafLoader variant="inline" size="sm" label="Life Lab đang cảm nhận & suy ngẫm…" />
                       ) : (
-                        <div className="whitespace-pre-wrap text-white font-normal leading-relaxed">{DEFAULT_OPENING_MESSAGE}</div>
+                        <div className="whitespace-pre-wrap text-[#f4f5f2] font-normal leading-[1.65]">{DEFAULT_OPENING_MESSAGE}</div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 px-2 text-[10px] sm:text-[11px] font-semibold text-calm-warm-ivory/80">
+                    <div className="flex items-center gap-2 px-2 text-[10.5px] sm:text-[11px] font-semibold text-calm-warm-ivory/80">
                       <span>{message.timestamp}</span>
                     </div>
 
