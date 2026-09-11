@@ -676,7 +676,10 @@ function ConversationPageContent() {
         }
         if (!cancelled) setConversationError(error instanceof Error ? error.message : 'Không thể tải cuộc trò chuyện');
       } finally {
-        if (!cancelled && !redirectingToConversationIndex) setIsLoadingConversation(false);
+        if (!cancelled && !redirectingToConversationIndex) {
+          setIsLoadingConversation(false);
+          setIsStreaming(false);
+        }
       }
     }
 
@@ -744,11 +747,30 @@ function ConversationPageContent() {
     ]);
 
     try {
+      let activeConversationId = conversationId;
+      if (!activeConversationId || activeConversationId === 'new') {
+        if (!newConversationPromiseRef.current) {
+          newConversationPromiseRef.current = (async () => {
+            const createResponse = await fetch('/api/conversations', { method: 'POST' });
+            if (!createResponse.ok) throw new Error('Không thể tạo cuộc trò chuyện');
+            const created = await createResponse.json();
+            return {
+              id: created.data.id as string,
+              data: created.data as Record<string, unknown>,
+              demoMode: created.demoMode === true,
+            };
+          })();
+        }
+        const created = await newConversationPromiseRef.current;
+        activeConversationId = created.id;
+        setConversationId(activeConversationId);
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          conversationId,
+          conversationId: activeConversationId,
           content: userText,
           recentMessages: [...messages, userMsg]
             .filter((message) => message.content.trim().length > 0)
@@ -763,6 +785,7 @@ function ConversationPageContent() {
         const json = await response.json().catch(() => ({}));
         setSendError(typeof json.error === 'string' ? `Chưa thể nhận phản hồi (${json.error}).` : 'Chưa thể nhận phản hồi từ Life Lab.');
         setRetryContent(userText);
+        setIsStreaming(false);
         return;
       }
 
