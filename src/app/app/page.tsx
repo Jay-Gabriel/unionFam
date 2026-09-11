@@ -30,7 +30,7 @@ import { LeafLoader } from '@/components/calm/leaf-loader';
 import { labelStage, labelStatus } from '@/lib/i18n';
 import { LifeArchetypeCardModal } from '@/components/calm/life-archetype-card';
 import { DailyZenCardModal } from '@/components/calm/daily-zen-card';
-import { SoulKnotGameModal } from '@/components/calm/soul-knot-game';
+import { PlayableLifeGameModal } from '@/components/calm/playable-life-game';
 
 const mapItems = [
   { key: 'my_life', index: '01', title: 'ĐỜI SỐNG MONG MUỐN', detail: 'Cuộc đời tôi muốn sống', icon: Compass, tone: 'bg-calm-lichen/15 text-calm-lichen' },
@@ -495,7 +495,7 @@ export default function DashboardOverviewPage() {
       </motion.div>
 
       {/* Modals */}
-      <SoulKnotGameModal
+      <PlayableLifeGameModal
         isOpen={isGameOpen}
         onClose={() => setIsGameOpen(false)}
       />
