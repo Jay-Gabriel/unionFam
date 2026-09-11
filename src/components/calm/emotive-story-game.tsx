@@ -182,6 +182,9 @@ export function EmotiveStoryGame({
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
 
       // Soft binaural chord
       [freq, freq * 1.25, freq * 1.5].forEach((f, idx) => {
@@ -262,46 +265,46 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
   };
 
   return (
-    <div className={`relative w-full max-w-4xl mx-auto overflow-hidden rounded-[36px] border border-calm-lichen/30 bg-gradient-to-b from-[#142217]/98 via-[#0f1a12]/98 to-[#09110b]/98 backdrop-blur-3xl p-6 sm:p-10 text-calm-paper-white shadow-[0_30px_90px_rgba(0,0,0,0.7)] ${isModal ? 'max-h-[92vh] overflow-y-auto' : ''}`}>
+    <div className={`relative w-full max-w-4xl mx-auto overflow-hidden rounded-[28px] sm:rounded-[36px] border border-calm-lichen/30 bg-gradient-to-b from-[#142217]/98 via-[#0f1a12]/98 to-[#09110b]/98 backdrop-blur-3xl p-4 sm:p-7 md:p-10 text-calm-paper-white shadow-[0_30px_90px_rgba(0,0,0,0.7)] touch-manipulation ${isModal ? 'max-h-[88vh] max-h-[88dvh] overflow-y-auto overscroll-contain' : ''}`}>
       {/* Background celestial particles & breathing aura */}
       <div className="pointer-events-none absolute -right-20 -top-20 h-96 w-96 rounded-full bg-gradient-to-br from-emerald-500/20 via-calm-pollen/15 to-transparent blur-3xl animate-pulse" />
       <div className="pointer-events-none absolute -left-20 -bottom-20 h-80 w-80 rounded-full bg-gradient-to-tr from-calm-lichen/20 via-transparent to-transparent blur-3xl" />
 
       {/* Top Header */}
-      <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-5">
-        <div className="flex items-center gap-3">
-          <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-tr from-calm-pollen/20 via-emerald-500/20 to-calm-lichen/20 border border-calm-pollen/40 shadow-[0_0_20px_rgba(238,213,150,0.3)]">
-            <Moon size={22} className="text-calm-pollen animate-pulse" />
+      <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-4 sm:pb-5 gap-2">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="relative grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-tr from-calm-pollen/20 via-emerald-500/20 to-calm-lichen/20 border border-calm-pollen/40 shadow-[0_0_20px_rgba(238,213,150,0.3)]">
+            <Moon size={20} className="text-calm-pollen animate-pulse" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-calm-pollen/15 border border-calm-pollen/30 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-calm-pollen">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="rounded-full bg-calm-pollen/15 border border-calm-pollen/30 px-2 py-0.5 text-[9px] sm:text-[9.5px] font-bold uppercase tracking-wider text-calm-pollen">
                 Trải Nghiệm Đánh Thức Cảm Xúc
               </span>
-              <span className="text-[11px] text-calm-fog">✦ Độc bản Life Lab ✦</span>
+              <span className="hidden xs:inline text-[10px] sm:text-[11px] text-calm-fog">✦ Độc bản Life Lab ✦</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-0.5">
+            <h2 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight text-white mt-0.5 truncate">
               Chuyến Tàu 00:00: Trạm Dừng Cho Tâm Hồn
             </h2>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:text-white transition"
+            className="grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:text-white transition active:scale-95"
             title={soundEnabled ? 'Tắt âm thanh tĩnh lặng' : 'Bật âm thanh'}
           >
-            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:text-white transition"
+              className="grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:text-white transition active:scale-95"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           )}
         </div>
@@ -309,20 +312,20 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
 
       {/* Step Indicator */}
       {currentStep > 0 && currentStep <= 3 && (
-        <div className="relative z-10 pt-4 flex items-center justify-between">
-          <span className="text-xs font-semibold text-calm-lichen">
+        <div className="relative z-10 pt-3 sm:pt-4 flex items-center justify-between gap-2">
+          <span className="text-[11px] sm:text-xs font-semibold text-calm-lichen truncate">
             Chặng {currentStep} / 3: {STORY_SCENES[currentStep - 1]?.stageName}
           </span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             {[1, 2, 3].map((step) => (
               <div
                 key={step}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
                   step === currentStep
-                    ? 'w-8 bg-calm-pollen shadow-[0_0_10px_rgba(238,213,150,0.5)]'
+                    ? 'w-6 sm:w-8 bg-calm-pollen shadow-[0_0_10px_rgba(238,213,150,0.5)]'
                     : step < currentStep
-                    ? 'w-4 bg-emerald-400'
-                    : 'w-4 bg-white/15'
+                    ? 'w-3 sm:w-4 bg-emerald-400'
+                    : 'w-3 sm:w-4 bg-white/15'
                 }`}
               />
             ))}
@@ -339,7 +342,7 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="relative z-10 py-10 flex flex-col items-center text-center space-y-7 max-w-2xl mx-auto"
+            className="relative z-10 py-6 sm:py-10 flex flex-col items-center text-center space-y-5 sm:space-y-7 max-w-2xl mx-auto"
           >
             <div className="relative">
               <motion.div
@@ -347,35 +350,36 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                 className="absolute -inset-6 rounded-full bg-gradient-to-tr from-calm-pollen/20 via-emerald-500/20 to-transparent blur-2xl"
               />
-              <div className="relative grid h-28 w-28 place-items-center rounded-full bg-gradient-to-b from-[#243a29] to-[#121f15] border-2 border-calm-pollen/50 shadow-[0_0_40px_rgba(238,213,150,0.3)]">
-                <Feather size={50} className="text-calm-pollen animate-pulse" />
+              <div className="relative grid h-20 w-20 sm:h-28 sm:w-28 place-items-center rounded-full bg-gradient-to-b from-[#243a29] to-[#121f15] border-2 border-calm-pollen/50 shadow-[0_0_40px_rgba(238,213,150,0.3)]">
+                <Feather size={38} className="text-calm-pollen animate-pulse sm:hidden" />
+                <Feather size={50} className="text-calm-pollen animate-pulse hidden sm:block" />
               </div>
             </div>
 
-            <div className="space-y-3">
-              <span className="text-[11px] uppercase tracking-widest text-emerald-300 font-mono">
+            <div className="space-y-2 sm:space-y-3 px-2">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-widest text-emerald-300 font-mono">
                 ✦ Dành cho những ai đang mệt nhoài ✦
               </span>
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
                 Đêm nay, bạn không cần phải tỏ ra mạnh mẽ nữa.
               </h3>
-              <p className="text-sm sm:text-base text-calm-fog/90 leading-relaxed max-w-xl mx-auto">
+              <p className="text-xs sm:text-sm md:text-base text-calm-fog/90 leading-relaxed max-w-xl mx-auto">
                 Chuyến tàu 00:00 chỉ chở một hành khách duy nhất: <strong>chính bạn</strong>. Hãy bước lên toa tàu, gỡ bỏ chiếc mặt nạ thường ngày và nhìn ngắm những vết thương chưa lành trong tĩnh lặng.
               </p>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 w-full flex justify-center">
               <button
                 type="button"
                 onClick={handleStartGame}
-                className="group relative flex items-center gap-3 rounded-full bg-gradient-to-r from-calm-pollen via-[#edd59a] to-calm-pollen px-9 py-4 text-sm sm:text-base font-extrabold text-black shadow-[0_0_35px_rgba(238,213,150,0.45)] hover:scale-105 active:scale-95 transition-all"
+                className="group relative flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-calm-pollen via-[#edd59a] to-calm-pollen px-7 sm:px-9 py-3.5 sm:py-4 text-xs sm:text-base font-extrabold text-black shadow-[0_0_35px_rgba(238,213,150,0.45)] hover:scale-105 active:scale-95 transition-all w-full max-w-xs sm:w-auto"
               >
                 <span>Bước Lên Chuyến Tàu</span>
-                <ArrowRight size={18} className="group-hover:translate-x-1.5 transition-transform" />
+                <ArrowRight size={16} className="group-hover:translate-x-1.5 transition-transform" />
               </button>
             </div>
 
-            <p className="text-[11px] text-calm-fog/60">
+            <p className="text-[10px] sm:text-[11px] text-calm-fog/60 px-4">
               * Không gian hoàn toàn riêng tư. Không lưu lại dữ liệu cá nhân nếu chưa có sự đồng ý của bạn.
             </p>
           </motion.div>
@@ -388,14 +392,14 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
-            className="relative z-10 py-6 space-y-6 max-w-2xl mx-auto"
+            className="relative z-10 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-2xl mx-auto"
           >
             {/* Question Title */}
-            <div className="text-center space-y-2">
-              <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">
+            <div className="text-center space-y-1.5 sm:space-y-2 px-1">
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight leading-snug">
                 {STORY_SCENES[currentStep - 1]?.title}
               </h3>
-              <p className="text-xs text-calm-fog">
+              <p className="text-[11px] sm:text-xs text-calm-fog">
                 {STORY_SCENES[currentStep - 1]?.prompt}
               </p>
             </div>
@@ -406,7 +410,7 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="rounded-2xl border border-calm-pollen/50 bg-gradient-to-r from-calm-pollen/20 via-[#2a3c2e] to-calm-pollen/20 p-4 text-center shadow-[0_0_30px_rgba(238,213,150,0.3)]"
+                className="rounded-2xl border border-calm-pollen/50 bg-gradient-to-r from-calm-pollen/20 via-[#2a3c2e] to-calm-pollen/20 p-3.5 sm:p-4 text-center shadow-[0_0_30px_rgba(238,213,150,0.3)]"
               >
                 <p className="text-xs sm:text-sm font-semibold text-calm-warm-ivory italic">
                   “{activeReaction}”
@@ -415,28 +419,28 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
             )}
 
             {/* Options List */}
-            <div className="space-y-3 pt-2">
-              {STORY_SCENES[currentStep - 1]?.options.map((option, idx) => (
+            <div className="space-y-2.5 sm:space-y-3 pt-1">
+              {STORY_SCENES[currentStep - 1]?.options.map((option) => (
                 <motion.button
                   key={option.id}
-                  whileHover={{ scale: 1.015, x: 4 }}
+                  whileHover={{ scale: 1.012, x: 3 }}
                   whileTap={{ scale: 0.985 }}
                   onClick={() => handleSelectOption(currentStep - 1, option)}
                   disabled={activeReaction !== null}
-                  className="w-full text-left group relative overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] p-4 sm:p-5 backdrop-blur-xl transition-all duration-300 hover:border-calm-pollen/60 hover:bg-white/[0.08] hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
+                  className="w-full text-left group relative overflow-hidden rounded-[20px] sm:rounded-[24px] border border-white/10 bg-white/[0.04] p-3.5 sm:p-5 backdrop-blur-xl transition-all duration-300 hover:border-calm-pollen/60 hover:bg-white/[0.08] hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)] active:bg-white/[0.1]"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1 max-w-[88%]">
-                      <p className="text-sm sm:text-base font-bold text-white group-hover:text-calm-pollen transition">
+                  <div className="flex items-start justify-between gap-2.5 sm:gap-3">
+                    <div className="space-y-1 max-w-[86%] sm:max-w-[88%]">
+                      <p className="text-xs sm:text-sm md:text-base font-bold text-white group-hover:text-calm-pollen transition leading-snug">
                         {option.text}
                       </p>
-                      <p className="text-xs text-calm-fog/85 leading-relaxed">
+                      <p className="text-[11px] sm:text-xs text-calm-fog/85 leading-relaxed">
                         {option.subtext}
                       </p>
                     </div>
 
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-calm-fog group-hover:border-calm-pollen/50 group-hover:bg-calm-pollen/20 group-hover:text-calm-pollen transition">
-                      <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                    <span className="grid h-7 w-7 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-calm-fog group-hover:border-calm-pollen/50 group-hover:bg-calm-pollen/20 group-hover:text-calm-pollen transition">
+                      <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
                     </span>
                   </div>
                 </motion.button>
@@ -452,15 +456,15 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative z-10 py-4 space-y-6 max-w-3xl mx-auto"
+            className="relative z-10 py-3 sm:py-4 space-y-4 sm:space-y-6 max-w-3xl mx-auto"
           >
             {/* Climax Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 border-b border-white/10 pb-3 sm:pb-4">
               <div>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">
+                <span className="text-[9.5px] sm:text-[10px] font-mono uppercase tracking-widest text-emerald-300">
                   ✦ Trạm Cuối: Ga Tĩnh Lặng ✦
                 </span>
-                <h3 className="text-xl sm:text-2xl font-bold text-white mt-0.5">
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white mt-0.5">
                   Bức Gương Soi Chiếu Tiềm Thức Của Bạn
                 </h3>
               </div>
@@ -468,7 +472,7 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
               <button
                 type="button"
                 onClick={handleRestart}
-                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-calm-fog hover:bg-white/15 hover:text-white transition"
+                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-calm-fog hover:bg-white/15 hover:text-white transition active:scale-95"
               >
                 <RotateCcw size={12} />
                 <span>Đi lại chuyến tàu</span>
@@ -476,19 +480,19 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
             </div>
 
             {/* 3 Emotional Insights Recap */}
-            <div className="grid gap-3.5 sm:grid-cols-3">
+            <div className="grid gap-2.5 sm:gap-3.5 grid-cols-1 sm:grid-cols-3">
               {userChoices.map((choice, idx) => (
                 <div
                   key={idx}
-                  className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.06] to-black/30 p-4 space-y-2 backdrop-blur-md"
+                  className="rounded-[20px] sm:rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.06] to-black/30 p-3.5 sm:p-4 space-y-1.5 sm:space-y-2 backdrop-blur-md"
                 >
-                  <span className="rounded-full bg-calm-pollen/15 px-2.5 py-0.5 text-[9px] font-bold uppercase text-calm-pollen border border-calm-pollen/30">
+                  <span className="rounded-full bg-calm-pollen/15 px-2.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold uppercase text-calm-pollen border border-calm-pollen/30">
                     Trạm {idx + 1} · {choice.toneScore}
                   </span>
                   <p className="text-xs font-bold text-calm-warm-ivory line-clamp-2">
                     {choice.text}
                   </p>
-                  <p className="text-[11px] text-calm-fog/80 italic border-t border-white/10 pt-2 leading-relaxed">
+                  <p className="text-[10.5px] sm:text-[11px] text-calm-fog/80 italic border-t border-white/10 pt-1.5 leading-relaxed">
                     “{choice.reaction}”
                   </p>
                 </div>
@@ -496,37 +500,37 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
             </div>
 
             {/* The Awakening Realization Card */}
-            <div className="rounded-[28px] border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/15 via-[#2b3a2d]/90 to-calm-pollen/15 p-5 sm:p-6 text-center space-y-2 shadow-[0_0_35px_rgba(238,213,150,0.15)]">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-calm-pollen flex items-center justify-center gap-1.5">
-                <Sparkles size={14} /> Thông điệp vũ trụ gửi đến bạn đêm nay
+            <div className="rounded-[22px] sm:rounded-[28px] border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/15 via-[#2b3a2d]/90 to-calm-pollen/15 p-4 sm:p-6 text-center space-y-1.5 sm:space-y-2 shadow-[0_0_35px_rgba(238,213,150,0.15)]">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-calm-pollen flex items-center justify-center gap-1.5">
+                <Sparkles size={13} /> Thông điệp vũ trụ gửi đến bạn đêm nay
               </span>
-              <p className="text-sm sm:text-base font-bold text-white max-w-xl mx-auto leading-relaxed">
+              <p className="text-xs sm:text-sm md:text-base font-bold text-white max-w-xl mx-auto leading-relaxed">
                 “Bạn không cần phải sửa chữa chính mình. Bạn chỉ cần ngừng gánh vác những kỳ vọng không thuộc về bạn. Hãy cho phép bản thân được sống thật một lần.”
               </p>
             </div>
 
             {/* THE CONVERSION HOOK: High-Empathy 1-Click to AI Companion Chat & Call */}
-            <div className="rounded-[30px] border border-emerald-400/50 bg-gradient-to-b from-[#1b3323]/98 via-[#13251a]/98 to-[#0b1710]/98 p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_rgba(52,211,153,0.25)] space-y-4">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-300 uppercase tracking-wider">
-                  <MessageCircleHeart size={16} />
+            <div className="rounded-[24px] sm:rounded-[30px] border border-emerald-400/50 bg-gradient-to-b from-[#1b3323]/98 via-[#13251a]/98 to-[#0b1710]/98 p-4 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_rgba(52,211,153,0.25)] space-y-3.5 sm:space-y-4">
+              <div className="space-y-1 sm:space-y-1.5">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                  <MessageCircleHeart size={15} />
                   <span>Người bạn đồng hành Life Lab đang ở đây</span>
                 </div>
-                <h4 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                <h4 className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight">
                   Bạn có muốn ngồi lại và trút hết nỗi niềm này cùng AI?
                 </h4>
-                <p className="text-xs sm:text-sm text-calm-lichen leading-relaxed">
+                <p className="text-[11px] sm:text-xs md:text-sm text-calm-lichen leading-relaxed">
                   Toàn bộ những cảm xúc và nút thắt bạn vừa bộc lộ đã được chuyển hóa thành một không gian đối thoại chân thành. Không phán xét. Không có lời khuyên sáo rỗng. Chỉ có sự thấu cảm tuyệt đối.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 pt-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-2">
                 <button
                   type="button"
                   onClick={handleStartChat}
-                  className="flex-1 min-w-[260px] flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-6 py-4 text-xs sm:text-sm font-extrabold text-black shadow-[0_0_30px_rgba(52,211,153,0.5)] hover:scale-[1.02] active:scale-98 transition"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-extrabold text-black shadow-[0_0_30px_rgba(52,211,153,0.5)] hover:scale-[1.02] active:scale-98 transition text-center"
                 >
-                  <MessageCircleHeart size={18} />
+                  <MessageCircleHeart size={16} />
                   <span>Mở Lòng Trò Chuyện Cùng AI Ngay →</span>
                 </button>
 
@@ -536,9 +540,9 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
                     router.push('/app/conversations/new?call=true');
                     onClose?.();
                   }}
-                  className="flex items-center justify-center gap-2 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-6 py-4 text-xs sm:text-sm font-bold text-calm-pollen hover:bg-calm-pollen/25 transition"
+                  className="flex items-center justify-center gap-2 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-calm-pollen hover:bg-calm-pollen/25 transition active:scale-98"
                 >
-                  <PhoneCall size={16} />
+                  <PhoneCall size={15} />
                   <span>Gọi thoại 1:1 trong tĩnh lặng</span>
                 </button>
               </div>
@@ -560,7 +564,7 @@ export function EmotiveStoryGameModal({
   if (!isOpen) return null;
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto overscroll-contain">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}

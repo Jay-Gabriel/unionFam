@@ -138,6 +138,9 @@ export function PlayableLifeGame({
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -522,35 +525,35 @@ export function PlayableLifeGame({
   const selectedDilemmaResult = chosenOption === 'left' ? currentDilemma?.leftOption : currentDilemma?.rightOption;
 
   return (
-    <div className={`relative w-full max-w-4xl mx-auto overflow-hidden rounded-[36px] border border-white/15 bg-gradient-to-b from-[#1c2c1f]/98 via-[#142217]/98 to-[#0d160f]/98 backdrop-blur-2xl p-5 sm:p-8 text-calm-paper-white shadow-[0_25px_80px_rgba(0,0,0,0.6)] ${isModal ? 'max-h-[92vh] overflow-y-auto' : ''}`}>
+    <div className={`relative w-full max-w-4xl mx-auto overflow-hidden rounded-[28px] sm:rounded-[36px] border border-white/15 bg-gradient-to-b from-[#1c2c1f]/98 via-[#142217]/98 to-[#0d160f]/98 backdrop-blur-2xl p-4 sm:p-7 md:p-8 text-calm-paper-white shadow-[0_25px_80px_rgba(0,0,0,0.6)] touch-manipulation ${isModal ? 'max-h-[88vh] max-h-[88dvh] overflow-y-auto overscroll-contain' : ''}`}>
       {/* Ambient background lightings */}
       <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-gradient-to-br from-emerald-500/20 via-calm-pollen/15 to-transparent blur-3xl" />
       <div className="pointer-events-none absolute -left-20 -bottom-20 h-80 w-80 rounded-full bg-gradient-to-tr from-calm-lichen/20 via-transparent to-transparent blur-3xl" />
 
       {/* Top Header Bar */}
-      <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-4">
-        <div className="flex items-center gap-3">
+      <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-4 gap-2">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="relative grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-tr from-emerald-400/25 to-calm-pollen/25 border border-emerald-400/40 shadow-[0_0_15px_rgba(52,211,153,0.3)]">
             <Sprout size={20} className="text-emerald-300 animate-pulse" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-emerald-300">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] sm:text-[9.5px] font-bold uppercase tracking-wider text-emerald-300">
                 Playable Mini-Game
               </span>
-              <span className="text-[11px] text-calm-fog">✦ Thử thách phản xạ & Trực giác ✦</span>
+              <span className="hidden xs:inline text-[10px] sm:text-[11px] text-calm-fog">✦ Thử thách phản xạ & Trực giác ✦</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white mt-0.5">
+            <h2 className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-white mt-0.5 truncate">
               Hành Trình Hạt Mầm: Vượt Bão Tâm Trí
             </h2>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:text-white transition"
+            className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:text-white transition active:scale-95"
             title={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
           >
             {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
@@ -559,7 +562,7 @@ export function PlayableLifeGame({
             <button
               type="button"
               onClick={onClose}
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:text-white transition"
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:text-white transition active:scale-95"
             >
               <X size={16} />
             </button>
@@ -576,7 +579,7 @@ export function PlayableLifeGame({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
-            className="relative z-10 py-8 flex flex-col items-center text-center space-y-6 max-w-xl mx-auto"
+            className="relative z-10 py-6 sm:py-8 flex flex-col items-center text-center space-y-5 sm:space-y-6 max-w-xl mx-auto"
           >
             <div className="relative">
               <motion.div
@@ -584,13 +587,13 @@ export function PlayableLifeGame({
                 transition={{ duration: 2.2, repeat: Infinity }}
                 className="absolute -inset-4 rounded-full bg-gradient-to-tr from-emerald-400/30 via-calm-pollen/20 to-transparent blur-xl"
               />
-              <div className="relative grid h-24 w-24 place-items-center rounded-full bg-gradient-to-b from-[#2a4030] to-[#16241a] border-2 border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.35)]">
-                <Sprout size={44} className="text-emerald-300 animate-bounce" />
+              <div className="relative grid h-20 w-20 sm:h-24 sm:w-24 place-items-center rounded-full bg-gradient-to-b from-[#2a4030] to-[#16241a] border-2 border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.35)]">
+                <Sprout size={38} className="text-emerald-300 animate-bounce" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h3 className="text-2xl font-extrabold text-white tracking-tight">
+            <div className="space-y-1.5 sm:space-y-2 px-2">
+              <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                 Vượt Qua Bão Suy Nghĩ & Lắng Nghe Trực Giác
               </h3>
               <p className="text-xs sm:text-sm text-calm-fog leading-relaxed">
@@ -599,7 +602,7 @@ export function PlayableLifeGame({
             </div>
 
             {/* How to play pill guide */}
-            <div className="grid grid-cols-3 gap-3 w-full text-left">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 w-full text-left">
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 space-y-1">
                 <span className="text-[10px] font-bold text-calm-lichen uppercase tracking-wider">1. Điều khiển</span>
                 <p className="text-[11px] text-calm-fog">Phím mũi tên / A-D hoặc Chạm vuốt trên màn hình</p>
@@ -617,9 +620,9 @@ export function PlayableLifeGame({
             <button
               type="button"
               onClick={startGame}
-              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-8 py-3.5 text-sm font-extrabold text-black shadow-[0_0_30px_rgba(52,211,153,0.5)] hover:scale-105 active:scale-95 transition"
+              className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-7 sm:px-8 py-3.5 text-xs sm:text-sm font-extrabold text-black shadow-[0_0_30px_rgba(52,211,153,0.5)] hover:scale-105 active:scale-95 transition w-full sm:w-auto"
             >
-              <Play size={18} fill="currentColor" />
+              <Play size={17} fill="currentColor" />
               <span>BẮT ĐẦU CHƠI NGAY (25s)</span>
             </button>
           </motion.div>
@@ -635,12 +638,12 @@ export function PlayableLifeGame({
             className="relative z-10 py-2 space-y-3"
           >
             {/* Live Stats Header */}
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/40 px-4 py-2 text-xs">
-              <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/40 px-3.5 sm:px-4 py-2 text-xs gap-2">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <div className="flex items-center gap-1.5">
                   <Trophy size={14} className="text-calm-pollen" />
                   <span className="font-mono font-bold text-white">{score}</span>
-                  <span className="text-[10px] text-calm-fog">Điểm</span>
+                  <span className="text-[10px] text-calm-fog hidden xs:inline">Điểm</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Shield size={14} className={shieldActive ? 'text-emerald-400 animate-pulse' : 'text-calm-fog/40'} />
@@ -649,7 +652,7 @@ export function PlayableLifeGame({
               </div>
 
               {/* Energy Bar */}
-              <div className="flex items-center gap-2 min-w-[140px]">
+              <div className="flex items-center gap-2 min-w-[110px] sm:min-w-[140px]">
                 <Flame size={14} className="text-calm-danger-clay" />
                 <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10 border border-white/10">
                   <div
@@ -667,19 +670,19 @@ export function PlayableLifeGame({
                 ref={canvasRef}
                 width={500}
                 height={400}
-                className="w-full max-w-[500px] h-[340px] sm:h-[380px] cursor-crosshair"
+                className="w-full max-w-[500px] h-[300px] sm:h-[380px] cursor-crosshair"
                 onTouchMove={handleCanvasTouchMove}
                 onMouseMove={handleCanvasMouseMove}
               />
 
               {/* Subtle instruction overlay */}
-              <div className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[10.5px] text-calm-fog/60">
+              <div className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[10px] sm:text-[10.5px] text-calm-fog/60 px-2">
                 Vuốt ngón tay hoặc nhấn phím ← → để di chuyển hạt mầm
               </div>
             </div>
 
             {/* Mobile Virtual Controller Buttons */}
-            <div className="flex items-center justify-center gap-4 pt-1 sm:hidden">
+            <div className="flex items-center justify-center gap-3 pt-1 sm:hidden">
               <button
                 type="button"
                 onClick={moveLeft}
@@ -705,13 +708,13 @@ export function PlayableLifeGame({
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.96 }}
-            className="relative z-10 py-6 space-y-6 max-w-2xl mx-auto text-center"
+            className="relative z-10 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-2xl mx-auto text-center"
           >
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-calm-pollen">
+            <div className="space-y-1.5 sm:space-y-2 px-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-3 py-1 text-[9.5px] sm:text-[10px] font-bold uppercase tracking-widest text-calm-pollen">
                 <Sparkles size={12} /> Cây Cổ Thụ Nhận Thức Xuất Hiện
               </span>
-              <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
                 Bạn đã vượt qua bão tâm trí! Giờ là lúc lựa chọn ngã rẽ:
               </h3>
               <p className="text-xs sm:text-sm text-calm-fog leading-relaxed">
@@ -720,28 +723,28 @@ export function PlayableLifeGame({
             </div>
 
             {/* 2 Decision Portals */}
-            <div className="grid gap-4 sm:grid-cols-2 text-left pt-2">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 text-left pt-1 sm:pt-2">
               {/* Left Portal */}
               <motion.button
                 type="button"
-                whileHover={{ scale: 1.02, y: -2 }}
+                whileHover={{ scale: 1.015, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleSelectDilemma('left')}
-                className="group relative overflow-hidden rounded-[26px] border border-calm-pollen/50 bg-gradient-to-b from-[#2a382b]/90 to-[#18241b]/90 p-5 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-calm-pollen transition-all"
+                className="group relative overflow-hidden rounded-[22px] sm:rounded-[26px] border border-calm-pollen/50 bg-gradient-to-b from-[#2a382b]/90 to-[#18241b]/90 p-4 sm:p-5 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-calm-pollen transition-all"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="rounded-full bg-calm-pollen/20 px-2.5 py-0.5 text-[9.5px] font-bold text-calm-pollen border border-calm-pollen/30">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <span className="rounded-full bg-calm-pollen/20 px-2.5 py-0.5 text-[9px] sm:text-[9.5px] font-bold text-calm-pollen border border-calm-pollen/30">
                     {currentDilemma.leftOption.tag}
                   </span>
-                  <span className="text-xl group-hover:scale-110 transition-transform">🚪</span>
+                  <span className="text-lg sm:text-xl group-hover:scale-110 transition-transform">🚪</span>
                 </div>
-                <h4 className="text-sm font-bold text-white group-hover:text-calm-pollen transition">
+                <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-calm-pollen transition">
                   {currentDilemma.leftOption.label}
                 </h4>
-                <p className="mt-1 text-xs text-calm-fog leading-snug">
+                <p className="mt-1 text-[11px] sm:text-xs text-calm-fog leading-snug">
                   {currentDilemma.leftOption.sub}
                 </p>
-                <div className="mt-4 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-semibold text-calm-pollen">
+                <div className="mt-3 sm:mt-4 pt-2 border-t border-white/10 flex items-center justify-between text-[10.5px] sm:text-[11px] font-semibold text-calm-pollen">
                   <span>Bước vào cánh cổng này</span>
                   <span className="group-hover:translate-x-1 transition-transform">Chọn →</span>
                 </div>
@@ -750,24 +753,24 @@ export function PlayableLifeGame({
               {/* Right Portal */}
               <motion.button
                 type="button"
-                whileHover={{ scale: 1.02, y: -2 }}
+                whileHover={{ scale: 1.015, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleSelectDilemma('right')}
-                className="group relative overflow-hidden rounded-[26px] border border-emerald-500/50 bg-gradient-to-b from-[#1c3523]/90 to-[#102216]/90 p-5 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-emerald-400 transition-all"
+                className="group relative overflow-hidden rounded-[22px] sm:rounded-[26px] border border-emerald-500/50 bg-gradient-to-b from-[#1c3523]/90 to-[#102216]/90 p-4 sm:p-5 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-emerald-400 transition-all"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[9.5px] font-bold text-emerald-300 border border-emerald-500/30">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[9px] sm:text-[9.5px] font-bold text-emerald-300 border border-emerald-500/30">
                     {currentDilemma.rightOption.tag}
                   </span>
-                  <span className="text-xl group-hover:scale-110 transition-transform">✨</span>
+                  <span className="text-lg sm:text-xl group-hover:scale-110 transition-transform">✨</span>
                 </div>
-                <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition">
+                <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-emerald-300 transition">
                   {currentDilemma.rightOption.label}
                 </h4>
-                <p className="mt-1 text-xs text-calm-fog leading-snug">
+                <p className="mt-1 text-[11px] sm:text-xs text-calm-fog leading-snug">
                   {currentDilemma.rightOption.sub}
                 </p>
-                <div className="mt-4 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-semibold text-emerald-300">
+                <div className="mt-3 sm:mt-4 pt-2 border-t border-white/10 flex items-center justify-between text-[10.5px] sm:text-[11px] font-semibold text-emerald-300">
                   <span>Bước vào cánh cổng này</span>
                   <span className="group-hover:translate-x-1 transition-transform">Chọn →</span>
                 </div>
@@ -783,15 +786,15 @@ export function PlayableLifeGame({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            className="relative z-10 py-4 space-y-5"
+            className="relative z-10 py-3 sm:py-4 space-y-4 sm:space-y-5"
           >
             {/* Player Stats Recap */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 border-b border-white/10 pb-3 sm:pb-4">
               <div>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">
+                <span className="text-[9.5px] sm:text-[10px] font-mono uppercase tracking-widest text-emerald-300">
                   ✦ Báo Cáo Giải Mã Tâm Trí Sau Ván Chơi ✦
                 </span>
-                <h3 className="text-lg sm:text-xl font-bold text-white">
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-white">
                   Bạn chọn: {selectedDilemmaResult.label}
                 </h3>
               </div>
@@ -799,7 +802,7 @@ export function PlayableLifeGame({
               <button
                 type="button"
                 onClick={startGame}
-                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-calm-fog hover:bg-white/15 hover:text-white transition"
+                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-calm-fog hover:bg-white/15 hover:text-white transition active:scale-95"
               >
                 <RotateCcw size={12} />
                 <span>Chơi lại</span>
@@ -807,24 +810,24 @@ export function PlayableLifeGame({
             </div>
 
             {/* 3 Metric Insight Badges */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-3 text-center space-y-0.5">
-                <p className="text-[10px] text-calm-fog uppercase">Điểm Tĩnh Lặng</p>
-                <p className="text-base sm:text-lg font-bold text-calm-pollen">{score} pts</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-2.5 sm:p-3 text-center space-y-0.5">
+                <p className="text-[9.5px] sm:text-[10px] text-calm-fog uppercase">Điểm Tĩnh Lặng</p>
+                <p className="text-sm sm:text-base md:text-lg font-bold text-calm-pollen">{score} pts</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-3 text-center space-y-0.5">
-                <p className="text-[10px] text-calm-fog uppercase">Cơn Bão Đã Né</p>
-                <p className="text-base sm:text-lg font-bold text-emerald-300">{dodgedCount} lần</p>
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-2.5 sm:p-3 text-center space-y-0.5">
+                <p className="text-[9.5px] sm:text-[10px] text-calm-fog uppercase">Cơn Bão Đã Né</p>
+                <p className="text-sm sm:text-base md:text-lg font-bold text-emerald-300">{dodgedCount} lần</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-3 text-center space-y-0.5">
-                <p className="text-[10px] text-calm-fog uppercase">Năng Lượng Giữ</p>
-                <p className="text-base sm:text-lg font-bold text-calm-lichen">{energy}%</p>
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-2.5 sm:p-3 text-center space-y-0.5">
+                <p className="text-[9.5px] sm:text-[10px] text-calm-fog uppercase">Năng Lượng Giữ</p>
+                <p className="text-sm sm:text-base md:text-lg font-bold text-calm-lichen">{energy}%</p>
               </div>
             </div>
 
             {/* Subconscious Blindspot Analysis */}
-            <div className="rounded-[24px] border border-calm-danger-clay/40 bg-gradient-to-b from-calm-danger-clay/15 to-black/30 p-4 sm:p-5 space-y-1.5">
-              <div className="flex items-center gap-2 text-xs font-bold text-calm-danger-clay uppercase tracking-wider">
+            <div className="rounded-[20px] sm:rounded-[24px] border border-calm-danger-clay/40 bg-gradient-to-b from-calm-danger-clay/15 to-black/30 p-3.5 sm:p-5 space-y-1.5">
+              <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-calm-danger-clay uppercase tracking-wider">
                 <Flame size={14} />
                 <span>Điểm mù tiềm thức được nhận diện qua ván chơi</span>
               </div>
@@ -834,26 +837,26 @@ export function PlayableLifeGame({
             </div>
 
             {/* THE CONVERSION HOOK: Directly into AI Chat & Voice Call */}
-            <div className="rounded-[28px] border border-emerald-500/40 bg-gradient-to-b from-[#1a2f1f]/95 via-[#122216]/95 to-[#0b170e]/95 p-5 sm:p-6 shadow-[0_15px_40px_rgba(0,0,0,0.5),0_0_25px_rgba(52,211,153,0.18)] space-y-4">
+            <div className="rounded-[24px] sm:rounded-[28px] border border-emerald-500/40 bg-gradient-to-b from-[#1a2f1f]/95 via-[#122216]/95 to-[#0b170e]/95 p-4 sm:p-6 shadow-[0_15px_40px_rgba(0,0,0,0.5),0_0_25px_rgba(52,211,153,0.18)] space-y-3.5 sm:space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <h4 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
-                    <MessageCircleHeart size={18} className="text-emerald-400" />
+                  <h4 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-2">
+                    <MessageCircleHeart size={17} className="text-emerald-400 shrink-0" />
                     <span>Life Lab đã sẵn sàng cùng bạn gỡ nút thắt này</span>
                   </h4>
-                  <p className="text-xs text-calm-lichen leading-relaxed">
+                  <p className="text-[11px] sm:text-xs text-calm-lichen leading-relaxed">
                     Mọi lựa chọn trong game phản ánh chính xác trạng thái tâm trí thực tế của bạn. Hãy để AI đồng hành bóc tách sâu hơn về lựa chọn này ngay bây giờ.
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1 sm:pt-2">
                 <button
                   type="button"
                   onClick={handleStartChat}
-                  className="flex-1 min-w-[240px] flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-6 py-3.5 text-xs sm:text-sm font-extrabold text-black shadow-[0_0_25px_rgba(52,211,153,0.4)] hover:scale-[1.02] active:scale-98 transition"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-extrabold text-black shadow-[0_0_25px_rgba(52,211,153,0.4)] hover:scale-[1.02] active:scale-98 transition text-center"
                 >
-                  <MessageCircleHeart size={17} />
+                  <MessageCircleHeart size={16} />
                   <span>Trò chuyện cùng AI về ngã rẽ này ngay →</span>
                 </button>
 
@@ -863,7 +866,7 @@ export function PlayableLifeGame({
                     router.push('/app/conversations/new?call=true');
                     onClose?.();
                   }}
-                  className="flex items-center justify-center gap-2 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-5 py-3.5 text-xs sm:text-sm font-bold text-calm-pollen hover:bg-calm-pollen/25 transition"
+                  className="flex items-center justify-center gap-2 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-5 py-3.5 text-xs sm:text-sm font-bold text-calm-pollen hover:bg-calm-pollen/25 transition active:scale-98"
                 >
                   <PhoneCall size={15} />
                   <span>Gọi thoại 1:1</span>
@@ -887,7 +890,7 @@ export function PlayableLifeGameModal({
   if (!isOpen) return null;
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto overscroll-contain">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}

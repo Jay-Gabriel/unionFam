@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -128,6 +128,16 @@ export function SoulKnotGame({
   const [selectedKnot, setSelectedKnot] = useState<SoulKnot | null>(null);
   const [chargeProgress, setChargeProgress] = useState(0);
   const [isPressing, setIsPressing] = useState(false);
+  const chargeTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (chargeTimerRef.current) {
+        clearInterval(chargeTimerRef.current);
+      }
+    };
+  }, []);
 
   // Handle Hold to Unlock Mini-game mechanic
   const startCharging = (knot: SoulKnot) => {
@@ -136,25 +146,38 @@ export function SoulKnotGame({
     setChargeProgress(0);
   };
 
-  const handleChargeStart = () => {
+  const stopCharging = () => {
+    setIsPressing(false);
+    if (chargeTimerRef.current) {
+      clearInterval(chargeTimerRef.current);
+      chargeTimerRef.current = null;
+    }
+  };
+
+  const handleChargeStart = (e?: React.TouchEvent | React.MouseEvent) => {
+    if (e) {
+      // Prevent default context menu on long press (especially iOS Safari)
+      e.stopPropagation();
+    }
+    stopCharging();
     setIsPressing(true);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
+
+    chargeTimerRef.current = setInterval(() => {
       setChargeProgress((p) => {
         if (p >= 100) {
-          clearInterval(interval);
-          setTimeout(() => setStep('revealed'), 300);
+          if (chargeTimerRef.current) clearInterval(chargeTimerRef.current);
+          setTimeout(() => setStep('revealed'), 250);
           return 100;
         }
-        return p + 5;
+        return p + 6;
       });
     }, 45);
   };
 
   const handleQuickUnlock = () => {
+    stopCharging();
     setChargeProgress(100);
-    setTimeout(() => setStep('revealed'), 200);
+    setTimeout(() => setStep('revealed'), 150);
   };
 
   const handleStartChatWithKnot = () => {
@@ -167,29 +190,29 @@ export function SoulKnotGame({
   };
 
   return (
-    <div className={`relative w-full max-w-4xl mx-auto overflow-hidden rounded-[36px] border border-white/15 bg-gradient-to-b from-[#212f24]/98 via-[#18241b]/98 to-[#101912]/98 backdrop-blur-2xl p-6 sm:p-9 text-calm-paper-white shadow-[0_25px_80px_rgba(0,0,0,0.6)] ${isModal ? 'max-h-[90vh] overflow-y-auto' : ''}`}>
+    <div className={`relative w-full max-w-4xl mx-auto overflow-hidden rounded-[28px] sm:rounded-[36px] border border-white/15 bg-gradient-to-b from-[#212f24]/98 via-[#18241b]/98 to-[#101912]/98 backdrop-blur-2xl p-4 sm:p-7 md:p-9 text-calm-paper-white shadow-[0_25px_80px_rgba(0,0,0,0.6)] touch-manipulation ${isModal ? 'max-h-[88vh] max-h-[88dvh] overflow-y-auto overscroll-contain' : ''}`}>
       {/* Background ambient lighting */}
       <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-gradient-to-br from-calm-lichen/20 via-calm-pollen/15 to-transparent blur-3xl" />
       <div className="pointer-events-none absolute -left-20 -bottom-20 h-80 w-80 rounded-full bg-gradient-to-tr from-emerald-500/15 via-transparent to-transparent blur-3xl" />
 
       {/* Header bar */}
-      <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-5">
-        <div className="flex items-center gap-3">
-          <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-tr from-calm-lichen/20 to-calm-pollen/20 border border-calm-lichen/40 shadow-[0_0_15px_rgba(185,198,165,0.3)]">
-            <Sprout size={22} className="text-calm-lichen animate-leaf-wave-1" />
+      <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-4 sm:pb-5 gap-2">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="relative grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-tr from-calm-lichen/20 to-calm-pollen/20 border border-calm-lichen/40 shadow-[0_0_15px_rgba(185,198,165,0.3)]">
+            <Sprout size={20} className="text-calm-lichen animate-leaf-wave-1" />
             <span className="absolute -top-1 -right-1 flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-calm-pollen opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-calm-pollen"></span>
             </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-calm-pollen/15 border border-calm-pollen/30 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-calm-pollen">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="rounded-full bg-calm-pollen/15 border border-calm-pollen/30 px-2 py-0.5 text-[9px] sm:text-[9.5px] font-bold uppercase tracking-wider text-calm-pollen">
                 Game Tương Tác Tâm Trí
               </span>
-              <span className="text-[11px] text-calm-fog">✦ Bước đệm thấu hiểu ✦</span>
+              <span className="hidden xs:inline text-[10px] sm:text-[11px] text-calm-fog">✦ Bước đệm thấu hiểu ✦</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-0.5">
+            <h2 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight text-white mt-0.5 truncate">
               La Bàn Gieo Hạt & Gỡ Nút Thắt Cuộc Sống
             </h2>
           </div>
@@ -199,9 +222,9 @@ export function SoulKnotGame({
           <button
             type="button"
             onClick={onClose}
-            className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:bg-white/15 hover:text-white transition"
+            className="grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-fog hover:bg-white/15 hover:text-white transition active:scale-95 shrink-0"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         )}
       </div>
@@ -214,43 +237,43 @@ export function SoulKnotGame({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="relative z-10 py-6 space-y-6"
+            className="relative z-10 py-4 sm:py-6 space-y-4 sm:space-y-6"
           >
-            <div className="text-center max-w-xl mx-auto space-y-2">
-              <p className="text-sm font-semibold text-calm-warm-ivory">
+            <div className="text-center max-w-xl mx-auto space-y-1.5 sm:space-y-2 px-1">
+              <p className="text-xs sm:text-sm font-semibold text-calm-warm-ivory">
                 Hôm nay bạn đang trăn trở hoặc cảm thấy bế tắc nhất ở điều gì?
               </p>
-              <p className="text-xs text-calm-fog leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-calm-fog leading-relaxed">
                 Chọn 1 nút thắt đang chiếm trọn tâm trí bạn để kích hoạt hạt mầm giải mã và bắt đầu cuộc đối thoại khai sáng.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5 pt-1 sm:pt-2">
               {SOUL_KNOTS.map((knot) => (
                 <motion.div
                   key={knot.id}
-                  whileHover={{ scale: 1.02, y: -3 }}
+                  whileHover={{ scale: 1.015, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => startCharging(knot)}
-                  className={`cursor-pointer group relative overflow-hidden rounded-[24px] border ${knot.borderColor} bg-gradient-to-b ${knot.bgGradient} bg-black/40 p-4 sm:p-5 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition-all duration-300 hover:shadow-[0_15px_40px_rgba(0,0,0,0.5)]`}
+                  className={`cursor-pointer group relative overflow-hidden rounded-[20px] sm:rounded-[24px] border ${knot.borderColor} bg-gradient-to-b ${knot.bgGradient} bg-black/40 p-3.5 sm:p-5 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition-all duration-300 hover:shadow-[0_15px_40px_rgba(0,0,0,0.5)] active:bg-black/60`}
                 >
                   <div className="flex items-start justify-between">
-                    <span className="text-3xl group-hover:scale-110 transition-transform">{knot.icon}</span>
-                    <span className="grid h-7 w-7 place-items-center rounded-full border border-white/15 bg-white/5 text-calm-fog group-hover:bg-white/20 group-hover:text-white transition">
-                      <ArrowRight size={13} />
+                    <span className="text-2xl sm:text-3xl group-hover:scale-110 transition-transform">{knot.icon}</span>
+                    <span className="grid h-6 w-6 sm:h-7 sm:w-7 place-items-center rounded-full border border-white/15 bg-white/5 text-calm-fog group-hover:bg-white/20 group-hover:text-white transition">
+                      <ArrowRight size={12} />
                     </span>
                   </div>
 
-                  <div className="mt-3.5 space-y-1">
-                    <h3 className="text-sm font-bold text-white group-hover:text-calm-warm-ivory transition">
+                  <div className="mt-2.5 sm:mt-3.5 space-y-1">
+                    <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-calm-warm-ivory transition leading-snug">
                       {knot.title}
                     </h3>
-                    <p className="text-xs text-calm-fog/80 leading-snug">
+                    <p className="text-[11px] sm:text-xs text-calm-fog/80 leading-snug">
                       {knot.subtitle}
                     </p>
                   </div>
 
-                  <div className="mt-3.5 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] font-semibold text-calm-lichen">
+                  <div className="mt-2.5 sm:mt-3.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10.5px] sm:text-[11px] font-semibold text-calm-lichen">
                     <span>Chạm để giải mã</span>
                     <span className="group-hover:translate-x-1 transition-transform">Gỡ nút →</span>
                   </div>
@@ -266,44 +289,48 @@ export function SoulKnotGame({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative z-10 py-10 flex flex-col items-center justify-center text-center space-y-7"
+            className="relative z-10 py-6 sm:py-10 flex flex-col items-center justify-center text-center space-y-5 sm:space-y-7"
           >
-            <div className="space-y-2 max-w-md">
-              <span className="text-4xl">{selectedKnot.icon}</span>
-              <h3 className="text-2xl font-bold text-white tracking-tight">{selectedKnot.title}</h3>
-              <p className="text-xs text-calm-fog leading-relaxed">
+            <div className="space-y-1.5 sm:space-y-2 max-w-md px-2">
+              <span className="text-3xl sm:text-4xl">{selectedKnot.icon}</span>
+              <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{selectedKnot.title}</h3>
+              <p className="text-[11px] sm:text-xs text-calm-fog leading-relaxed">
                 Hãy hít một hơi thật sâu. Chạm và giữ quả cầu bên dưới để truyền năng lượng nhận thức vào nút thắt này.
               </p>
             </div>
 
             {/* Interactive Pulse Charging Orb */}
-            <div className="relative flex items-center justify-center my-4">
+            <div className="relative flex items-center justify-center my-2 sm:my-4">
               <motion.div
                 animate={{
                   scale: [1, 1.25, 1],
                   opacity: [0.3, 0.7, 0.3],
                 }}
                 transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute h-48 w-48 rounded-full border-2 border-calm-pollen/40 bg-calm-pollen/15 blur-lg"
+                className="absolute h-40 w-40 sm:h-48 sm:w-48 rounded-full border-2 border-calm-pollen/40 bg-calm-pollen/15 blur-lg"
               />
 
               <button
                 type="button"
                 onMouseDown={handleChargeStart}
+                onMouseUp={stopCharging}
+                onMouseLeave={stopCharging}
                 onTouchStart={handleChargeStart}
+                onTouchEnd={stopCharging}
+                onTouchCancel={stopCharging}
                 onClick={handleQuickUnlock}
-                className="relative grid h-32 w-32 place-items-center rounded-full bg-gradient-to-tr from-[#384c3b] via-[#243527] to-[#384c3b] border-2 border-calm-lichen text-calm-warm-ivory shadow-[0_0_45px_rgba(185,198,165,0.4)] cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none"
+                className="relative grid h-28 w-28 sm:h-32 sm:w-32 place-items-center rounded-full bg-gradient-to-tr from-[#384c3b] via-[#243527] to-[#384c3b] border-2 border-calm-lichen text-calm-warm-ivory shadow-[0_0_45px_rgba(185,198,165,0.4)] cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none touch-none"
               >
                 <div className="flex flex-col items-center gap-1 text-center">
-                  <Sparkles size={24} className="text-calm-pollen animate-pulse" />
-                  <span className="text-xs font-bold text-white">Chạm & Giữ</span>
+                  <Sparkles size={22} className="text-calm-pollen animate-pulse" />
+                  <span className="text-xs font-bold text-white">{isPressing ? 'Đang nạp...' : 'Chạm & Giữ'}</span>
                   <span className="text-[10px] font-mono text-calm-pollen">{chargeProgress}%</span>
                 </div>
               </button>
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full max-w-xs space-y-2">
+            <div className="w-full max-w-xs space-y-2 px-2">
               <div className="h-2 w-full overflow-hidden rounded-full bg-black/40 border border-white/10">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-calm-lichen via-calm-pollen to-emerald-400 transition-all duration-100"
@@ -313,7 +340,7 @@ export function SoulKnotGame({
               <button
                 type="button"
                 onClick={handleQuickUnlock}
-                className="text-[11.5px] text-calm-lichen underline hover:text-white transition"
+                className="text-[11px] sm:text-[11.5px] text-calm-lichen underline hover:text-white transition active:scale-95"
               >
                 Hoặc bấm để mở khóa ngay →
               </button>
@@ -327,24 +354,24 @@ export function SoulKnotGame({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            className="relative z-10 py-6 space-y-6"
+            className="relative z-10 py-4 sm:py-6 space-y-4 sm:space-y-6"
           >
             {/* Top Result Badge */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">{selectedKnot.icon}</span>
+            <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 border-b border-white/10 pb-3 sm:pb-4">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <span className="text-2xl sm:text-3xl">{selectedKnot.icon}</span>
                 <div>
-                  <span className="text-[10.5px] font-mono uppercase tracking-wider text-emerald-300">
+                  <span className="text-[9.5px] sm:text-[10.5px] font-mono uppercase tracking-wider text-emerald-300">
                     ✦ Đã bóc tách năng lượng tiềm thức ✦
                   </span>
-                  <h3 className="text-lg sm:text-xl font-bold text-white">{selectedKnot.title}</h3>
+                  <h3 className="text-base sm:text-xl font-bold text-white">{selectedKnot.title}</h3>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setStep('select')}
-                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-calm-fog hover:bg-white/15 hover:text-white transition"
+                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-calm-fog hover:bg-white/15 hover:text-white transition active:scale-95"
               >
                 <RefreshCw size={12} />
                 <span>Chọn nút thắt khác</span>
@@ -352,10 +379,10 @@ export function SoulKnotGame({
             </div>
 
             {/* Insight breakdown cards */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
               {/* Card 1: Điểm mù tiềm thức */}
-              <div className="rounded-[24px] border border-calm-danger-clay/40 bg-gradient-to-b from-calm-danger-clay/15 to-black/30 p-5 space-y-2 backdrop-blur-md">
-                <div className="flex items-center gap-2 text-xs font-bold text-calm-danger-clay uppercase tracking-wider">
+              <div className="rounded-[20px] sm:rounded-[24px] border border-calm-danger-clay/40 bg-gradient-to-b from-calm-danger-clay/15 to-black/30 p-4 sm:p-5 space-y-1.5 sm:space-y-2 backdrop-blur-md">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-calm-danger-clay uppercase tracking-wider">
                   <Flame size={14} />
                   <span>Điểm mù cốt lõi của bạn</span>
                 </div>
@@ -365,8 +392,8 @@ export function SoulKnotGame({
               </div>
 
               {/* Card 2: Hạt giống chuyển hóa */}
-              <div className="rounded-[24px] border border-calm-lichen/40 bg-gradient-to-b from-calm-lichen/15 to-black/30 p-5 space-y-2 backdrop-blur-md">
-                <div className="flex items-center gap-2 text-xs font-bold text-calm-lichen uppercase tracking-wider">
+              <div className="rounded-[20px] sm:rounded-[24px] border border-calm-lichen/40 bg-gradient-to-b from-calm-lichen/15 to-black/30 p-4 sm:p-5 space-y-1.5 sm:space-y-2 backdrop-blur-md">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-calm-lichen uppercase tracking-wider">
                   <Sprout size={14} />
                   <span>Hạt giống nhận thức 24h</span>
                 </div>
@@ -377,34 +404,32 @@ export function SoulKnotGame({
             </div>
 
             {/* Awakening Question Hook */}
-            <div className="rounded-[24px] border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/15 via-[#2a372b]/80 to-calm-pollen/15 p-5 text-center space-y-2 shadow-[0_0_30px_rgba(238,213,150,0.15)]">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-calm-pollen flex items-center justify-center gap-1.5">
+            <div className="rounded-[20px] sm:rounded-[24px] border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/15 via-[#2a372b]/80 to-calm-pollen/15 p-4 sm:p-5 text-center space-y-1.5 sm:space-y-2 shadow-[0_0_30px_rgba(238,213,150,0.15)]">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-calm-pollen flex items-center justify-center gap-1.5">
                 <Sparkles size={13} /> Câu hỏi khai phóng cho bạn
               </span>
-              <p className="text-sm sm:text-base font-bold text-white max-w-xl mx-auto leading-relaxed">
+              <p className="text-xs sm:text-sm md:text-base font-bold text-white max-w-xl mx-auto leading-relaxed">
                 “{selectedKnot.awakeningQuestion}”
               </p>
             </div>
 
             {/* THE CONVERSION FUNNEL: 1-Click to Chat & Voice Call */}
-            <div className="rounded-[28px] border border-emerald-500/40 bg-gradient-to-b from-[#182c1c]/95 to-[#101d13]/95 p-5 sm:p-6 shadow-[0_15px_40px_rgba(0,0,0,0.5),0_0_25px_rgba(52,211,153,0.18)] space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <h4 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
-                    <MessageCircleHeart size={18} className="text-emerald-400" />
-                    <span>Đưa nút thắt này vào trò chuyện cùng Life Lab ngay</span>
-                  </h4>
-                  <p className="text-xs text-calm-lichen mt-1">
-                    AI đã chuẩn bị sẵn mạch phản chiếu để cùng bạn đào sâu và tìm ra giải pháp hành động cụ thể.
-                  </p>
-                </div>
+            <div className="rounded-[24px] sm:rounded-[28px] border border-emerald-500/40 bg-gradient-to-b from-[#182c1c]/95 to-[#101d13]/95 p-4 sm:p-6 shadow-[0_15px_40px_rgba(0,0,0,0.5),0_0_25px_rgba(52,211,153,0.18)] space-y-3.5 sm:space-y-4">
+              <div className="space-y-1">
+                <h4 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-2">
+                  <MessageCircleHeart size={17} className="text-emerald-400 shrink-0" />
+                  <span>Đưa nút thắt này vào trò chuyện cùng Life Lab ngay</span>
+                </h4>
+                <p className="text-[11px] sm:text-xs text-calm-lichen leading-relaxed">
+                  AI đã chuẩn bị sẵn mạch phản chiếu để cùng bạn đào sâu và tìm ra giải pháp hành động cụ thể.
+                </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1 sm:pt-2">
                 <button
                   type="button"
                   onClick={handleStartChatWithKnot}
-                  className="flex-1 min-w-[240px] flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-6 py-3 text-xs sm:text-sm font-bold text-black shadow-[0_0_25px_rgba(52,211,153,0.4)] hover:scale-[1.02] active:scale-98 transition"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-black shadow-[0_0_25px_rgba(52,211,153,0.4)] hover:scale-[1.02] active:scale-98 transition text-center"
                 >
                   <MessageCircleHeart size={16} />
                   <span>Trò chuyện cùng AI về nút thắt này →</span>
@@ -416,7 +441,7 @@ export function SoulKnotGame({
                     router.push('/app/conversations/new?call=true');
                     onClose?.();
                   }}
-                  className="flex items-center justify-center gap-2 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-5 py-3 text-xs sm:text-sm font-bold text-calm-pollen hover:bg-calm-pollen/25 transition"
+                  className="flex items-center justify-center gap-2 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-calm-pollen hover:bg-calm-pollen/25 transition active:scale-98"
                 >
                   <PhoneCall size={15} />
                   <span>Gọi thoại 1:1</span>
@@ -440,7 +465,7 @@ export function SoulKnotGameModal({
   if (!isOpen) return null;
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto overscroll-contain">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}

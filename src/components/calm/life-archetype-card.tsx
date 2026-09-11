@@ -321,82 +321,82 @@ export function LifeArchetypeCardModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xl overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-xl -webkit-backdrop-blur-xl overflow-y-auto overscroll-contain">
         <motion.div
           initial={{ opacity: 0, scale: 0.94, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 20 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="relative flex flex-col lg:flex-row max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-[36px] border border-calm-lichen/30 bg-gradient-to-b from-[#1c2a20]/95 via-[#142017]/98 to-[#0c140e]/98 text-calm-paper-white shadow-[0_25px_70px_rgba(0,0,0,0.6)]"
+          className="relative flex flex-col lg:flex-row max-h-[92vh] max-h-[90dvh] w-full max-w-4xl overflow-hidden rounded-[28px] sm:rounded-[36px] border border-calm-lichen/30 bg-gradient-to-b from-[#1c2a20]/95 via-[#142017]/98 to-[#0c140e]/98 text-calm-paper-white shadow-[0_25px_70px_rgba(0,0,0,0.6)] my-auto"
         >
           {/* Close button */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full border border-white/15 bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white active:scale-95 touch-manipulation"
           >
-            <X size={20} />
+            <X size={18} className="sm:size-5" />
           </button>
 
           {/* Left Column: Interactive 9:16 Card Preview */}
-          <div className="flex-1 p-5 sm:p-7 flex flex-col items-center justify-center bg-black/30 border-b lg:border-b-0 lg:border-r border-white/10">
-            <div className="mb-3 text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-calm-pollen">
-                <Sparkles size={13} /> Thẻ Căn Cước Tâm Lý 9:16
+          <div className="shrink-0 p-4 sm:p-6 md:p-7 flex flex-col items-center justify-center bg-black/30 border-b lg:border-b-0 lg:border-r border-white/10 overflow-hidden">
+            <div className="mb-2.5 sm:mb-3 text-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-3 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] text-calm-pollen">
+                <Sparkles size={12} /> Thẻ Căn Cước Tâm Lý 9:16
               </span>
             </div>
 
-            {/* Visual Card 9:16 Mockup */}
+            {/* Visual Card 9:16 Mockup (Responsive scaling for small screens) */}
             <div
               ref={cardCanvasRef}
-              className="relative w-full max-w-[320px] aspect-[9/16] rounded-[28px] border-2 border-calm-lichen/40 bg-gradient-to-b from-[#1b2b20] via-[#152319] to-[#0d1610] p-5 flex flex-col justify-between overflow-hidden shadow-[0_15px_45px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.15)] group"
+              className="relative w-full max-w-[270px] sm:max-w-[300px] md:max-w-[320px] aspect-[9/16] rounded-[24px] sm:rounded-[28px] border-2 border-calm-lichen/40 bg-gradient-to-b from-[#1b2b20] via-[#152319] to-[#0d1610] p-4 sm:p-5 flex flex-col justify-between overflow-hidden shadow-[0_15px_45px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.15)] group select-none"
             >
               {/* Star / Glow particles background */}
-              <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-calm-pollen/20 blur-2xl" />
-              <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-calm-lichen/20 blur-2xl" />
+              <div className="pointer-events-none absolute -top-10 -right-10 h-36 w-36 rounded-full bg-calm-pollen/20 blur-2xl" />
+              <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-calm-lichen/20 blur-2xl" />
 
               {/* Card Top */}
-              <div className="relative z-10 space-y-2">
-                <div className="flex items-center justify-between text-[9px] font-mono tracking-widest text-calm-lichen uppercase">
+              <div className="relative z-10 space-y-1.5 sm:space-y-2">
+                <div className="flex items-center justify-between text-[8.5px] sm:text-[9px] font-mono tracking-widest text-calm-lichen uppercase">
                   <span>UnionFam LifeLab</span>
                   <span>#{cardId}</span>
                 </div>
-                <div className="pt-2">
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-calm-lichen/80">Nguyên mẫu của bạn</p>
-                  <h3 className="text-xl font-bold tracking-tight text-calm-pollen leading-tight">{archetype.name}</h3>
-                  <p className="text-[9.5px] font-mono tracking-wider text-calm-fog/80">{archetype.subtitle}</p>
+                <div className="pt-1 sm:pt-2">
+                  <p className="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase text-calm-lichen/80">Nguyên mẫu của bạn</p>
+                  <h3 className="text-lg sm:text-xl font-bold tracking-tight text-calm-pollen leading-tight">{archetype.name}</h3>
+                  <p className="text-[8.5px] sm:text-[9.5px] font-mono tracking-wider text-calm-fog/80">{archetype.subtitle}</p>
                 </div>
-                <div className="inline-flex items-center gap-1 rounded-full border border-calm-pollen/30 bg-calm-pollen/10 px-2.5 py-0.5 text-[9.5px] font-semibold text-calm-pollen">
+                <div className="inline-flex items-center gap-1 rounded-full border border-calm-pollen/30 bg-calm-pollen/10 px-2 py-0.5 text-[8.5px] sm:text-[9.5px] font-semibold text-calm-pollen">
                   <Zap size={10} /> {archetype.energyFrequency}
                 </div>
               </div>
 
-              {/* Card Mid: Blindspots & Superpower */}
-              <div className="relative z-10 space-y-2.5 my-2">
-                <div className="rounded-xl border border-white/10 bg-black/40 p-2.5 text-[11px] italic text-calm-warm-ivory/90 leading-relaxed">
+              {/* Card Mid: Blindspots & Quote */}
+              <div className="relative z-10 space-y-2 my-1.5 sm:my-2">
+                <div className="rounded-xl border border-white/10 bg-black/40 p-2 sm:p-2.5 text-[10px] sm:text-[11px] italic text-calm-warm-ivory/90 leading-relaxed">
                   “{archetype.quote}”
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-calm-lichen">3 Điểm mù lớn nhất:</p>
+                  <p className="text-[8.5px] sm:text-[9.5px] font-bold uppercase tracking-wider text-calm-lichen">3 Điểm mù lớn nhất:</p>
                   {archetype.blindspots.map((spot, i) => (
-                    <p key={i} className="text-[10px] leading-tight text-calm-fog/95 flex items-start gap-1">
-                      <span className="text-calm-pollen shrink-0 font-mono">0{i+1}.</span> {spot}
+                    <p key={i} className="text-[9px] sm:text-[10px] leading-tight text-calm-fog/95 flex items-start gap-1">
+                      <span className="text-calm-pollen shrink-0 font-mono">0{i+1}.</span> <span className="line-clamp-2">{spot}</span>
                     </p>
                   ))}
                 </div>
               </div>
 
               {/* Card Bottom: Core values & Brand Watermark */}
-              <div className="relative z-10 pt-2 border-t border-white/10 space-y-2">
+              <div className="relative z-10 pt-1.5 sm:pt-2 border-t border-white/10 space-y-1.5 sm:space-y-2">
                 <div className="flex flex-wrap gap-1">
                   {archetype.coreValues.map((val, i) => (
-                    <span key={i} className="rounded-full bg-calm-pollen/15 border border-calm-pollen/30 px-2 py-0.5 text-[9px] font-medium text-calm-pollen">
+                    <span key={i} className="rounded-full bg-calm-pollen/15 border border-calm-pollen/30 px-2 py-0.5 text-[8px] sm:text-[9px] font-medium text-calm-pollen">
                       {val}
                     </span>
                   ))}
                 </div>
-                <div className="flex items-center justify-between text-[9px] text-calm-fog/60 pt-1">
-                  <span>Khám phá tại: <strong>unionfam.com</strong></span>
+                <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-calm-fog/60 pt-0.5">
+                  <span>Khám phá: <strong>unionfam.com</strong></span>
                   <span>✦ 2026</span>
                 </div>
               </div>
@@ -404,10 +404,10 @@ export function LifeArchetypeCardModal({
           </div>
 
           {/* Right Column: Archetype Selector & Viral Actions */}
-          <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between space-y-6 overflow-y-auto">
-            <div className="space-y-5">
+          <div className="flex-1 p-5 sm:p-7 md:p-8 flex flex-col justify-between space-y-5 overflow-y-auto overscroll-contain">
+            <div className="space-y-4 sm:space-y-5">
               <div>
-                <h3 className="text-2xl font-bold tracking-tight text-white">Căn Cước Tâm Lý Của Bạn</h3>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Căn Cước Tâm Lý Của Bạn</h3>
                 <p className="text-xs text-calm-fog leading-relaxed mt-1">
                   Được đúc kết tự động từ những trăn trở, giá trị và câu trả lời thật lòng của bạn cùng AI LifeLab.
                 </p>
@@ -424,7 +424,7 @@ export function LifeArchetypeCardModal({
                       key={key}
                       type="button"
                       onClick={() => setSelectedKey(key)}
-                      className={`p-2.5 rounded-2xl border text-left text-xs transition-all ${
+                      className={`p-2.5 rounded-2xl border text-left text-xs transition-all touch-manipulation ${
                         selectedKey === key
                           ? 'border-calm-pollen bg-calm-pollen/20 text-white font-bold shadow-[0_0_15px_rgba(238,213,150,0.25)]'
                           : 'border-white/10 bg-white/5 text-calm-fog hover:bg-white/10 hover:text-white'
@@ -438,25 +438,25 @@ export function LifeArchetypeCardModal({
               </div>
 
               {/* Core summary details */}
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-black/25 p-4 text-xs">
+              <div className="space-y-2.5 rounded-2xl border border-white/10 bg-black/25 p-3.5 sm:p-4 text-xs">
                 <p className="text-calm-warm-ivory flex items-center gap-1.5 font-semibold">
                   <Sparkles size={14} className="text-calm-pollen shrink-0" />
-                  <strong>Siêu năng lực:</strong> {archetype.superpower}
+                  <span><strong>Siêu năng lực:</strong> {archetype.superpower}</span>
                 </p>
                 <p className="text-calm-fog flex items-center gap-1.5">
                   <Shield size={14} className="text-calm-lichen shrink-0" />
-                  <strong>Mã bảo chứng:</strong> #{cardId}
+                  <span><strong>Mã bảo chứng:</strong> #{cardId}</span>
                 </p>
               </div>
             </div>
 
             {/* Action Buttons: 1-Click Story Download & Share */}
-            <div className="space-y-2.5 pt-4 border-t border-white/10">
+            <div className="space-y-2.5 pt-3 sm:pt-4 border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
               <button
                 type="button"
                 onClick={handleDownloadStoryImage}
                 disabled={isGeneratingImage}
-                className="w-full flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-calm-pollen via-[#f7e4b5] to-calm-pollen px-6 py-3.5 text-sm font-bold text-calm-deep-moss shadow-[0_6px_22px_rgba(238,213,150,0.4)] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-calm-pollen via-[#f7e4b5] to-calm-pollen px-5 py-3.5 text-xs sm:text-sm font-bold text-calm-deep-moss shadow-[0_6px_22px_rgba(238,213,150,0.4)] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 touch-manipulation"
               >
                 {isGeneratingImage ? (
                   <>
@@ -466,7 +466,7 @@ export function LifeArchetypeCardModal({
                 ) : (
                   <>
                     <Download size={16} />
-                    <span>Tải ảnh Story 9:16 để đăng Instagram / Facebook</span>
+                    <span>Tải ảnh Story 9:16 (Instagram / Facebook)</span>
                   </>
                 )}
               </button>
@@ -474,17 +474,17 @@ export function LifeArchetypeCardModal({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="w-full flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-xs font-semibold text-calm-paper-white transition hover:bg-white/15 active:scale-95"
+                className="w-full flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-xs font-semibold text-calm-paper-white transition hover:bg-white/15 active:scale-95 touch-manipulation"
               >
                 {copied ? (
                   <>
                     <Check size={14} className="text-emerald-400" />
-                    <span className="text-emerald-300">Đã sao chép link thẻ căn cước!</span>
+                    <span className="text-emerald-300 font-semibold">Đã sao chép link thẻ căn cước!</span>
                   </>
                 ) : (
                   <>
                     <Share2 size={14} />
-                    <span>Sao chép liên kết chia sẻ cho bạn bè</span>
+                    <span>Sao chép liên kết chia sẻ</span>
                   </>
                 )}
               </button>
