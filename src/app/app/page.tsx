@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -61,10 +62,20 @@ type DashboardState = {
 };
 
 export default function DashboardOverviewPage() {
+  const searchParams = useSearchParams();
   const [dashboard, setDashboard] = useState<DashboardState | null>(null);
   const [loading, setLoading] = useState(true);
   const [isArchetypeOpen, setIsArchetypeOpen] = useState(false);
   const [isZenCardOpen, setIsZenCardOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('revealArchetype') === 'true') {
+      setIsArchetypeOpen(true);
+    }
+    if (searchParams.get('openZenCard') === 'true') {
+      setIsZenCardOpen(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;

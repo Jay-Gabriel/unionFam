@@ -103,7 +103,7 @@ export default function QuestionsPage() {
     if (currentIndex < nextEligible.length - 1) {
       setCurrentIndex((prev) => Math.min(prev + 1, nextEligible.length - 1));
     } else {
-      router.push('/app');
+      router.push('/app?revealArchetype=true');
     }
   };
 
