@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   BookOpen,
   CheckCircle2,
@@ -369,6 +369,7 @@ async function requestOpeningTurn(id: string, onDelta?: (text: string) => void):
 export default function ConversationPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const routeConversationId = (params?.id as string) || 'new';
   const [conversationId, setConversationId] = useState(routeConversationId);
 
@@ -397,6 +398,23 @@ export default function ConversationPage() {
     data: Record<string, unknown>;
     demoMode: boolean;
   }> | null>(null);
+
+  // Read preloaded prompt or call param from Mini-game or deep-links
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const promptQuery = searchParams.get('prompt');
+    const storedPrompt = window.sessionStorage.getItem('lifelab_preloaded_prompt');
+    const targetPrompt = promptQuery || storedPrompt;
+    if (targetPrompt) {
+      setInputContent(targetPrompt);
+      window.sessionStorage.removeItem('lifelab_preloaded_prompt');
+    }
+    const callQuery = searchParams.get('call');
+    if (callQuery === 'true') {
+      setVoiceInitialConnected(true);
+      setIsVoiceModalOpen(true);
+    }
+  }, [searchParams]);
   const scrollToBottom = useCallback((smooth = false) => {
     if (typeof window === 'undefined') return;
     window.scrollTo(0, 0);

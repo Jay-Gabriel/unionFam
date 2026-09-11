@@ -30,6 +30,7 @@ import { LeafLoader } from '@/components/calm/leaf-loader';
 import { labelStage, labelStatus } from '@/lib/i18n';
 import { LifeArchetypeCardModal } from '@/components/calm/life-archetype-card';
 import { DailyZenCardModal } from '@/components/calm/daily-zen-card';
+import { SoulKnotGameModal } from '@/components/calm/soul-knot-game';
 
 const mapItems = [
   { key: 'my_life', index: '01', title: 'ĐỜI SỐNG MONG MUỐN', detail: 'Cuộc đời tôi muốn sống', icon: Compass, tone: 'bg-calm-lichen/15 text-calm-lichen' },
@@ -67,6 +68,7 @@ export default function DashboardOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [isArchetypeOpen, setIsArchetypeOpen] = useState(false);
   const [isZenCardOpen, setIsZenCardOpen] = useState(false);
+  const [isGameOpen, setIsGameOpen] = useState(false);
 
   useEffect(() => {
     if (searchParams.get('revealArchetype') === 'true') {
@@ -74,6 +76,9 @@ export default function DashboardOverviewPage() {
     }
     if (searchParams.get('openZenCard') === 'true') {
       setIsZenCardOpen(true);
+    }
+    if (searchParams.get('openGame') === 'true') {
+      setIsGameOpen(true);
     }
   }, [searchParams]);
 
@@ -177,9 +182,38 @@ export default function DashboardOverviewPage() {
         </div>
       </motion.section>
 
-      {/* 2 Strategic Growth Action Banners */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {/* Banner 1: Thẻ Căn Cước Tâm Lý 9:16 */}
+      {/* 3 Strategic Growth Action Banners */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Banner 1: Game Gieo Hạt & Gỡ Nút Thắt Cuộc Sống */}
+        <motion.div
+          variants={reveal}
+          onClick={() => setIsGameOpen(true)}
+          className="cursor-pointer group relative overflow-hidden rounded-[28px] border border-emerald-500/40 bg-gradient-to-r from-[#1b3323]/95 via-[#13261a]/95 to-[#0b1710]/95 p-5 sm:p-6 backdrop-blur-xl shadow-[0_15px_35px_rgba(0,0,0,0.35)] hover:border-emerald-400 hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="pointer-events-none absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-emerald-500/20 blur-2xl" />
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 max-w-[80%]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-300">
+                <Sparkles size={12} /> Game Gỡ Rối Tâm Trí
+              </span>
+              <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition">
+                Game Gỡ Nút Thắt Cuộc Sống
+              </h3>
+              <p className="text-xs text-calm-fog/90 leading-relaxed">
+                Chạm năng lượng, bóc tách điểm mù vô thức & mở mạch chat đối thoại sâu cùng Life Lab.
+              </p>
+            </div>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 group-hover:scale-110 transition-transform">
+              <Sprout size={20} />
+            </span>
+          </div>
+          <div className="mt-4 flex items-center justify-between text-xs font-semibold text-emerald-300 border-t border-white/10 pt-3">
+            <span>Chơi & Gỡ nút ngay</span>
+            <span className="group-hover:translate-x-1 transition-transform">Khám phá →</span>
+          </div>
+        </motion.div>
+
+        {/* Banner 2: Thẻ Căn Cước Tâm Lý 9:16 */}
         <motion.div
           variants={reveal}
           onClick={() => setIsArchetypeOpen(true)}
@@ -192,7 +226,7 @@ export default function DashboardOverviewPage() {
                 <Sparkles size={12} /> Độc quyền LifeLab
               </span>
               <h3 className="text-lg font-bold text-white group-hover:text-calm-pollen transition">
-                Thẻ Căn Cước Tâm Lý (Story 9:16)
+                Thẻ Căn Cước Tâm Lý (9:16)
               </h3>
               <p className="text-xs text-calm-fog/90 leading-relaxed">
                 Khám phá nguyên mẫu, 3 điểm mù lớn nhất & xuất ảnh Story sang trọng để chia sẻ lên MXH.
@@ -208,7 +242,7 @@ export default function DashboardOverviewPage() {
           </div>
         </motion.div>
 
-        {/* Banner 2: Rút Thẻ Bài Tĩnh Lặng Hôm Nay */}
+        {/* Banner 3: Rút Thẻ Bài Tĩnh Lặng Hôm Nay */}
         <motion.div
           variants={reveal}
           onClick={() => setIsZenCardOpen(true)}
@@ -461,6 +495,10 @@ export default function DashboardOverviewPage() {
       </motion.div>
 
       {/* Modals */}
+      <SoulKnotGameModal
+        isOpen={isGameOpen}
+        onClose={() => setIsGameOpen(false)}
+      />
       <LifeArchetypeCardModal
         isOpen={isArchetypeOpen}
         onClose={() => setIsArchetypeOpen(false)}
