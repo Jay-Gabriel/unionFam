@@ -299,7 +299,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 360, damping: 34 }}
-              className="fixed inset-y-0 left-0 z-50 w-[286px] overflow-y-auto border-r border-white/10 bg-calm-deep-moss px-5 py-5 md:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-[286px] overflow-y-auto overscroll-contain border-r border-white/10 bg-calm-deep-moss px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] md:hidden touch-manipulation"
             >
               <div className="mb-7 flex items-center justify-between">
                 <Brand />
@@ -464,7 +464,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {!hideBottomNav && (
-        <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-[24px] border border-white/10 bg-calm-deep-moss/95 p-1.5 shadow-glass md:hidden">
+        <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 grid grid-cols-4 rounded-[24px] border border-white/10 bg-calm-deep-moss/95 p-1.5 shadow-glass backdrop-blur-md md:hidden touch-manipulation">
           {mobileNavigation.map((item) => {
             const active = isRouteActive(pathname, item.href);
             const Icon = item.icon;
@@ -473,8 +473,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 prefetch={true}
-                className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-[18px] text-[9px] font-medium ${
-                  active ? 'bg-white/15 text-calm-warm-ivory' : 'text-calm-fog/70'
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-[18px] text-[9px] font-medium transition-all active:scale-95 ${
+                  active ? 'bg-white/15 text-calm-warm-ivory shadow-sm' : 'text-calm-fog/70 hover:text-calm-paper-white'
                 }`}
               >
                 <Icon className={`h-[18px] w-[18px] ${active ? 'text-calm-warm-ivory' : 'text-calm-fog/70'}`} />

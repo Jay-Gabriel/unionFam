@@ -215,12 +215,12 @@ export function LiveVoiceSanctuaryModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-2xl overflow-y-auto overscroll-contain">
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.92 }}
-          className="relative w-full max-w-lg overflow-hidden rounded-[40px] border border-calm-lichen/30 bg-gradient-to-b from-[#18261c] via-[#101c13] to-[#0a120c] p-6 sm:p-9 text-calm-paper-white shadow-[0_25px_80px_rgba(0,0,0,0.7)] flex flex-col items-center justify-between min-h-[540px]"
+          className="relative w-full max-w-lg overflow-hidden rounded-[28px] sm:rounded-[40px] border border-calm-lichen/30 bg-gradient-to-b from-[#18261c] via-[#101c13] to-[#0a120c] p-4 sm:p-7 md:p-9 text-calm-paper-white shadow-[0_25px_80px_rgba(0,0,0,0.7)] flex flex-col items-center justify-between min-h-[460px] sm:min-h-[520px] max-h-[88vh] max-h-[88dvh] overflow-y-auto overscroll-contain touch-manipulation my-auto"
         >
           {/* Ambient Background Aura */}
           <div
@@ -232,19 +232,19 @@ export function LiveVoiceSanctuaryModal({
 
           {/* Top Bar: Identity & Encryption badge */}
           <div className="relative z-10 flex items-center justify-between w-full">
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-calm-lichen">
-              <ShieldCheck size={13} className="text-calm-lichen" />
+            <div className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10.5px] sm:text-[11px] text-calm-lichen">
+              <ShieldCheck size={13} className="text-calm-lichen shrink-0" />
               <span>Bảo mật 1:1 không phán xét</span>
             </div>
             {callState === 'connected' && (
-              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 font-mono text-xs font-bold text-emerald-300">
+              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-[11px] sm:text-xs font-bold text-emerald-300">
                 {formatTime(callDuration)}
               </span>
             )}
           </div>
 
           {/* Center: Glowing Voice Orb / Pulse Ring */}
-          <div className="relative z-10 flex flex-col items-center justify-center my-6 space-y-6 text-center">
+          <div className="relative z-10 flex flex-col items-center justify-center my-4 sm:my-6 space-y-4 sm:space-y-6 text-center">
             <div className="relative flex items-center justify-center">
               {/* Outer pulsing energy waves */}
               <motion.div
@@ -253,7 +253,7 @@ export function LiveVoiceSanctuaryModal({
                   opacity: callState === 'incoming' ? [0.4, 0.8, 0.4] : [0.3, 0.7, 0.3],
                 }}
                 transition={{ duration: callState === 'incoming' ? 1.5 : 2, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute h-48 w-48 rounded-full border-2 border-calm-pollen/40 bg-calm-pollen/10 blur-md"
+                className="absolute h-36 w-36 sm:h-48 sm:w-48 rounded-full border-2 border-calm-pollen/40 bg-calm-pollen/10 blur-md"
               />
               <motion.div
                 animate={{
@@ -261,34 +261,39 @@ export function LiveVoiceSanctuaryModal({
                   opacity: [0.2, 0.5, 0.2],
                 }}
                 transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
-                className="absolute h-56 w-56 rounded-full border border-calm-lichen/30 bg-calm-lichen/5 blur-lg"
+                className="absolute h-44 w-44 sm:h-56 sm:w-56 rounded-full border border-calm-lichen/30 bg-calm-lichen/5 blur-lg"
               />
 
               {/* Core Organic Orb */}
               <div
-                className="relative grid h-28 w-28 place-items-center rounded-full border-2 border-calm-pollen/60 bg-gradient-to-tr from-[#2a3d2e] via-[#1f2f23] to-[#2a3d2e] shadow-[0_0_40px_rgba(238,213,150,0.4)] transition-all duration-300"
+                className="relative grid h-24 w-24 sm:h-28 sm:w-28 place-items-center rounded-full border-2 border-calm-pollen/60 bg-gradient-to-tr from-[#2a3d2e] via-[#1f2f23] to-[#2a3d2e] shadow-[0_0_40px_rgba(238,213,150,0.4)] transition-all duration-300"
                 style={{
                   transform: `scale(${1 + audioLevel * 0.2})`,
                 }}
               >
                 {callState === 'incoming' ? (
-                  <PhoneCall size={42} className="text-calm-pollen animate-bounce" />
+                  <PhoneCall size={34} className="text-calm-pollen animate-bounce sm:hidden" />
                 ) : (
-                  <Sprout size={44} className="text-calm-lichen animate-leaf-wave-1" />
+                  <Sprout size={36} className="text-calm-lichen animate-leaf-wave-1 sm:hidden" />
+                )}
+                {callState === 'incoming' ? (
+                  <PhoneCall size={42} className="text-calm-pollen animate-bounce hidden sm:block" />
+                ) : (
+                  <Sprout size={44} className="text-calm-lichen animate-leaf-wave-1 hidden sm:block" />
                 )}
               </div>
             </div>
 
             {/* Caller Info & Subtitles */}
-            <div className="space-y-2 max-w-sm">
-              <h3 className="text-2xl font-bold tracking-tight text-white">
+            <div className="space-y-1.5 sm:space-y-2 max-w-sm px-2">
+              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
                 {callState === 'incoming' ? 'Life Lab đang gọi cho bạn…' : 'Phòng Thoại Tĩnh Lặng'}
               </h3>
-              <p className="text-xs font-mono tracking-wider text-calm-lichen uppercase">
+              <p className="text-[11px] sm:text-xs font-mono tracking-wider text-calm-lichen uppercase">
                 {callState === 'incoming' ? '✦ Cuộc gọi trực tiếp 1:1 ✦' : isAiSpeaking ? '🌿 Life Lab đang phản hồi…' : '🎙️ Đang lắng nghe bạn…'}
               </p>
               {callState === 'connected' && (
-                <div className="rounded-2xl border border-white/10 bg-black/40 p-3 text-xs italic text-calm-warm-ivory leading-relaxed max-h-24 overflow-y-auto">
+                <div className="rounded-2xl border border-white/10 bg-black/40 p-2.5 sm:p-3 text-[11px] sm:text-xs italic text-calm-warm-ivory leading-relaxed max-h-20 sm:max-h-24 overflow-y-auto">
                   “{currentTranscript || aiResponseText}”
                 </div>
               )}
@@ -296,55 +301,55 @@ export function LiveVoiceSanctuaryModal({
           </div>
 
           {/* Bottom Action Controls */}
-          <div className="relative z-10 w-full pt-4">
+          <div className="relative z-10 w-full pt-2 sm:pt-4">
             {callState === 'incoming' ? (
               <div className="flex items-center justify-around gap-6">
                 {/* Dismiss */}
                 <button
                   type="button"
                   onClick={() => onClose()}
-                  className="flex flex-col items-center gap-1.5 group"
+                  className="flex flex-col items-center gap-1.5 group active:scale-95 transition"
                 >
-                  <div className="grid h-14 w-14 place-items-center rounded-full border border-red-500/40 bg-red-500/20 text-red-300 shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all group-hover:scale-110">
-                    <PhoneOff size={24} />
+                  <div className="grid h-12 w-12 sm:h-14 sm:w-14 place-items-center rounded-full border border-red-500/40 bg-red-500/20 text-red-300 shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all group-hover:scale-110">
+                    <PhoneOff size={22} />
                   </div>
-                  <span className="text-[11px] font-medium text-calm-fog">Để sau</span>
+                  <span className="text-[10.5px] sm:text-[11px] font-medium text-calm-fog">Để sau</span>
                 </button>
 
                 {/* Answer */}
                 <button
                   type="button"
                   onClick={handleAnswerCall}
-                  className="flex flex-col items-center gap-1.5 group"
+                  className="flex flex-col items-center gap-1.5 group active:scale-95 transition"
                 >
-                  <div className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 text-black shadow-[0_0_30px_rgba(52,211,153,0.5)] transition-all group-hover:scale-110 animate-pulse">
-                    <Phone size={28} />
+                  <div className="grid h-14 w-14 sm:h-16 sm:w-16 place-items-center rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 text-black shadow-[0_0_30px_rgba(52,211,153,0.5)] transition-all group-hover:scale-110 animate-pulse">
+                    <Phone size={26} />
                   </div>
                   <span className="text-xs font-bold text-emerald-300">Bắt máy ngay</span>
                 </button>
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-6">
+              <div className="flex items-center justify-center gap-5 sm:gap-6">
                 {/* Mute Mic */}
                 <button
                   type="button"
                   onClick={() => setIsMuted(!isMuted)}
-                  className={`grid h-12 w-12 place-items-center rounded-full border transition-all ${
+                  className={`grid h-11 w-11 sm:h-12 sm:w-12 place-items-center rounded-full border transition-all active:scale-95 ${
                     isMuted ? 'border-amber-500/40 bg-amber-500/20 text-amber-300' : 'border-white/20 bg-white/10 text-white'
                   }`}
                   title={isMuted ? 'Bật micro' : 'Tắt micro'}
                 >
-                  {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                  {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
                 </button>
 
                 {/* Hang Up */}
                 <button
                   type="button"
                   onClick={handleEndCall}
-                  className="grid h-14 w-14 place-items-center rounded-full bg-red-500 text-white shadow-[0_0_25px_rgba(239,68,68,0.5)] transition-all hover:scale-110 active:scale-95"
+                  className="grid h-12 w-12 sm:h-14 sm:w-14 place-items-center rounded-full bg-red-500 text-white shadow-[0_0_25px_rgba(239,68,68,0.5)] transition-all hover:scale-110 active:scale-95"
                   title="Gác máy"
                 >
-                  <PhoneOff size={24} />
+                  <PhoneOff size={22} />
                 </button>
               </div>
             )}

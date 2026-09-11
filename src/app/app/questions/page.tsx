@@ -176,7 +176,7 @@ export default function QuestionsPage() {
               }}
               onBlur={(e) => e.target.value.trim() && saveCurrentAnswer(e.target.value)}
               placeholder="Nhập câu trả lời của bạn..."
-              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-[16px] sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all"
             />
           )}
 

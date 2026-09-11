@@ -146,7 +146,7 @@ export function DailyZenCardModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 20 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="relative w-full max-w-md overflow-hidden rounded-[36px] border border-calm-pollen/30 bg-gradient-to-b from-[#1e2c21]/98 via-[#152319]/98 to-[#0d1610]/98 p-6 sm:p-8 text-calm-paper-white shadow-[0_25px_70px_rgba(0,0,0,0.6)]"
+          className="relative w-full max-w-md overflow-y-auto overscroll-contain max-h-[92vh] max-h-[92dvh] rounded-[36px] border border-calm-pollen/30 bg-gradient-to-b from-[#1e2c21]/98 via-[#152319]/98 to-[#0d1610]/98 p-5 sm:p-8 text-calm-paper-white shadow-[0_25px_70px_rgba(0,0,0,0.6)] my-auto touch-manipulation"
         >
           {/* Close button */}
           <button

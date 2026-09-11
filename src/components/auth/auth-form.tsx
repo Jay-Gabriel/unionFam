@@ -186,7 +186,7 @@ export function AuthForm({ mode = 'member' }: { mode?: AuthMode }) {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="admin@example.com"
-                  className="w-full rounded-2xl border border-white/15 bg-white/10 py-2.5 pl-10 pr-4 text-xs text-calm-paper-white outline-none transition-all placeholder:text-calm-fog/60 focus:border-calm-lichen/70 focus:ring-2 focus:ring-calm-lichen/20 md:text-sm"
+                  className="w-full rounded-2xl border border-white/15 bg-white/10 py-2.5 pl-10 pr-4 text-[16px] sm:text-sm text-calm-paper-white outline-none transition-all placeholder:text-calm-fog/60 focus:border-calm-lichen/70 focus:ring-2 focus:ring-calm-lichen/20"
                 />
               </div>
             </div>
@@ -203,7 +203,7 @@ export function AuthForm({ mode = 'member' }: { mode?: AuthMode }) {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-2xl border border-white/15 bg-white/10 py-2.5 pl-10 pr-4 text-xs text-calm-paper-white outline-none transition-all placeholder:text-calm-fog/60 focus:border-calm-lichen/70 focus:ring-2 focus:ring-calm-lichen/20 md:text-sm"
+                  className="w-full rounded-2xl border border-white/15 bg-white/10 py-2.5 pl-10 pr-4 text-[16px] sm:text-sm text-calm-paper-white outline-none transition-all placeholder:text-calm-fog/60 focus:border-calm-lichen/70 focus:ring-2 focus:ring-calm-lichen/20"
                 />
               </div>
             </div>

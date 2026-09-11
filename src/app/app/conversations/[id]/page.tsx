@@ -980,36 +980,38 @@ function ConversationPageContent() {
 
   return (
     <div className="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col min-h-0 text-calm-paper-white">
-      <section className="shrink-0 flex flex-col gap-2.5 rounded-[24px] sm:rounded-[28px] border border-white/10 bg-gradient-to-r from-calm-moss/80 via-calm-deep-moss/85 to-calm-moss/80 backdrop-blur-xl px-4 py-3 sm:px-6 sm:py-3.5 shadow-[0_12px_36px_rgba(0,0,0,0.18)] sm:flex-row sm:items-center sm:justify-between mb-2.5 sm:mb-3">
-        <div className="flex items-center gap-3">
-          <div className="relative grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-2xl border border-calm-lichen/30 bg-calm-lichen/15 text-calm-warm-ivory shadow-[0_4px_16px_rgba(185,198,165,0.2)]">
-            <Sprout size={19} className="text-calm-lichen animate-leaf-wave-1" />
+      {/* Chat Room Top Bar */}
+      <section className="shrink-0 flex flex-col gap-2 rounded-[20px] sm:rounded-[28px] border border-white/10 bg-gradient-to-r from-calm-moss/80 via-calm-deep-moss/85 to-calm-moss/80 backdrop-blur-xl px-3.5 py-2.5 sm:px-6 sm:py-3.5 shadow-[0_12px_36px_rgba(0,0,0,0.18)] sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="relative grid h-9 w-9 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-2xl border border-calm-lichen/30 bg-calm-lichen/15 text-calm-warm-ivory shadow-[0_4px_16px_rgba(185,198,165,0.2)]">
+            <Sprout size={18} className="text-calm-lichen animate-leaf-wave-1" />
             <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="truncate text-base font-semibold tracking-[-0.02em] text-calm-paper-white sm:text-[17px]">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <h2 className="truncate text-sm font-semibold tracking-[-0.02em] text-calm-paper-white sm:text-[17px]">
                 Trò chuyện cùng Life Lab
               </h2>
-              <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-medium text-emerald-300">
+              <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[8.5px] sm:text-[9px] font-medium text-emerald-300 shrink-0">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
                 Đang lắng nghe
               </span>
             </div>
-            <p className="truncate text-[10.5px] font-mono text-calm-fog/60">Phiên: {conversationId}</p>
+            <p className="truncate text-[10px] font-mono text-calm-fog/60">Phiên: {conversationId}</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto sm:justify-end">
+
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => {
               setVoiceInitialConnected(true);
               setIsVoiceModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/20 to-calm-lichen/20 px-3 py-1 text-[11px] font-bold text-calm-pollen shadow-[0_0_12px_rgba(238,213,150,0.2)] hover:border-calm-pollen hover:scale-105 active:scale-95 transition"
+            className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/20 to-calm-lichen/20 px-2.5 py-1 sm:px-3 sm:py-1 text-[10.5px] sm:text-[11px] font-bold text-calm-pollen shadow-[0_0_12px_rgba(238,213,150,0.2)] hover:border-calm-pollen hover:scale-105 active:scale-95 transition"
             title="Gọi thoại trực tiếp cùng Life Lab"
           >
             <PhoneCall size={12} className="text-calm-pollen animate-pulse" />
@@ -1017,20 +1019,21 @@ function ConversationPageContent() {
           </button>
           <SanctuaryAudioPlayer />
           {isDemoConversation && (
-            <div className="rounded-full border border-calm-pollen/30 bg-calm-pollen/15 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-calm-pollen shadow-sm">
-              Bản thử thiết bị
+            <div className="rounded-full border border-calm-pollen/30 bg-calm-pollen/15 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[8.5px] sm:text-[9px] font-semibold uppercase tracking-[0.1em] text-calm-pollen shadow-sm">
+              Bản thử
             </div>
           )}
-          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] backdrop-blur-sm px-3 py-1 text-[10.5px] font-medium text-calm-lichen shadow-sm">
+          <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] backdrop-blur-sm px-3 py-1 text-[10.5px] font-medium text-calm-lichen shadow-sm">
             <ShieldCheck size={13} className="text-calm-lichen" />
             Bạn giữ quyền quyết định
           </div>
         </div>
       </section>
 
+      {/* Messages Scroll Sanctuary */}
       <section
         ref={messagesScrollRef}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-[28px] sm:rounded-[36px] border border-white/10 bg-gradient-to-b from-[#212c23]/60 via-[#1c261e]/40 to-[#18211a]/70 backdrop-blur-xl px-3.5 py-4 sm:px-6 sm:py-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-[24px] sm:rounded-[36px] border border-white/10 bg-gradient-to-b from-[#212c23]/60 via-[#1c261e]/40 to-[#18211a]/70 backdrop-blur-xl px-3 py-3.5 sm:px-6 sm:py-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
         aria-label="Nội dung cuộc trò chuyện"
       >
         {showIncomingCallBadge && (
@@ -1046,28 +1049,30 @@ function ConversationPageContent() {
             }}
           />
         )}
-        <div className="space-y-6 sm:space-y-7" aria-live="polite">
+        <div className="space-y-4 sm:space-y-6" aria-live="polite">
           {messages.map((message) => (
-            <div key={message.id} className="space-y-3">
+            <div key={message.id} className="space-y-2.5 sm:space-y-3">
               {message.role === 'user' ? (
-                <div className="ml-auto flex max-w-[90%] items-start justify-end gap-2.5 sm:max-w-[76%] sm:gap-3">
-                  <div className="space-y-1 text-right">
-                    <div className="break-words rounded-[24px] rounded-tr-[6px] border border-calm-lichen/35 bg-gradient-to-br from-[#3b4c3e] to-[#2d3b30] px-4 py-3 text-left text-sm leading-6 text-calm-paper-white shadow-[0_10px_28px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12)] sm:px-5 sm:py-3.5 sm:text-[15px]">
+                <div className="ml-auto flex max-w-[92%] sm:max-w-[78%] items-start justify-end gap-2 sm:gap-3">
+                  <div className="space-y-1 text-right min-w-0">
+                    <div className="break-words rounded-[20px] rounded-tr-[4px] sm:rounded-[24px] sm:rounded-tr-[6px] border border-calm-lichen/35 bg-gradient-to-br from-[#3b4c3e] to-[#2d3b30] px-3.5 py-2.5 text-left text-xs leading-relaxed text-calm-paper-white shadow-[0_10px_28px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12)] sm:px-5 sm:py-3.5 sm:text-[15px]">
                       {message.content}
                     </div>
-                    <span className="block px-2 text-[10.5px] font-semibold text-calm-warm-ivory/85">{message.timestamp}</span>
+                    <span className="block px-2 text-[10px] sm:text-[10.5px] font-semibold text-calm-warm-ivory/85">{message.timestamp}</span>
                   </div>
-                  <div className="grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/15 text-white shadow-sm">
-                    <UserRound size={15} />
+                  <div className="grid h-7 w-7 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/15 text-white shadow-sm mt-0.5">
+                    <UserRound size={13} className="sm:hidden" />
+                    <UserRound size={15} className="hidden sm:block" />
                   </div>
                 </div>
               ) : (
-                <div className="flex max-w-[95%] items-start gap-2.5 sm:max-w-[84%] sm:gap-3.5">
-                  <div className="mt-0.5 grid h-8 w-8 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-2xl border border-calm-lichen/35 bg-calm-lichen/20 text-calm-lichen shadow-[0_4px_14px_rgba(185,198,165,0.25)]">
-                    <Sprout size={16} />
+                <div className="flex max-w-[96%] sm:max-w-[85%] items-start gap-2 sm:gap-3.5">
+                  <div className="mt-0.5 grid h-7 w-7 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-2xl border border-calm-lichen/35 bg-calm-lichen/20 text-calm-lichen shadow-[0_4px_14px_rgba(185,198,165,0.25)]">
+                    <Sprout size={14} className="sm:hidden" />
+                    <Sprout size={16} className="hidden sm:block" />
                   </div>
-                  <div className="min-w-0 flex-1 space-y-3">
-                    <div className="break-words rounded-[26px] rounded-tl-[6px] border border-white/[0.16] bg-gradient-to-b from-[#2e3b31]/98 to-[#243026]/98 backdrop-blur-md px-4 py-3.5 text-sm leading-relaxed text-white shadow-[0_10px_35px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] sm:px-5 sm:py-4 sm:text-[15.5px]">
+                  <div className="min-w-0 flex-1 space-y-2.5 sm:space-y-3">
+                    <div className="break-words rounded-[22px] rounded-tl-[4px] sm:rounded-[26px] sm:rounded-tl-[6px] border border-white/[0.16] bg-gradient-to-b from-[#2e3b31]/98 to-[#243026]/98 backdrop-blur-md px-3.5 py-3 text-xs sm:text-[15px] leading-relaxed text-white shadow-[0_10px_35px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] sm:px-5 sm:py-4">
                       {message.content ? (
                         <div className="whitespace-pre-wrap text-white font-normal">{message.content}</div>
                       ) : isStreaming ? (
@@ -1076,7 +1081,7 @@ function ConversationPageContent() {
                         <div className="whitespace-pre-wrap text-white font-normal">{DEFAULT_OPENING_MESSAGE}</div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 px-2 text-[10.5px] font-semibold text-calm-warm-ivory/85">
+                    <div className="flex items-center gap-2 px-2 text-[10px] sm:text-[10.5px] font-semibold text-calm-warm-ivory/85">
                       <span>{message.timestamp}</span>
                     </div>
 
@@ -1099,30 +1104,30 @@ function ConversationPageContent() {
 
                     {/* ONLY Micro-Experiment Card is displayed */}
                     {message.experimentProposal && (
-                      <div className="space-y-3.5 rounded-[26px] border border-calm-pollen/40 bg-gradient-to-b from-[#353328]/95 to-[#242c23]/95 backdrop-blur-md p-4 sm:p-5 shadow-[0_18px_45px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.1)]">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2.5">
-                            <span className="grid h-7 w-7 place-items-center rounded-xl bg-calm-pollen/20 text-calm-pollen shadow-[0_0_10px_rgba(238,213,150,0.25)] border border-calm-pollen/30">
-                              <FlaskConical size={15} />
+                      <div className="space-y-3 rounded-[22px] sm:rounded-[26px] border border-calm-pollen/40 bg-gradient-to-b from-[#353328]/95 to-[#242c23]/95 backdrop-blur-md p-3.5 sm:p-5 shadow-[0_18px_45px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.1)]">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-6 w-6 sm:h-7 sm:w-7 place-items-center rounded-xl bg-calm-pollen/20 text-calm-pollen shadow-[0_0_10px_rgba(238,213,150,0.25)] border border-calm-pollen/30">
+                              <FlaskConical size={14} />
                             </span>
-                            <span className="text-xs font-bold tracking-tight text-white">
+                            <span className="text-[11px] sm:text-xs font-bold tracking-tight text-white">
                               Đề xuất thử nghiệm ({message.experimentProposal.targetDays || 7} ngày)
                             </span>
                           </div>
-                          <span className="rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.12em] text-calm-pollen shadow-sm">
+                          <span className="rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-2 py-0.5 text-[8.5px] sm:text-[9.5px] font-bold uppercase tracking-[0.12em] text-calm-pollen shadow-sm">
                             Thực hành ngay
                           </span>
                         </div>
 
-                        <div className="space-y-2.5 rounded-2xl border border-white/10 bg-black/25 p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed text-white">
-                          <p className="font-bold text-calm-warm-ivory text-sm sm:text-[15px] flex items-center gap-1.5">
-                            <Sparkles size={15} className="text-calm-pollen shrink-0" />
+                        <div className="space-y-2 rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4 text-xs sm:text-sm leading-relaxed text-white">
+                          <p className="font-bold text-calm-warm-ivory text-xs sm:text-[15px] flex items-center gap-1.5">
+                            <Sparkles size={14} className="text-calm-pollen shrink-0" />
                             {message.experimentProposal.title}
                           </p>
-                          <p className="text-calm-fog text-xs leading-relaxed">
+                          <p className="text-calm-fog text-[11px] sm:text-xs leading-relaxed">
                             <strong className="text-white">Giả thuyết:</strong> {message.experimentProposal.hypothesis}
                           </p>
-                          <div className="pt-2 text-xs border-t border-white/10 space-y-1.5">
+                          <div className="pt-2 text-[11px] sm:text-xs border-t border-white/10 space-y-1">
                             <p className="text-[#bfe7cb] leading-relaxed">
                               <strong className="text-white">Bước nhỏ nhất:</strong> {message.experimentProposal.smallestStep}
                             </p>
@@ -1132,16 +1137,16 @@ function ConversationPageContent() {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-3.5 py-2.5 text-xs font-semibold text-emerald-100 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-3 py-2 text-[11px] sm:text-xs font-semibold text-emerald-100 shadow-sm">
                           <span className="flex items-center gap-1.5">
-                            <CheckCircle2 size={16} className="text-emerald-300 shrink-0" />
-                            Đã kích hoạt trong phòng Thử nghiệm
+                            <CheckCircle2 size={15} className="text-emerald-300 shrink-0" />
+                            Đã kích hoạt trong Thử nghiệm
                           </span>
                           <Link
                             href="/app/experiments"
-                            className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.12em] text-calm-pollen underline hover:text-white transition"
+                            className="inline-flex items-center gap-1 text-[10.5px] sm:text-[11px] font-bold uppercase tracking-[0.12em] text-calm-pollen underline hover:text-white transition"
                           >
-                            Xem Thử nghiệm →
+                            Xem ngay →
                           </Link>
                         </div>
                       </div>
@@ -1158,40 +1163,41 @@ function ConversationPageContent() {
       {sendError && (
         <div className="shrink-0 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-calm-danger-clay/30 bg-calm-danger-clay/10 px-3.5 py-2 text-xs text-[#e7bbb5]" role="alert">
           <span>{sendError}</span>
-          <button type="button" onClick={() => { setInputContent(retryContent); setSendError(''); }} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 font-semibold text-calm-warm-ivory">
+          <button type="button" onClick={() => { setInputContent(retryContent); setSendError(''); }} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 font-semibold text-calm-warm-ivory active:scale-95 transition">
             Giữ lại để gửi lại
           </button>
         </div>
       )}
 
-      <div className="shrink-0 pt-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
-        {/* Quick Suggestion Pills for easy 1-tap testing on Mobile & Desktop */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-[11.5px]">
+      {/* Chat Input & Quick Suggestion Row */}
+      <div className="shrink-0 pt-2 pb-[max(0.35rem,env(safe-area-inset-bottom))]">
+        {/* Quick Suggestion Pills */}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none text-[11px] sm:text-[11.5px] touch-manipulation">
           <button
             type="button"
             onClick={() => setInputContent('Tôi muốn làm thử nghiệm 15 phút mỗi sáng để tạo nhịp điệu mới')}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/30 bg-calm-pollen/10 hover:bg-calm-pollen/20 backdrop-blur-sm px-3.5 py-1.5 font-medium text-calm-pollen shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/30 bg-calm-pollen/10 hover:bg-calm-pollen/20 active:bg-calm-pollen/30 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-calm-pollen shadow-sm transition-all whitespace-nowrap active:scale-95"
           >
             <span>🧪</span> Thử nghiệm 15 phút
           </button>
           <button
             type="button"
             onClick={() => setInputContent('Hôm nay tôi đã làm thử và nhận ra bài học là bước nhỏ giúp tâm trí nhẹ nhàng hơn')}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-fern/35 bg-calm-fern/10 hover:bg-calm-fern/20 backdrop-blur-sm px-3.5 py-1.5 font-medium text-[#c9e2cf] shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-fern/35 bg-calm-fern/10 hover:bg-calm-fern/20 active:bg-calm-fern/30 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-[#c9e2cf] shadow-sm transition-all whitespace-nowrap active:scale-95"
           >
             <span>🌱</span> Ghi nhận & Bài học
           </button>
           <button
             type="button"
             onClick={() => setInputContent('Tôi đang có khoản tiết kiệm 6 tháng và kinh nghiệm chuyên môn 5 năm')}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-lichen/35 bg-calm-lichen/10 hover:bg-calm-lichen/20 backdrop-blur-sm px-3.5 py-1.5 font-medium text-calm-lichen shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-lichen/35 bg-calm-lichen/10 hover:bg-calm-lichen/20 active:bg-calm-lichen/30 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-calm-lichen shadow-sm transition-all whitespace-nowrap active:scale-95"
           >
             <span>💼</span> Nguồn lực & Tài chính
           </button>
           <button
             type="button"
             onClick={() => setInputContent('Tôi mong muốn một cuộc sống tự do thời gian và dành cho gia đình')}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/15 backdrop-blur-sm px-3.5 py-1.5 font-medium text-calm-warm-ivory shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/15 active:bg-white/20 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-calm-warm-ivory shadow-sm transition-all whitespace-nowrap active:scale-95"
           >
             <span>🧭</span> Bản đồ cuộc sống
           </button>
@@ -1199,14 +1205,14 @@ function ConversationPageContent() {
 
         <form
           onSubmit={handleSendMessage}
-          className="flex items-center gap-2 rounded-[28px] border border-white/20 bg-gradient-to-r from-[#2c392f]/95 via-[#233026]/95 to-[#2c392f]/95 backdrop-blur-xl p-2 sm:p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.35)] focus-within:border-calm-lichen/60 focus-within:shadow-[0_0_25px_rgba(185,198,165,0.25)] transition-all duration-300"
+          className="flex items-center gap-1.5 sm:gap-2 rounded-[24px] sm:rounded-[28px] border border-white/20 bg-gradient-to-r from-[#2c392f]/95 via-[#233026]/95 to-[#2c392f]/95 backdrop-blur-xl p-1.5 sm:p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.35)] focus-within:border-calm-lichen/60 focus-within:shadow-[0_0_25px_rgba(185,198,165,0.25)] transition-all duration-300"
         >
           <button
             type="button"
-            className="rounded-full p-2 text-calm-fog/60 transition hover:bg-white/10 hover:text-calm-lichen"
+            className="rounded-full p-1.5 sm:p-2 text-calm-fog/60 transition hover:bg-white/10 hover:text-calm-lichen active:scale-95 shrink-0"
             aria-label="Đính kèm tệp"
           >
-            <Paperclip size={18} />
+            <Paperclip size={17} />
           </button>
           <textarea
             rows={1}
@@ -1229,12 +1235,12 @@ function ConversationPageContent() {
               event.target.style.height = 'auto';
               event.target.style.height = `${Math.min(event.target.scrollHeight, 120)}px`;
             }}
-            className="min-w-0 flex-1 max-h-28 resize-none bg-transparent px-2 py-1.5 text-[16px] leading-5 text-calm-paper-white outline-none placeholder:text-calm-fog/45 sm:text-[15px]"
+            className="min-w-0 flex-1 max-h-28 resize-none bg-transparent px-2 py-1 text-[16px] leading-5 text-calm-paper-white outline-none placeholder:text-calm-fog/45 sm:text-[15px]"
           />
           <button
             type="submit"
             disabled={isStreaming || !inputContent.trim()}
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-calm-lichen to-[#cde0b8] px-4 py-2 sm:px-5 sm:py-2.5 text-xs font-bold text-calm-deep-moss shadow-[0_4px_16px_rgba(185,198,165,0.3)] transition-all duration-200 hover:shadow-[0_6px_22px_rgba(185,198,165,0.45)] hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-calm-lichen to-[#cde0b8] px-3.5 py-2 sm:px-5 sm:py-2.5 text-xs font-bold text-calm-deep-moss shadow-[0_4px_16px_rgba(185,198,165,0.3)] transition-all duration-200 hover:shadow-[0_6px_22px_rgba(185,198,165,0.45)] hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
           >
             {isStreaming ? (
               <LeafLoader variant="inline" size="sm" />
@@ -1246,7 +1252,7 @@ function ConversationPageContent() {
             )}
           </button>
         </form>
-        <p className="mt-1.5 text-center text-[10.5px] text-calm-fog/50 hidden sm:block">
+        <p className="mt-1 text-center text-[10px] sm:text-[10.5px] text-calm-fog/50 hidden sm:block">
           Life Lab luôn lắng nghe không phán xét. Mọi đề xuất đều do bạn làm chủ.
         </p>
       </div>
