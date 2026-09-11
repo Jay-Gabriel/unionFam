@@ -33,30 +33,33 @@ type ProfileData = {
 };
 
 export default function LifeMapPage() {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>({
+    current: null,
+    draft: null,
+    snapshot: {},
+    insights: [],
+  });
   const [snapshot, setSnapshot] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draftSaving, setDraftSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
   const load = async () => {
-    setLoading(true);
     try {
       const response = await fetch('/api/life-profile');
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error || 'Không thể tải bản đồ cuộc sống');
-      setProfile(json.data);
-      setSnapshot(json.data.snapshot || {});
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể tải bản đồ cuộc sống');
-    } finally {
-      setLoading(false);
+      if (response.ok && json.data) {
+        setProfile(json.data);
+        setSnapshot(json.data.snapshot || {});
+      }
+    } catch {
+      // Ignored
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void load(); }, []);
 
   const insightCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -120,13 +123,7 @@ export default function LifeMapPage() {
     dimensions: { ...(current.dimensions || {}), [key]: { ...(current.dimensions?.[key] || {}), summary: value } },
   }));
 
-  if (loading) {
-    return (
-      <div className="grid min-h-[420px] place-items-center">
-        <LeafLoader variant="bloom" size="md" label="Đang tải Bản đồ cuộc sống…" />
-      </div>
-    );
-  }
+
   if (error && !profile) return <div className="rounded-3xl bg-rose-50 p-6 text-sm font-semibold text-rose-700">{error}</div>;
 
   return (

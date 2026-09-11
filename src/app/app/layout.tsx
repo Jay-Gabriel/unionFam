@@ -38,7 +38,7 @@ const navigation: Array<{ label: string; items: NavItem[] }> = [
     label: 'Hôm nay',
     items: [
       { label: 'Tổng quan', href: '/app', icon: Home },
-      { label: 'Trò chuyện cùng AI', href: '/app/conversations', icon: MessageCircleHeart },
+      { label: 'Trò chuyện cùng AI', href: '/app/conversations/new', icon: MessageCircleHeart },
     ],
   },
   {
@@ -69,7 +69,7 @@ const navigation: Array<{ label: string; items: NavItem[] }> = [
 
 const mobileNavigation = [
   { label: 'Hôm nay', href: '/app', icon: Home },
-  { label: 'Trò chuyện', href: '/app/conversations', icon: MessageCircleHeart },
+  { label: 'Trò chuyện', href: '/app/conversations/new', icon: MessageCircleHeart },
   { label: 'Bản đồ', href: '/app/life-map', icon: Compass },
   { label: 'Thử nghiệm', href: '/app/experiments', icon: FlaskConical },
 ];

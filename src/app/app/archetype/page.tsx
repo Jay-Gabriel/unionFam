@@ -9,7 +9,7 @@ import { ARCHETYPES, LifeArchetypeCardModal } from '@/components/calm/life-arche
 export default function ArchetypeSharePage() {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get('type') || 'creator';
-  const [modalOpen, setModalOpen] = useState(true);
+  const [modalOpen, setModalOpen] = useState(() => searchParams.get('modal') === 'true');
 
   const archetype = ARCHETYPES[typeParam] || ARCHETYPES.creator;
 

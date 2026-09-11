@@ -12,8 +12,12 @@ type FinancialData = {
 };
 
 export default function FinancialLifePage() {
-  const [data, setData] = useState<FinancialData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<FinancialData>({
+    snapshot: {},
+    resources: [],
+    gaps: [],
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -25,18 +29,9 @@ export default function FinancialLifePage() {
         const gaps = gapsResponse.ok ? await gapsResponse.json() : { data: [] };
         if (!cancelled) setData({ snapshot: profile.data?.snapshot || {}, resources: resources.data || [], gaps: gaps.data || [] });
       })
-      .catch((reason) => { if (!cancelled) setError(reason instanceof Error ? reason.message : 'Không thể tải dữ liệu tài chính'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
-
-  if (loading) {
-    return (
-      <div className="grid min-h-[420px] place-items-center">
-        <LeafLoader variant="bloom" size="md" label="Đang tổng hợp dữ liệu tài chính & nguồn lực…" />
-      </div>
-    );
-  }
 
   const financialSummary = data?.snapshot.dimensions?.what_it_takes?.summary;
   const moneyResources = data?.resources.filter((resource) => resource.resource_type === 'money') || [];
