@@ -25,8 +25,57 @@ import {
 } from 'lucide-react';
 import { LeafLoader } from '@/components/calm/leaf-loader';
 import { SanctuaryAudioPlayer } from '@/components/calm/sanctuary-audio-player';
-import { LiveVoiceSanctuaryModal, IncomingVoiceCallBadge } from '@/components/calm/live-voice-sanctuary';
+import {
+  LiveVoiceSanctuaryModal,
+  IncomingVoiceCallBadge,
+  VoiceCallOfferCard,
+} from '@/components/calm/live-voice-sanctuary';
 import { labelDimension } from '@/lib/i18n';
+
+const DISTRESS_KEYWORDS = [
+  'suy sụp',
+  'kiệt sức',
+  'áp lực',
+  'quá tải',
+  'bế tắc',
+  'khóc',
+  'mệt quá',
+  'mệt mỏi',
+  'muốn buông xuôi',
+  'gục ngã',
+  'không chịu nổi',
+  'bất lực',
+  'lo lắng tột cùng',
+  'trầm cảm',
+  'hoảng loạn',
+  'stress nặng',
+  'cô đơn quá',
+  'tuyệt vọng',
+  'mệt quá rồi',
+  'nản quá',
+  'đuối sức',
+];
+
+const CALL_ACCEPT_KEYWORDS = [
+  'đồng ý',
+  'gọi đi',
+  'ừ gọi',
+  'gọi luôn',
+  'muốn gọi',
+  'gọi cho mình',
+  'gọi nhé',
+  'gọi nha',
+  'ok gọi',
+  'oke gọi',
+  'được gọi đi',
+  'ừ',
+  'uầy gọi đi',
+  'gọi thôi',
+  'bắt máy',
+  'kết nối đi',
+  'nhấc máy',
+  'gọi liền',
+];
 
 interface Observation {
   id: string;
@@ -79,6 +128,7 @@ interface Message {
   experimentProposal?: ExperimentProposal;
   reflectionProposal?: ReflectionProposal;
   resourceProposal?: ResourceProposal;
+  hasVoiceOffer?: boolean;
 }
 
 function mapConversationMessages(data: Record<string, unknown>): Message[] {
@@ -107,6 +157,7 @@ function mapConversationMessages(data: Record<string, unknown>): Message[] {
       content: String(message.content || ''),
       timestamp: new Date(String(message.created_at)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       observation: observationsByMessage.get(String(message.id)),
+      hasVoiceOffer: Boolean(message.hasVoiceOffer),
     }));
 }
 
@@ -131,6 +182,7 @@ function readDemoMessages(id: string): Message[] {
         experimentProposal: message.experimentProposal as ExperimentProposal | undefined,
         reflectionProposal: message.reflectionProposal as ReflectionProposal | undefined,
         resourceProposal: message.resourceProposal as ResourceProposal | undefined,
+        hasVoiceOffer: Boolean(message.hasVoiceOffer),
       }));
   } catch {
     return [];
@@ -334,6 +386,7 @@ export default function ConversationPage() {
   const [retryContent, setRetryContent] = useState('');
   const [showIncomingCallBadge, setShowIncomingCallBadge] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [voiceInitialConnected, setVoiceInitialConnected] = useState(false);
   const [hasDismissedCall, setHasDismissedCall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLElement>(null);
@@ -594,7 +647,26 @@ export default function ConversationPage() {
     event.preventDefault();
     if (!inputContent.trim() || isStreaming) return;
 
-    const userText = inputContent;
+    const userText = inputContent.trim();
+    const lowerUserText = userText.toLowerCase();
+
+    // Check if user is agreeing to a voice call offer or requesting a call
+    const hasRecentVoiceOffer = messages.some((m) => m.role === 'assistant' && m.hasVoiceOffer);
+    const isAffirmative = CALL_ACCEPT_KEYWORDS.some((kw) => lowerUserText.includes(kw));
+    const isExplicitCallRequest =
+      lowerUserText.includes('gọi điện') ||
+      lowerUserText.includes('gọi thoại') ||
+      lowerUserText.includes('muốn gọi') ||
+      lowerUserText.includes('gọi luôn');
+
+    if ((hasRecentVoiceOffer && isAffirmative) || isExplicitCallRequest) {
+      setVoiceInitialConnected(true);
+      setIsVoiceModalOpen(true);
+    }
+
+    // Check if user expresses emotional distress / breakdown / exhaustion
+    const isDistressed = DISTRESS_KEYWORDS.some((kw) => lowerUserText.includes(kw));
+
     setSendError('');
     setRetryContent('');
     const userMsg: Message = {
@@ -616,6 +688,7 @@ export default function ConversationPage() {
         role: 'assistant',
         content: '',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        hasVoiceOffer: isDistressed,
       },
     ]);
 
@@ -679,9 +752,6 @@ export default function ConversationPage() {
       );
     } finally {
       setIsStreaming(false);
-      if (!hasDismissedCall) {
-        setTimeout(() => setShowIncomingCallBadge(true), 1500);
-      }
     }
   };
 
@@ -897,7 +967,10 @@ export default function ConversationPage() {
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto sm:justify-end">
           <button
             type="button"
-            onClick={() => setIsVoiceModalOpen(true)}
+            onClick={() => {
+              setVoiceInitialConnected(true);
+              setIsVoiceModalOpen(true);
+            }}
             className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/20 to-calm-lichen/20 px-3 py-1 text-[11px] font-bold text-calm-pollen shadow-[0_0_12px_rgba(238,213,150,0.2)] hover:border-calm-pollen hover:scale-105 active:scale-95 transition"
             title="Gọi thoại trực tiếp cùng Life Lab"
           >
@@ -926,6 +999,7 @@ export default function ConversationPage() {
           <IncomingVoiceCallBadge
             onAnswer={() => {
               setShowIncomingCallBadge(false);
+              setVoiceInitialConnected(true);
               setIsVoiceModalOpen(true);
             }}
             onDismiss={() => {
@@ -965,6 +1039,23 @@ export default function ConversationPage() {
                     <div className="flex items-center gap-2 px-2 text-[10.5px] font-semibold text-calm-warm-ivory/85">
                       <span>{message.timestamp}</span>
                     </div>
+
+                    {/* Proactive 1:1 Voice Call Offer Card on emotional breakdown / distress */}
+                    {message.hasVoiceOffer && (
+                      <VoiceCallOfferCard
+                        onAccept={() => {
+                          setVoiceInitialConnected(true);
+                          setIsVoiceModalOpen(true);
+                        }}
+                        onDecline={() => {
+                          setMessages((prev) =>
+                            prev.map((m) =>
+                              m.id === message.id ? { ...m, hasVoiceOffer: false } : m
+                            )
+                          );
+                        }}
+                      />
+                    )}
 
                     {/* ONLY Micro-Experiment Card is displayed */}
                     {message.experimentProposal && (
@@ -1122,8 +1213,10 @@ export default function ConversationPage() {
 
       <LiveVoiceSanctuaryModal
         isOpen={isVoiceModalOpen}
+        initialConnected={voiceInitialConnected}
         onClose={(callSummary) => {
           setIsVoiceModalOpen(false);
+          setVoiceInitialConnected(false);
           if (callSummary) {
             setMessages((prev) => [
               ...prev,

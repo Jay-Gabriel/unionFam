@@ -23,6 +23,7 @@ interface LiveVoiceSanctuaryProps {
   onClose: (callSummary?: string) => void;
   userName?: string;
   conversationId?: string;
+  initialConnected?: boolean;
 }
 
 export function LiveVoiceSanctuaryModal({
@@ -30,18 +31,46 @@ export function LiveVoiceSanctuaryModal({
   onClose,
   userName = 'Bạn',
   conversationId = '',
+  initialConnected = false,
 }: LiveVoiceSanctuaryProps) {
-  const [callState, setCallState] = useState<'incoming' | 'connected' | 'ended'>('incoming');
+  const [callState, setCallState] = useState<'incoming' | 'connected' | 'ended'>(
+    initialConnected ? 'connected' : 'incoming'
+  );
   const [isMuted, setIsMuted] = useState(false);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [currentTranscript, setCurrentTranscript] = useState('');
-  const [aiResponseText, setAiResponseText] = useState('Chào bạn, mình là Life Lab. Mình luôn ở đây lắng nghe bạn, hôm nay tâm trạng của bạn thế nào?');
+  const [aiResponseText, setAiResponseText] = useState(
+    'Chào bạn, mình là Life Lab. Mình luôn ở đây để lắng nghe bạn. Hãy cứ thả lỏng và chia sẻ bất cứ điều gì bạn đang cảm thấy nhé.'
+  );
   const [audioLevel, setAudioLevel] = useState(0.2);
 
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+
+  // Synchronize callState when modal opens with initialConnected
+  useEffect(() => {
+    if (isOpen) {
+      if (initialConnected) {
+        setCallState('connected');
+        setCallDuration(0);
+        speakAiText('Chào bạn, mình đã kết nối cùng bạn rồi. Hãy cứ hít thở thật sâu, mình luôn ở đây lắng nghe bạn.');
+        startListening();
+      } else {
+        setCallState('incoming');
+        setCallDuration(0);
+      }
+    } else {
+      if (durationTimerRef.current) clearInterval(durationTimerRef.current);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }, [isOpen, initialConnected]);
 
   // Handle call timer
   useEffect(() => {
@@ -376,3 +405,65 @@ export function IncomingVoiceCallBadge({
     </motion.div>
   );
 }
+
+// In-Message Voice Call Offer Card when user is overwhelmed/distressed
+export function VoiceCallOfferCard({
+  onAccept,
+  onDecline,
+}: {
+  onAccept: () => void;
+  onDecline?: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className="mt-3 overflow-hidden rounded-[26px] border border-emerald-500/40 bg-gradient-to-b from-[#1c2c20]/98 via-[#132217]/98 to-[#0d1710]/98 backdrop-blur-xl p-4 sm:p-5 shadow-[0_15px_40px_rgba(0,0,0,0.45),0_0_25px_rgba(52,211,153,0.18)]"
+    >
+      <div className="flex items-start gap-3.5">
+        <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-black shadow-[0_0_20px_rgba(52,211,153,0.4)]">
+          <PhoneCall size={22} className="animate-pulse" />
+          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400"></span>
+          </span>
+        </div>
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <h4 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
+              <span>Phòng Thoại Chữa Lành 1:1</span>
+              <Sparkles size={14} className="text-calm-pollen" />
+            </h4>
+            <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-emerald-300">
+              Sẵn sàng kết nối
+            </span>
+          </div>
+          <p className="text-xs text-calm-lichen leading-relaxed">
+            Life Lab cảm nhận được bạn đang gánh vác nhiều áp lực hoặc kiệt sức. Bạn có muốn chuyển sang <strong className="text-white">gọi thoại trực tiếp</strong> để trải lòng và hít thở nhẹ nhàng hơn không?
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3.5 pt-3 border-t border-white/10 flex flex-wrap items-center justify-end gap-2.5">
+        {onDecline && (
+          <button
+            type="button"
+            onClick={onDecline}
+            className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-calm-fog hover:bg-white/15 hover:text-white transition"
+          >
+            Để sau, nhắn tin tiếp
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onAccept}
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-5 py-2 text-xs font-bold text-black shadow-[0_0_20px_rgba(52,211,153,0.4)] hover:scale-105 active:scale-95 transition"
+        >
+          <Phone size={14} />
+          <span>Đồng ý, gọi thoại ngay</span>
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
