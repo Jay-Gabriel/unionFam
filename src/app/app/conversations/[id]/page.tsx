@@ -131,6 +131,9 @@ interface Message {
   hasVoiceOffer?: boolean;
 }
 
+const DEFAULT_OPENING_MESSAGE =
+  'Chào bạn. Mình ở đây để lắng nghe cùng bạn. Nếu có thể miêu tả cuộc sống mà bạn thực sự mong muốn trong 1–2 câu, bạn sẽ nói điều gì?';
+
 function mapConversationMessages(data: Record<string, unknown>): Message[] {
   const observationsByMessage = new Map<string, Observation>();
   const observations = Array.isArray(data.observations) ? data.observations : [];
@@ -151,14 +154,18 @@ function mapConversationMessages(data: Record<string, unknown>): Message[] {
   return messages
     .filter((value): value is Record<string, unknown> => Boolean(value && typeof value === 'object'))
     .filter((message) => message.role !== 'system_tool')
-    .map((message) => ({
-      id: String(message.id),
-      role: message.role as Message['role'],
-      content: String(message.content || ''),
-      timestamp: new Date(String(message.created_at)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      observation: observationsByMessage.get(String(message.id)),
-      hasVoiceOffer: Boolean(message.hasVoiceOffer),
-    }));
+    .map((message) => {
+      const rawContent = String(message.content || '');
+      const content = rawContent.trim() ? rawContent : (message.role === 'assistant' ? DEFAULT_OPENING_MESSAGE : '');
+      return {
+        id: String(message.id),
+        role: message.role as Message['role'],
+        content,
+        timestamp: new Date(String(message.created_at)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        observation: observationsByMessage.get(String(message.id)),
+        hasVoiceOffer: Boolean(message.hasVoiceOffer),
+      };
+    });
 }
 
 const DEMO_STORAGE_PREFIX = 'lifelab:demo:conversation:';
@@ -173,17 +180,21 @@ function readDemoMessages(id: string): Message[] {
       .filter((value): value is Record<string, unknown> => Boolean(value && typeof value === 'object'))
       .filter((message) => (message.role === 'user' || message.role === 'assistant') && typeof message.content === 'string')
       .slice(-100)
-      .map((message) => ({
-        id: String(message.id || `${message.role}-${crypto.randomUUID()}`),
-        role: message.role as Message['role'],
-        content: String(message.content).slice(0, 6000),
-        timestamp: typeof message.timestamp === 'string' ? message.timestamp : new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        observation: message.observation as Observation | undefined,
-        experimentProposal: message.experimentProposal as ExperimentProposal | undefined,
-        reflectionProposal: message.reflectionProposal as ReflectionProposal | undefined,
-        resourceProposal: message.resourceProposal as ResourceProposal | undefined,
-        hasVoiceOffer: Boolean(message.hasVoiceOffer),
-      }));
+      .map((message) => {
+        const rawContent = String(message.content || '').slice(0, 6000);
+        const content = rawContent.trim() ? rawContent : (message.role === 'assistant' ? DEFAULT_OPENING_MESSAGE : '');
+        return {
+          id: String(message.id || `${message.role}-${crypto.randomUUID()}`),
+          role: message.role as Message['role'],
+          content,
+          timestamp: typeof message.timestamp === 'string' ? message.timestamp : new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          observation: message.observation as Observation | undefined,
+          experimentProposal: message.experimentProposal as ExperimentProposal | undefined,
+          reflectionProposal: message.reflectionProposal as ReflectionProposal | undefined,
+          resourceProposal: message.resourceProposal as ResourceProposal | undefined,
+          hasVoiceOffer: Boolean(message.hasVoiceOffer),
+        };
+      });
   } catch {
     return [];
   }
@@ -363,7 +374,13 @@ async function requestOpeningTurn(id: string, onDelta?: (text: string) => void):
     if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 350));
   }
 
-  throw lastError || new Error('Chưa thể mở lời chào của Life Lab.');
+  // Graceful fallback: return the canonical opening message
+  return {
+    responseText: DEFAULT_OPENING_MESSAGE,
+    assistantMessageId: `ai-${Date.now()}`,
+    nextStage: 'discovery',
+    requiresPermission: false,
+  };
 }
 
 export default function ConversationPage() {
@@ -405,9 +422,8 @@ export default function ConversationPage() {
     const promptQuery = searchParams.get('prompt');
     const storedPrompt = window.sessionStorage.getItem('lifelab_preloaded_prompt');
     const targetPrompt = promptQuery || storedPrompt;
-    if (targetPrompt) {
+    if (targetPrompt && targetPrompt.trim()) {
       setInputContent(targetPrompt);
-      window.sessionStorage.removeItem('lifelab_preloaded_prompt');
     }
     const callQuery = searchParams.get('call');
     if (callQuery === 'true') {
@@ -522,7 +538,8 @@ export default function ConversationPage() {
           createdNewConversation = true;
           if (!cancelled) {
             setConversationId(activeId);
-            router.replace(`/app/conversations/${activeId}`);
+            const searchString = typeof window !== 'undefined' ? window.location.search : '';
+            router.replace(`/app/conversations/${activeId}${searchString}`);
           }
         }
 
@@ -575,7 +592,7 @@ export default function ConversationPage() {
                   {
                     id: openingPlaceholderId,
                     role: 'assistant' as const,
-                    content: '',
+                    content: DEFAULT_OPENING_MESSAGE,
                     timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
                   },
                 ]);
@@ -696,6 +713,9 @@ export default function ConversationPage() {
 
     setMessages((previous) => [...previous, userMsg]);
     setInputContent('');
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem('lifelab_preloaded_prompt');
+    }
     setIsStreaming(true);
 
     const assistantMsgId = `ai-${Date.now()}`;
@@ -1050,8 +1070,10 @@ export default function ConversationPage() {
                     <div className="break-words rounded-[26px] rounded-tl-[6px] border border-white/[0.16] bg-gradient-to-b from-[#2e3b31]/98 to-[#243026]/98 backdrop-blur-md px-4 py-3.5 text-sm leading-relaxed text-white shadow-[0_10px_35px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] sm:px-5 sm:py-4 sm:text-[15.5px]">
                       {message.content ? (
                         <div className="whitespace-pre-wrap text-white font-normal">{message.content}</div>
+                      ) : isStreaming ? (
+                        <LeafLoader variant="inline" size="sm" label="Life Lab đang cảm nhận & suy ngẫm…" />
                       ) : (
-                        isStreaming && <LeafLoader variant="inline" size="sm" label="Life Lab đang cảm nhận & suy ngẫm…" />
+                        <div className="whitespace-pre-wrap text-white font-normal">{DEFAULT_OPENING_MESSAGE}</div>
                       )}
                     </div>
                     <div className="flex items-center gap-2 px-2 text-[10.5px] font-semibold text-calm-warm-ivory/85">
