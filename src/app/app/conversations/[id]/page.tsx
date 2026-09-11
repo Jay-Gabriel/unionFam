@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   BookOpen,
   CheckCircle2,
+  ChevronLeft,
   Compass,
   Edit3,
   ExternalLink,
@@ -981,8 +982,15 @@ function ConversationPageContent() {
   return (
     <div className="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col min-h-0 text-calm-paper-white">
       {/* Chat Room Top Bar */}
-      <section className="shrink-0 flex items-center justify-between gap-2 rounded-[18px] sm:rounded-[28px] border border-white/10 bg-gradient-to-r from-calm-moss/80 via-calm-deep-moss/85 to-calm-moss/80 backdrop-blur-xl px-3 py-2 sm:px-6 sm:py-3.5 shadow-[0_12px_36px_rgba(0,0,0,0.18)] mb-1.5 sm:mb-3">
+      <section className="shrink-0 flex items-center justify-between gap-2 border-b border-white/10 bg-[#263128]/95 sm:bg-gradient-to-r sm:from-calm-moss/80 sm:via-calm-deep-moss/85 sm:to-calm-moss/80 backdrop-blur-xl px-3.5 py-2.5 sm:px-6 sm:py-3.5 sm:rounded-[28px] sm:border sm:shadow-[0_12px_36px_rgba(0,0,0,0.18)] sm:mb-3">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Link
+            href="/app"
+            className="grid h-8 w-8 sm:hidden place-items-center rounded-full border border-white/15 bg-white/10 text-white/90 hover:bg-white/20 active:scale-95 transition-all shrink-0"
+            aria-label="Quay lại bảng điều khiển"
+          >
+            <ChevronLeft size={18} />
+          </Link>
           <div className="relative grid h-8 w-8 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-xl sm:rounded-2xl border border-calm-lichen/30 bg-calm-lichen/15 text-calm-warm-ivory shadow-[0_4px_16px_rgba(185,198,165,0.2)]">
             <Sprout size={16} className="sm:hidden text-calm-lichen animate-leaf-wave-1" />
             <Sprout size={18} className="hidden sm:block text-calm-lichen animate-leaf-wave-1" />
@@ -993,12 +1001,12 @@ function ConversationPageContent() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <h2 className="truncate text-[13px] sm:text-[17px] font-semibold tracking-[-0.02em] text-calm-paper-white">
-                Trò chuyện cùng Life Lab
+              <h2 className="truncate text-[14px] sm:text-[17px] font-semibold tracking-[-0.02em] text-calm-paper-white">
+                Trò chuyện cùng AI
               </h2>
               <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[8.5px] sm:text-[9px] font-medium text-emerald-300 shrink-0">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-                Đang lắng nghe
+                Trực tuyến
               </span>
             </div>
             <p className="hidden sm:block truncate text-[10px] font-mono text-calm-fog/60">Phiên: {conversationId}</p>
@@ -1012,7 +1020,7 @@ function ConversationPageContent() {
               setVoiceInitialConnected(true);
               setIsVoiceModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/20 to-calm-lichen/20 px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-[12px] font-bold text-calm-pollen shadow-[0_0_12px_rgba(238,213,150,0.2)] hover:border-calm-pollen hover:scale-105 active:scale-95 transition whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/20 to-calm-lichen/20 px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-[12px] font-bold text-calm-pollen shadow-[0_0_12px_rgba(238,213,150,0.2)] hover:border-calm-pollen hover:scale-105 active:scale-95 transition whitespace-nowrap"
             title="Gọi thoại trực tiếp cùng Life Lab"
           >
             <PhoneCall size={12} className="text-calm-pollen animate-pulse" />
@@ -1034,7 +1042,7 @@ function ConversationPageContent() {
       {/* Messages Scroll Sanctuary */}
       <section
         ref={messagesScrollRef}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-[20px] sm:rounded-[36px] border border-white/10 bg-gradient-to-b from-[#212c23]/60 via-[#1c261e]/40 to-[#18211a]/70 backdrop-blur-xl px-3 py-3.5 sm:px-6 sm:py-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 sm:px-6 sm:py-6 sm:rounded-[36px] sm:border border-white/10 sm:bg-gradient-to-b sm:from-[#212c23]/60 sm:via-[#1c261e]/40 sm:to-[#18211a]/70 sm:backdrop-blur-xl sm:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
         aria-label="Nội dung cuộc trò chuyện"
       >
         {showIncomingCallBadge && (
@@ -1171,7 +1179,7 @@ function ConversationPageContent() {
       )}
 
       {/* Chat Input & Quick Suggestion Row */}
-      <div className="shrink-0 pt-2 pb-[max(0.35rem,env(safe-area-inset-bottom))]">
+      <div className="shrink-0 px-3 sm:px-0 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] bg-[#263128]/95 sm:bg-transparent border-t border-white/5 sm:border-0">
         {/* Quick Suggestion Pills */}
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none text-[11px] sm:text-[11.5px] touch-manipulation">
           <button

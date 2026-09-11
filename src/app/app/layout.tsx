@@ -270,17 +270,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      <header className="shrink-0 sticky top-0 z-40 flex items-center justify-between border-b border-white/5 bg-calm-deep-moss/95 px-4 py-3 md:hidden">
-        <Brand />
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-paper-white"
-          aria-label="Mở menu"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-      </header>
+      {!isConversationRoom && (
+        <header className="shrink-0 sticky top-0 z-40 flex items-center justify-between border-b border-white/5 bg-calm-deep-moss/95 px-4 py-3 md:hidden">
+          <Brand />
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/5 text-calm-paper-white"
+            aria-label="Mở menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </header>
+      )}
 
       <AnimatePresence>
         {mobileOpen && (
@@ -456,7 +458,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <main className={`relative mx-auto w-full max-w-[1480px] flex-1 min-h-0 flex flex-col ${
           isConversationRoom
-            ? 'p-1.5 sm:px-6 md:py-6 overflow-hidden'
+            ? 'p-0 sm:px-6 md:py-6 overflow-hidden'
             : 'overflow-y-auto px-4 pb-28 pt-5 sm:px-6 md:pb-10 md:pt-7 lg:px-10'
         }`}>
           {children}
