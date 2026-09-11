@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Sparkles, ArrowRight, Compass, Shield, Zap, Download } from 'lucide-react';
 import { ARCHETYPES, LifeArchetypeCardModal } from '@/components/calm/life-archetype-card';
+import { LeafLoader } from '@/components/calm/leaf-loader';
 
-export default function ArchetypeSharePage() {
+function ArchetypeShareContent() {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get('type') || 'creator';
   const [modalOpen, setModalOpen] = useState(() => searchParams.get('modal') === 'true');
@@ -83,5 +84,13 @@ export default function ArchetypeSharePage() {
         archetypeKey={typeParam}
       />
     </div>
+  );
+}
+
+export default function ArchetypeSharePage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[400px] items-center justify-center"><LeafLoader variant="bloom" size="md" label="Đang mở căn cước tâm lý..." /></div>}>
+      <ArchetypeShareContent />
+    </Suspense>
   );
 }

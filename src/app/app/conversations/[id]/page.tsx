@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -383,7 +383,7 @@ async function requestOpeningTurn(id: string, onDelta?: (text: string) => void):
   };
 }
 
-export default function ConversationPage() {
+function ConversationPageContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1274,3 +1274,12 @@ export default function ConversationPage() {
     </div>
   );
 }
+
+export default function ConversationPage() {
+  return (
+    <Suspense fallback={<div className="grid h-full min-h-[380px] flex-1 place-items-center rounded-[32px] border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent backdrop-blur-md text-calm-fog shadow-glass"><LeafLoader variant="bloom" size="md" label="Đang mở khoảng lặng của bạn…" /></div>}>
+      <ConversationPageContent />
+    </Suspense>
+  );
+}
+

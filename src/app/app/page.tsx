@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -63,7 +63,7 @@ type DashboardState = {
   progress: { streak: number; questionnaireProgress: number; answers: number; conversations: number; experiments: number };
 };
 
-export default function DashboardOverviewPage() {
+function DashboardOverviewContent() {
   const searchParams = useSearchParams();
   const [dashboard, setDashboard] = useState<DashboardState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -511,3 +511,12 @@ export default function DashboardOverviewPage() {
     </motion.div>
   );
 }
+
+export default function DashboardOverviewPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[400px] items-center justify-center"><LeafLoader variant="bloom" size="md" label="Đang cảm nhận không gian của bạn…" /></div>}>
+      <DashboardOverviewContent />
+    </Suspense>
+  );
+}
+
