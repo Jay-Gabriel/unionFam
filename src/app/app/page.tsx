@@ -25,12 +25,13 @@ import {
   Download,
   Share2,
   Zap,
+  Moon,
 } from 'lucide-react';
 import { LeafLoader } from '@/components/calm/leaf-loader';
 import { labelStage, labelStatus } from '@/lib/i18n';
 import { LifeArchetypeCardModal } from '@/components/calm/life-archetype-card';
 import { DailyZenCardModal } from '@/components/calm/daily-zen-card';
-import { PlayableLifeGameModal } from '@/components/calm/playable-life-game';
+import { EmotiveStoryGameModal } from '@/components/calm/emotive-story-game';
 
 const mapItems = [
   { key: 'my_life', index: '01', title: 'ĐỜI SỐNG MONG MUỐN', detail: 'Cuộc đời tôi muốn sống', icon: Compass, tone: 'bg-calm-lichen/15 text-calm-lichen' },
@@ -184,32 +185,32 @@ export default function DashboardOverviewPage() {
 
       {/* 3 Strategic Growth Action Banners */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Banner 1: Game Gieo Hạt & Gỡ Nút Thắt Cuộc Sống */}
+        {/* Banner 1: Game Chuyến Tàu 00:00 (Chạm Cảm Xúc) */}
         <motion.div
           variants={reveal}
           onClick={() => setIsGameOpen(true)}
-          className="cursor-pointer group relative overflow-hidden rounded-[28px] border border-emerald-500/40 bg-gradient-to-r from-[#1b3323]/95 via-[#13261a]/95 to-[#0b1710]/95 p-5 sm:p-6 backdrop-blur-xl shadow-[0_15px_35px_rgba(0,0,0,0.35)] hover:border-emerald-400 hover:scale-[1.01] transition-all duration-300"
+          className="cursor-pointer group relative overflow-hidden rounded-[28px] border border-calm-pollen/50 bg-gradient-to-r from-[#243528]/95 via-[#18261b]/95 to-[#0e1710]/95 p-5 sm:p-6 backdrop-blur-xl shadow-[0_15px_35px_rgba(0,0,0,0.4)] hover:border-calm-pollen hover:scale-[1.01] transition-all duration-300"
         >
-          <div className="pointer-events-none absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-emerald-500/20 blur-2xl" />
+          <div className="pointer-events-none absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-calm-pollen/20 blur-2xl" />
           <div className="flex items-start justify-between">
             <div className="space-y-2 max-w-[80%]">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-300">
-                <Sparkles size={12} /> Game Gỡ Rối Tâm Trí
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-calm-pollen">
+                <Sparkles size={12} /> Chạm Cảm Xúc 00:00
               </span>
-              <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition">
-                Game Gỡ Nút Thắt Cuộc Sống
+              <h3 className="text-lg font-bold text-white group-hover:text-calm-pollen transition">
+                Chuyến Tàu 00:00
               </h3>
               <p className="text-xs text-calm-fog/90 leading-relaxed">
-                Chạm năng lượng, bóc tách điểm mù vô thức & mở mạch chat đối thoại sâu cùng Life Lab.
+                Trạm dừng cho những tâm hồn mệt mỏi. Gỡ bỏ mặt nạ và mở lòng chia sẻ cùng AI.
               </p>
             </div>
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 group-hover:scale-110 transition-transform">
-              <Sprout size={20} />
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-calm-pollen/20 text-calm-pollen border border-calm-pollen/30 group-hover:scale-110 transition-transform">
+              <Moon size={20} />
             </span>
           </div>
-          <div className="mt-4 flex items-center justify-between text-xs font-semibold text-emerald-300 border-t border-white/10 pt-3">
-            <span>Chơi & Gỡ nút ngay</span>
-            <span className="group-hover:translate-x-1 transition-transform">Khám phá →</span>
+          <div className="mt-4 flex items-center justify-between text-xs font-semibold text-calm-pollen border-t border-white/10 pt-3">
+            <span>Bước lên chuyến tàu</span>
+            <span className="group-hover:translate-x-1 transition-transform">Trải nghiệm ngay →</span>
           </div>
         </motion.div>
 
@@ -495,7 +496,7 @@ export default function DashboardOverviewPage() {
       </motion.div>
 
       {/* Modals */}
-      <PlayableLifeGameModal
+      <EmotiveStoryGameModal
         isOpen={isGameOpen}
         onClose={() => setIsGameOpen(false)}
       />
