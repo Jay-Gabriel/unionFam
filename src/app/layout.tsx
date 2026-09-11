@@ -33,8 +33,6 @@ export default function RootLayout({
         className="min-h-screen bg-calm-deep-moss antialiased font-sans"
         style={{ backgroundColor: '#263128' }}
       >
-        <LeafCursor />
-        <FloatingSanctuaryAtmosphere />
         {children}
       </body>
     </html>

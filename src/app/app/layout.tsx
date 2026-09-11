@@ -26,13 +26,6 @@ import {
   X,
 } from 'lucide-react';
 
-// Keep the decorative WebGL scene out of the critical app shell bundle. It is
-// a progressive enhancement, so the CSS/poster layers can paint immediately
-// while Three.js loads in a separate client chunk after navigation.
-const SanctuaryCanvas = dynamic(
-  () => import('@/components/sanctuary-3d/sanctuary-canvas').then((module) => module.SanctuaryCanvas),
-  { ssr: false, loading: () => null },
-);
 
 type NavItem = {
   label: string;
@@ -256,29 +249,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         maxHeight: 'var(--app-viewport-height, 100dvh)',
       }}
     >
-      {/* Immediate 2.5D atmosphere plus a lazy WebGL progressive enhancement. */}
+      {/* High-performance hardware-accelerated ambient atmosphere */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-calm-deep-moss" aria-hidden="true">
-        {/* WebGL is a progressive enhancement: the poster/CSS layers paint
-            immediately, while SanctuaryCanvas idles in on capable desktop
-            devices and remains static on mobile, reduced-motion and save-data. */}
-        <SanctuaryCanvas
-          variant="app-morning"
-          fallbackSrc="/visuals/living-sanctuary/hero-poster.svg"
-          className="opacity-20 mix-blend-screen"
-        />
         <div
           className="absolute inset-0 opacity-80"
           style={{
             background:
-              'radial-gradient(circle at 82% 12%, rgba(185,198,165,0.12), transparent 30%), radial-gradient(circle at 18% 70%, rgba(89,106,85,0.18), transparent 38%), linear-gradient(180deg, #263128 0%, #1d2820 68%, #111b15 100%)',
+              'radial-gradient(circle at 82% 12%, rgba(185,198,165,0.08), transparent 40%), radial-gradient(circle at 18% 70%, rgba(89,106,85,0.12), transparent 45%), linear-gradient(180deg, #263128 0%, #1d2820 68%, #111b15 100%)',
           }}
         />
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-[0.055]"
+          className="absolute inset-0 bg-cover bg-center opacity-[0.04]"
           style={{ backgroundImage: "url('/visuals/living-sanctuary/root-back.svg')" }}
         />
         <div
-          className="absolute inset-x-0 bottom-0 h-[42%] bg-cover bg-bottom opacity-[0.07]"
+          className="absolute inset-x-0 bottom-0 h-[42%] bg-cover bg-bottom opacity-[0.05]"
           style={{ backgroundImage: "url('/visuals/living-sanctuary/moss-front.svg')" }}
         />
       </div>
