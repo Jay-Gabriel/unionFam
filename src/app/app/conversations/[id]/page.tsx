@@ -520,7 +520,9 @@ function ConversationPageContent() {
           if (!cancelled) {
             setConversationId(activeId);
             const searchString = typeof window !== 'undefined' ? window.location.search : '';
-            router.replace(`/app/conversations/${activeId}${searchString}`);
+            if (typeof window !== 'undefined' && window.history?.replaceState) {
+              window.history.replaceState(null, '', `/app/conversations/${activeId}${searchString}`);
+            }
           }
         } else {
           activeLoadedIdRef.current = activeId;
