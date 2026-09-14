@@ -533,18 +533,6 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
                   <MessageCircleHeart size={16} />
                   <span>Mở Lòng Trò Chuyện Cùng AI Ngay →</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    router.push('/app/conversations/new?call=true');
-                    onClose?.();
-                  }}
-                  className="flex items-center justify-center gap-2 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-5 sm:px-6 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-calm-pollen hover:bg-calm-pollen/25 transition active:scale-98"
-                >
-                  <PhoneCall size={15} />
-                  <span>Gọi thoại 1:1 trong tĩnh lặng</span>
-                </button>
               </div>
             </div>
           </motion.div>

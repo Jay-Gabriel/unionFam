@@ -31,7 +31,7 @@ import { LeafLoader } from '@/components/calm/leaf-loader';
 import { labelStage, labelStatus } from '@/lib/i18n';
 import { LifeArchetypeCardModal } from '@/components/calm/life-archetype-card';
 import { DailyZenCardModal } from '@/components/calm/daily-zen-card';
-import { EmotiveStoryGameModal } from '@/components/calm/emotive-story-game';
+import { ChoiceIdentityGameModal } from '@/components/calm/choice-identity-game';
 
 const mapItems = [
   { key: 'my_life', index: '01', title: 'ĐỜI SỐNG MONG MUỐN', detail: 'Cuộc đời tôi muốn sống', icon: Compass, tone: 'bg-calm-lichen/15 text-calm-lichen' },
@@ -185,31 +185,31 @@ function DashboardOverviewContent() {
 
       {/* 3 Strategic Growth Action Banners */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Banner 1: Game Chuyến Tàu 00:00 (Chạm Cảm Xúc) */}
+        {/* Banner 1: Game Căn Cước Lựa Chọn (Khám Phá Lực Kéo) */}
         <motion.div
           variants={reveal}
           onClick={() => setIsGameOpen(true)}
-          className="cursor-pointer group relative overflow-hidden rounded-[28px] border border-calm-pollen/50 bg-gradient-to-r from-[#243528]/95 via-[#18261b]/95 to-[#0e1710]/95 p-5 sm:p-6 backdrop-blur-xl shadow-[0_15px_35px_rgba(0,0,0,0.4)] hover:border-calm-pollen hover:scale-[1.01] transition-all duration-300"
+          className="cursor-pointer group relative overflow-hidden rounded-[28px] border border-calm-lichen/50 bg-gradient-to-r from-[#243528]/95 via-[#18261b]/95 to-[#0e1710]/95 p-5 sm:p-6 backdrop-blur-xl shadow-[0_15px_35px_rgba(0,0,0,0.4)] hover:border-calm-lichen hover:scale-[1.01] transition-all duration-300"
         >
-          <div className="pointer-events-none absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-calm-pollen/20 blur-2xl" />
+          <div className="pointer-events-none absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-calm-lichen/20 blur-2xl" />
           <div className="flex items-start justify-between">
             <div className="space-y-2 max-w-[80%]">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-calm-pollen">
-                <Sparkles size={12} /> Chạm Cảm Xúc 00:00
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-calm-lichen/40 bg-calm-lichen/15 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-calm-lichen">
+                <Sparkles size={12} /> Game Đời Sống
               </span>
-              <h3 className="text-lg font-bold text-white group-hover:text-calm-pollen transition">
-                Chuyến Tàu 00:00
+              <h3 className="text-lg font-bold text-white group-hover:text-calm-lichen transition">
+                Căn Cước Lựa Chọn
               </h3>
               <p className="text-xs text-calm-fog/90 leading-relaxed">
-                Trạm dừng cho những tâm hồn mệt mỏi. Gỡ bỏ mặt nạ và mở lòng chia sẻ cùng AI.
+                Đi qua 6 tình huống đời thường để nhìn rõ 4 lực kéo và điều bạn đang ưu tiên bảo vệ.
               </p>
             </div>
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-calm-pollen/20 text-calm-pollen border border-calm-pollen/30 group-hover:scale-110 transition-transform">
-              <Moon size={20} />
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-calm-lichen/20 text-calm-lichen border border-calm-lichen/30 group-hover:scale-110 transition-transform">
+              <Scale size={20} />
             </span>
           </div>
-          <div className="mt-4 flex items-center justify-between text-xs font-semibold text-calm-pollen border-t border-white/10 pt-3">
-            <span>Bước lên chuyến tàu</span>
+          <div className="mt-4 flex items-center justify-between text-xs font-semibold text-calm-lichen border-t border-white/10 pt-3">
+            <span>Khám phá 4 lực kéo</span>
             <span className="group-hover:translate-x-1 transition-transform">Trải nghiệm ngay →</span>
           </div>
         </motion.div>
@@ -496,7 +496,7 @@ function DashboardOverviewContent() {
       </motion.div>
 
       {/* Modals */}
-      <EmotiveStoryGameModal
+      <ChoiceIdentityGameModal
         isOpen={isGameOpen}
         onClose={() => setIsGameOpen(false)}
       />

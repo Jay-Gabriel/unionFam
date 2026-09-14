@@ -68,14 +68,38 @@ export function SanctuaryAudioPlayer({
       void startAudio();
     }
 
+    const handleCustomPlay = () => {
+      if (audioRef.current) {
+        audioRef.current.volume = volume > 0 ? volume : 0.45;
+        audioRef.current.play().then(() => {
+          setIsPlaying(true);
+          setIsMuted(false);
+          localStorage.setItem('unionfam_432hz_muted', 'false');
+        }).catch(() => {});
+      }
+    };
+
+    const handleCustomPause = () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+        localStorage.setItem('unionfam_432hz_muted', 'true');
+      }
+    };
+
+    window.addEventListener('lifelab:play-audio', handleCustomPlay);
+    window.addEventListener('lifelab:pause-audio', handleCustomPause);
+
     return () => {
+      window.removeEventListener('lifelab:play-audio', handleCustomPlay);
+      window.removeEventListener('lifelab:pause-audio', handleCustomPause);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
         audioRef.current = null;
       }
     };
-  }, [src, autoPlay]);
+  }, [src, autoPlay, volume]);
 
   const togglePlay = async () => {
     if (!audioRef.current) return;

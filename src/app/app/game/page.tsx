@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Sparkles, Moon, Compass } from 'lucide-react';
+import { ArrowLeft, Sparkles, Scale, Moon, Compass } from 'lucide-react';
+import { ChoiceIdentityGame } from '@/components/calm/choice-identity-game';
 import { EmotiveStoryGame } from '@/components/calm/emotive-story-game';
 import { SoulKnotGame } from '@/components/calm/soul-knot-game';
 
 export default function GamePage() {
-  const [activeTab, setActiveTab] = useState<'story' | 'knot'>('story');
+  const [activeTab, setActiveTab] = useState<'choice' | 'story' | 'knot'>('choice');
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-12">
@@ -24,6 +25,18 @@ export default function GamePage() {
         <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-black/40 p-1 backdrop-blur-md overflow-x-auto scrollbar-none max-w-full touch-manipulation">
           <button
             type="button"
+            onClick={() => setActiveTab('choice')}
+            className={`flex items-center gap-1.5 rounded-full px-3.5 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 ${
+              activeTab === 'choice'
+                ? 'bg-gradient-to-r from-calm-lichen via-emerald-400 to-calm-pollen text-black shadow-[0_0_15px_rgba(185,198,165,0.4)]'
+                : 'text-calm-fog hover:text-white'
+            }`}
+          >
+            <Scale size={13} />
+            <span>1. Căn Cước Lựa Chọn</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab('story')}
             className={`flex items-center gap-1.5 rounded-full px-3.5 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 ${
               activeTab === 'story'
@@ -32,7 +45,7 @@ export default function GamePage() {
             }`}
           >
             <Moon size={13} />
-            <span>1. Chuyến Tàu 00:00</span>
+            <span>2. Chuyến Tàu 00:00</span>
           </button>
           <button
             type="button"
@@ -44,14 +57,15 @@ export default function GamePage() {
             }`}
           >
             <Compass size={13} />
-            <span>2. La Bàn Gieo Hạt</span>
+            <span>3. La Bàn Gieo Hạt</span>
           </button>
         </div>
       </div>
 
       {/* Render Selected Emotive Game */}
-      {activeTab === 'story' ? <EmotiveStoryGame /> : <SoulKnotGame />}
+      {activeTab === 'choice' && <ChoiceIdentityGame />}
+      {activeTab === 'story' && <EmotiveStoryGame />}
+      {activeTab === 'knot' && <SoulKnotGame />}
     </div>
   );
 }
-

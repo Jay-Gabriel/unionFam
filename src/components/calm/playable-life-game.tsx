@@ -859,18 +859,6 @@ export function PlayableLifeGame({
                   <MessageCircleHeart size={16} />
                   <span>Trò chuyện cùng AI về ngã rẽ này ngay →</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    router.push('/app/conversations/new?call=true');
-                    onClose?.();
-                  }}
-                  className="flex items-center justify-center gap-2 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 px-5 py-3.5 text-xs sm:text-sm font-bold text-calm-pollen hover:bg-calm-pollen/25 transition active:scale-98"
-                >
-                  <PhoneCall size={15} />
-                  <span>Gọi thoại 1:1</span>
-                </button>
               </div>
             </div>
           </motion.div>

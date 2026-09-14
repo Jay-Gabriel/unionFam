@@ -182,6 +182,18 @@ export function buildMockResponse(
 ): string {
   const text = latestUserMessage.toLowerCase();
 
+  // Inquiry / Wanting to do a small experiment without a concrete step yet
+  if (
+    text.includes('thí nghiệm nhỏ') ||
+    text.includes('thử nghiệm nhỏ') ||
+    text.includes('muốn làm một thí nghiệm') ||
+    text.includes('muốn làm thử nghiệm') ||
+    text.includes('gợi ý thử nghiệm') ||
+    text.includes('làm sao để thử nghiệm')
+  ) {
+    return 'Để thiết kế một thử nghiệm vi mô nhẹ nhàng và dễ thành công, bạn nên bắt đầu bằng một hành động tốn dưới 15–30 phút trong 24–48 giờ tới mà không tạo áp lực. Bạn đang muốn thử nghiệm về khía cạnh nào: (1) Giành lại 20 phút tĩnh lặng cho bản thân, (2) Thử một thói quen buổi sáng/tối mới, hay (3) Dành 30 phút tìm hiểu một kỹ năng/dự án bạn tò mò?';
+  }
+
   // Reflection / Completed experiment results
   if (
     text.includes('làm thử') ||

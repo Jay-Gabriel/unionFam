@@ -15,68 +15,21 @@ import {
   Leaf,
   Loader2,
   Paperclip,
-  PhoneCall,
   Send,
   ShieldCheck,
   Sparkles,
   Sprout,
   UserRound,
+  Volume2,
+  VolumeX,
   Wallet,
   XCircle,
 } from 'lucide-react';
 import { LeafLoader } from '@/components/calm/leaf-loader';
 import { SanctuaryAudioPlayer } from '@/components/calm/sanctuary-audio-player';
-import {
-  LiveVoiceSanctuaryModal,
-  IncomingVoiceCallBadge,
-  VoiceCallOfferCard,
-} from '@/components/calm/live-voice-sanctuary';
+import { SanctuaryMusicPromptModal } from '@/components/calm/sanctuary-music-prompt-modal';
+import { speakVietnamese, stopSpeaking } from '@/lib/calm-speech';
 import { labelDimension } from '@/lib/i18n';
-
-const DISTRESS_KEYWORDS = [
-  'suy sụp',
-  'kiệt sức',
-  'áp lực',
-  'quá tải',
-  'bế tắc',
-  'khóc',
-  'mệt quá',
-  'mệt mỏi',
-  'muốn buông xuôi',
-  'gục ngã',
-  'không chịu nổi',
-  'bất lực',
-  'lo lắng tột cùng',
-  'trầm cảm',
-  'hoảng loạn',
-  'stress nặng',
-  'cô đơn quá',
-  'tuyệt vọng',
-  'mệt quá rồi',
-  'nản quá',
-  'đuối sức',
-];
-
-const CALL_ACCEPT_KEYWORDS = [
-  'đồng ý',
-  'gọi đi',
-  'ừ gọi',
-  'gọi luôn',
-  'muốn gọi',
-  'gọi cho mình',
-  'gọi nhé',
-  'gọi nha',
-  'ok gọi',
-  'oke gọi',
-  'được gọi đi',
-  'ừ',
-  'uầy gọi đi',
-  'gọi thôi',
-  'bắt máy',
-  'kết nối đi',
-  'nhấc máy',
-  'gọi liền',
-];
 
 interface Observation {
   id: string;
@@ -129,7 +82,6 @@ interface Message {
   experimentProposal?: ExperimentProposal;
   reflectionProposal?: ReflectionProposal;
   resourceProposal?: ResourceProposal;
-  hasVoiceOffer?: boolean;
 }
 
 const DEFAULT_OPENING_MESSAGE =
@@ -164,7 +116,6 @@ function mapConversationMessages(data: Record<string, unknown>): Message[] {
         content,
         timestamp: new Date(String(message.created_at)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         observation: observationsByMessage.get(String(message.id)),
-        hasVoiceOffer: Boolean(message.hasVoiceOffer),
       };
     });
 }
@@ -193,7 +144,6 @@ function readDemoMessages(id: string): Message[] {
           experimentProposal: message.experimentProposal as ExperimentProposal | undefined,
           reflectionProposal: message.reflectionProposal as ReflectionProposal | undefined,
           resourceProposal: message.resourceProposal as ResourceProposal | undefined,
-          hasVoiceOffer: Boolean(message.hasVoiceOffer),
         };
       });
   } catch {
@@ -403,10 +353,12 @@ function ConversationPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendError, setSendError] = useState('');
   const [retryContent, setRetryContent] = useState('');
-  const [showIncomingCallBadge, setShowIncomingCallBadge] = useState(false);
-  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
-  const [voiceInitialConnected, setVoiceInitialConnected] = useState(false);
-  const [hasDismissedCall, setHasDismissedCall] = useState(false);
+  const [isFromChoiceIdentity, setIsFromChoiceIdentity] = useState(false);
+  const [isMusicPromptOpen, setIsMusicPromptOpen] = useState(false);
+  const [isAutoVoiceEnabled, setIsAutoVoiceEnabled] = useState(true);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+
+  const activeLoadedIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -417,6 +369,36 @@ function ConversationPageContent() {
     data: Record<string, unknown>;
     demoMode: boolean;
   }> | null>(null);
+
+  // Check music permission prompt on entering sanctuary
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const asked = localStorage.getItem('lifelab_music_permission_asked');
+    if (asked !== 'true') {
+      const timer = setTimeout(() => setIsMusicPromptOpen(true), 600);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleToggleVoice = useCallback((messageId: string, content: string) => {
+    if (speakingMessageId === messageId) {
+      stopSpeaking();
+      setSpeakingMessageId(null);
+    } else {
+      speakVietnamese(content, {
+        onStart: () => setSpeakingMessageId(messageId),
+        onEnd: () => setSpeakingMessageId(null),
+        onError: () => setSpeakingMessageId(null),
+      });
+    }
+  }, [speakingMessageId]);
+
+  // Clean up speech on unmount
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
 
   // Auto-grow textarea freely and smoothly on content change
   useEffect(() => {
@@ -429,26 +411,26 @@ function ConversationPageContent() {
     }
   }, [inputContent]);
 
-  // Read preloaded prompt or call param from Mini-game or deep-links
+  // Read preloaded prompt or game context from Mini-game or deep-links
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const promptQuery = searchParams.get('prompt');
+    const fromGameQuery = searchParams.get('fromGame');
     const storedPrompt = window.sessionStorage.getItem('lifelab_preloaded_prompt');
+    const storedGameContext = window.sessionStorage.getItem('lifelab_game_context');
+
+    if (fromGameQuery === 'choice_identity' || storedGameContext) {
+      setIsFromChoiceIdentity(true);
+    }
+
     const targetPrompt = promptQuery || storedPrompt;
     if (targetPrompt && targetPrompt.trim()) {
       setInputContent(targetPrompt);
     }
-    const callQuery = searchParams.get('call');
-    if (callQuery === 'true') {
-      setVoiceInitialConnected(true);
-      setIsVoiceModalOpen(true);
-    }
   }, [searchParams]);
+
   const scrollToBottom = useCallback((smooth = false) => {
     if (typeof window === 'undefined') return;
-    window.scrollTo(0, 0);
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
     const container = messagesScrollRef.current;
     if (container) {
       container.scrollTo({
@@ -469,23 +451,13 @@ function ConversationPageContent() {
 
     const handleViewportChange = () => {
       scrollToBottom(false);
-      const t1 = setTimeout(() => scrollToBottom(false), 80);
-      const t2 = setTimeout(() => scrollToBottom(false), 250);
-      const t3 = setTimeout(() => scrollToBottom(false), 450);
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-        clearTimeout(t3);
-      };
     };
 
     viewport?.addEventListener('resize', handleViewportChange);
-    viewport?.addEventListener('scroll', handleViewportChange);
     window.addEventListener('resize', handleViewportChange);
 
     return () => {
       viewport?.removeEventListener('resize', handleViewportChange);
-      viewport?.removeEventListener('scroll', handleViewportChange);
       window.removeEventListener('resize', handleViewportChange);
     };
   }, [scrollToBottom]);
@@ -493,27 +465,22 @@ function ConversationPageContent() {
   useEffect(() => {
     if (isLoadingConversation) return;
 
-    // Keep the latest turn and any auto-extracted cards visible on mobile/desktop
     const frame = window.requestAnimationFrame(() => {
       scrollToBottom(!isStreaming);
     });
 
-    const timer1 = setTimeout(() => scrollToBottom(false), 50);
-    const timer2 = setTimeout(() => scrollToBottom(false), 180);
-    const timer3 = setTimeout(() => scrollToBottom(false), 400);
-
     return () => {
       window.cancelAnimationFrame(frame);
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
     };
-  }, [isLoadingConversation, isStreaming, messages, scrollToBottom]);
+  }, [isLoadingConversation, isStreaming, messages.length, scrollToBottom]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadConversation() {
+      if (routeConversationId !== 'new' && activeLoadedIdRef.current === routeConversationId) {
+        return;
+      }
       let redirectingToConversationIndex = false;
       setIsLoadingConversation(true);
       setIsStreaming(false);
@@ -542,6 +509,7 @@ function ConversationPageContent() {
           }
           const created = await newConversationPromiseRef.current;
           activeId = created.id;
+          activeLoadedIdRef.current = activeId;
           createdConversationData = {
             conversation: created.data,
             messages: [],
@@ -554,6 +522,8 @@ function ConversationPageContent() {
             const searchString = typeof window !== 'undefined' ? window.location.search : '';
             router.replace(`/app/conversations/${activeId}${searchString}`);
           }
+        } else {
+          activeLoadedIdRef.current = activeId;
         }
 
         const loadData = async (): Promise<Record<string, unknown>> => {
@@ -701,23 +671,6 @@ function ConversationPageContent() {
     const userText = inputContent.trim();
     const lowerUserText = userText.toLowerCase();
 
-    // Check if user is agreeing to a voice call offer or requesting a call
-    const hasRecentVoiceOffer = messages.some((m) => m.role === 'assistant' && m.hasVoiceOffer);
-    const isAffirmative = CALL_ACCEPT_KEYWORDS.some((kw) => lowerUserText.includes(kw));
-    const isExplicitCallRequest =
-      lowerUserText.includes('gọi điện') ||
-      lowerUserText.includes('gọi thoại') ||
-      lowerUserText.includes('muốn gọi') ||
-      lowerUserText.includes('gọi luôn');
-
-    if ((hasRecentVoiceOffer && isAffirmative) || isExplicitCallRequest) {
-      setVoiceInitialConnected(true);
-      setIsVoiceModalOpen(true);
-    }
-
-    // Check if user expresses emotional distress / breakdown / exhaustion
-    const isDistressed = DISTRESS_KEYWORDS.some((kw) => lowerUserText.includes(kw));
-
     setSendError('');
     setRetryContent('');
     const userMsg: Message = {
@@ -742,7 +695,6 @@ function ConversationPageContent() {
         role: 'assistant',
         content: '',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        hasVoiceOffer: isDistressed,
       },
     ]);
 
@@ -798,6 +750,15 @@ function ConversationPageContent() {
           )
         );
       });
+
+      if (isAutoVoiceEnabled && stream.responseText) {
+        speakVietnamese(stream.responseText, {
+          onStart: () => setSpeakingMessageId(assistantMsgId),
+          onEnd: () => setSpeakingMessageId(null),
+          onError: () => setSpeakingMessageId(null),
+        });
+      }
+
       if (stream.observation || stream.experimentProposal || stream.reflectionProposal || stream.resourceProposal) {
         setMessages((previous) =>
           previous.map((message) =>
@@ -1052,14 +1013,18 @@ function ConversationPageContent() {
           <button
             type="button"
             onClick={() => {
-              setVoiceInitialConnected(true);
-              setIsVoiceModalOpen(true);
+              if (speakingMessageId) stopSpeaking();
+              setIsAutoVoiceEnabled(!isAutoVoiceEnabled);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-gradient-to-r from-calm-pollen/20 to-calm-lichen/20 px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-[12px] font-bold text-calm-pollen shadow-[0_0_12px_rgba(238,213,150,0.2)] hover:border-calm-pollen hover:scale-105 active:scale-95 transition whitespace-nowrap"
-            title="Gọi thoại trực tiếp cùng Life Lab"
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] sm:text-[11px] font-medium transition-all ${
+              isAutoVoiceEnabled
+                ? 'border-calm-lichen/40 bg-calm-lichen/20 text-calm-warm-ivory shadow-sm'
+                : 'border-white/10 bg-white/5 text-calm-fog hover:text-white'
+            }`}
+            title="Tự động đọc giọng nói AI truyền cảm khi trả lời"
           >
-            <PhoneCall size={12} className="text-calm-pollen animate-pulse" />
-            <span>Gọi thoại 1:1</span>
+            {isAutoVoiceEnabled ? <Volume2 size={13} className="text-calm-lichen" /> : <VolumeX size={13} />}
+            <span className="hidden sm:inline">{isAutoVoiceEnabled ? 'Giọng đọc: Bật' : 'Giọng đọc: Tắt'}</span>
           </button>
           <SanctuaryAudioPlayer />
           {isDemoConversation && (
@@ -1080,19 +1045,6 @@ function ConversationPageContent() {
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 sm:px-6 sm:py-6 sm:rounded-[36px] sm:border border-white/10 sm:bg-gradient-to-b sm:from-[#212c23]/60 sm:via-[#1c261e]/40 sm:to-[#18211a]/70 sm:backdrop-blur-xl sm:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
         aria-label="Nội dung cuộc trò chuyện"
       >
-        {showIncomingCallBadge && (
-          <IncomingVoiceCallBadge
-            onAnswer={() => {
-              setShowIncomingCallBadge(false);
-              setVoiceInitialConnected(true);
-              setIsVoiceModalOpen(true);
-            }}
-            onDismiss={() => {
-              setShowIncomingCallBadge(false);
-              setHasDismissedCall(true);
-            }}
-          />
-        )}
         <div className="space-y-4 sm:space-y-6" aria-live="polite">
           {messages.map((message) => (
             <div key={message.id} className="space-y-2 sm:space-y-2.5">
@@ -1123,26 +1075,33 @@ function ConversationPageContent() {
                         <div className="whitespace-pre-wrap text-[#f4f5f2] font-normal leading-[1.65]">{DEFAULT_OPENING_MESSAGE}</div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 px-2 text-[10.5px] sm:text-[11px] font-semibold text-calm-warm-ivory/80">
+                    <div className="flex items-center justify-between gap-2 px-2 text-[10.5px] sm:text-[11px] font-semibold text-calm-warm-ivory/80">
                       <span>{message.timestamp}</span>
+                      {message.content && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleVoice(message.id, message.content)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-medium transition-all ${
+                            speakingMessageId === message.id
+                              ? 'bg-calm-lichen/30 text-calm-warm-ivory border border-calm-lichen/50 animate-pulse'
+                              : 'bg-white/10 text-calm-fog hover:text-calm-lichen hover:bg-white/15'
+                          }`}
+                          title={speakingMessageId === message.id ? 'Dừng đọc' : 'Nghe AI đọc truyền cảm'}
+                        >
+                          {speakingMessageId === message.id ? (
+                            <>
+                              <VolumeX size={12} className="text-calm-lichen" />
+                              <span>Đang đọc...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 size={12} />
+                              <span>Nghe đọc</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
-
-                    {/* Proactive 1:1 Voice Call Offer Card on emotional breakdown / distress */}
-                    {message.hasVoiceOffer && (
-                      <VoiceCallOfferCard
-                        onAccept={() => {
-                          setVoiceInitialConnected(true);
-                          setIsVoiceModalOpen(true);
-                        }}
-                        onDecline={() => {
-                          setMessages((prev) =>
-                            prev.map((m) =>
-                              m.id === message.id ? { ...m, hasVoiceOffer: false } : m
-                            )
-                          );
-                        }}
-                      />
-                    )}
 
                     {/* ONLY Micro-Experiment Card is displayed */}
                     {message.experimentProposal && (
@@ -1215,34 +1174,62 @@ function ConversationPageContent() {
       <div className="shrink-0 px-3 sm:px-0 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] bg-[#263128]/95 sm:bg-transparent border-t border-white/5 sm:border-0">
         {/* Quick Suggestion Pills */}
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none text-[11px] sm:text-[11.5px] touch-manipulation">
-          <button
-            type="button"
-            onClick={() => setInputContent('Tôi muốn làm thử nghiệm 15 phút mỗi sáng để tạo nhịp điệu mới')}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/30 bg-calm-pollen/10 hover:bg-calm-pollen/20 active:bg-calm-pollen/30 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-calm-pollen shadow-sm transition-all whitespace-nowrap active:scale-95"
-          >
-            <span>🧪</span> Thử nghiệm 15 phút
-          </button>
-          <button
-            type="button"
-            onClick={() => setInputContent('Hôm nay tôi đã làm thử và nhận ra bài học là bước nhỏ giúp tâm trí nhẹ nhàng hơn')}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-fern/35 bg-calm-fern/10 hover:bg-calm-fern/20 active:bg-calm-fern/30 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-[#c9e2cf] shadow-sm transition-all whitespace-nowrap active:scale-95"
-          >
-            <span>🌱</span> Ghi nhận & Bài học
-          </button>
-          <button
-            type="button"
-            onClick={() => setInputContent('Tôi đang có khoản tiết kiệm 6 tháng và kinh nghiệm chuyên môn 5 năm')}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-lichen/35 bg-calm-lichen/10 hover:bg-calm-lichen/20 active:bg-calm-lichen/30 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-calm-lichen shadow-sm transition-all whitespace-nowrap active:scale-95"
-          >
-            <span>💼</span> Nguồn lực & Tài chính
-          </button>
-          <button
-            type="button"
-            onClick={() => setInputContent('Tôi mong muốn một cuộc sống tự do thời gian và dành cho gia đình')}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/15 active:bg-white/20 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-calm-warm-ivory shadow-sm transition-all whitespace-nowrap active:scale-95"
-          >
-            <span>🧭</span> Bản đồ cuộc sống
-          </button>
+          {isFromChoiceIdentity ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setInputContent('Đúng, tôi muốn nói thêm.')}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-lichen/40 bg-calm-lichen/15 hover:bg-calm-lichen/25 active:bg-calm-lichen/35 backdrop-blur-sm px-3.5 py-1.5 font-semibold text-calm-warm-ivory shadow-sm transition-all whitespace-nowrap active:scale-95"
+              >
+                <span>✨</span> Đúng, tôi muốn nói thêm.
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputContent('Một phần thôi.')}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/40 bg-calm-pollen/15 hover:bg-calm-pollen/25 active:bg-calm-pollen/35 backdrop-blur-sm px-3.5 py-1.5 font-semibold text-calm-pollen shadow-sm transition-all whitespace-nowrap active:scale-95"
+              >
+                <span>🌿</span> Một phần thôi.
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputContent('Không, tôi muốn bắt đầu từ điều khác.')}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-sm px-3.5 py-1.5 font-semibold text-calm-fog hover:text-white shadow-sm transition-all whitespace-nowrap active:scale-95"
+              >
+                <span>🧭</span> Không, tôi muốn bắt đầu từ điều khác.
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setInputContent('Tôi muốn làm một thí nghiệm nhỏ để thay đổi nhịp sống')}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-pollen/30 bg-calm-pollen/10 hover:bg-calm-pollen/20 active:bg-calm-pollen/30 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-calm-pollen shadow-sm transition-all whitespace-nowrap active:scale-95"
+              >
+                <span>🧪</span> Thử nghiệm vi mô
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputContent('Hôm nay tôi đã làm thử và nhận ra bài học là bước nhỏ giúp tâm trí nhẹ nhàng hơn')}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-fern/35 bg-calm-fern/10 hover:bg-calm-fern/20 active:bg-calm-fern/30 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-[#c9e2cf] shadow-sm transition-all whitespace-nowrap active:scale-95"
+              >
+                <span>🌱</span> Ghi nhận & Bài học
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputContent('Tôi đang có khoản tiết kiệm 6 tháng và kinh nghiệm chuyên môn 5 năm')}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-calm-lichen/35 bg-calm-lichen/10 hover:bg-calm-lichen/20 active:bg-calm-lichen/30 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-calm-lichen shadow-sm transition-all whitespace-nowrap active:scale-95"
+              >
+                <span>💼</span> Nguồn lực & Tài chính
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputContent('Tôi mong muốn một cuộc sống tự do thời gian và dành cho gia đình')}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/15 active:bg-white/20 backdrop-blur-sm px-3 py-1 sm:px-3.5 sm:py-1.5 font-medium text-calm-warm-ivory shadow-sm transition-all whitespace-nowrap active:scale-95"
+              >
+                <span>🧭</span> Bản đồ cuộc sống
+              </button>
+            </>
+          )}
         </div>
 
         <form
@@ -1296,25 +1283,21 @@ function ConversationPageContent() {
         </p>
       </div>
 
-      <LiveVoiceSanctuaryModal
-        isOpen={isVoiceModalOpen}
-        initialConnected={voiceInitialConnected}
-        onClose={(callSummary) => {
-          setIsVoiceModalOpen(false);
-          setVoiceInitialConnected(false);
-          if (callSummary) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: `call-summary-${Date.now()}`,
-                role: 'assistant',
-                content: callSummary,
-                timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-              },
-            ]);
+      <SanctuaryMusicPromptModal
+        isOpen={isMusicPromptOpen}
+        onAccept={() => {
+          setIsMusicPromptOpen(false);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('lifelab_music_permission_asked', 'true');
+            window.dispatchEvent(new CustomEvent('lifelab:play-audio'));
           }
         }}
-        conversationId={conversationId}
+        onDecline={() => {
+          setIsMusicPromptOpen(false);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('lifelab_music_permission_asked', 'true');
+          }
+        }}
       />
     </div>
   );
