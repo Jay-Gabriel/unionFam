@@ -22,8 +22,8 @@ export function SanctuaryAudioPlayer({
 
   useEffect(() => {
     // Check localStorage preference
-    const savedMute = localStorage.getItem('unionfam_432hz_muted');
-    if (savedMute === 'true') {
+    const savedMute = localStorage.getItem('unionfam_432hz_muted') === 'true';
+    if (savedMute) {
       setIsMuted(true);
     }
 
@@ -37,11 +37,11 @@ export function SanctuaryAudioPlayer({
 
     const audio = new Audio(src);
     audio.loop = true;
-    audio.volume = isMuted ? 0 : volume;
+    audio.volume = savedMute ? 0 : volume;
     audioRef.current = audio;
 
     const startAudio = async () => {
-      if (savedMute === 'true') return;
+      if (savedMute) return;
       try {
         await audio.play();
         setIsPlaying(true);
