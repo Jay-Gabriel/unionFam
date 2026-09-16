@@ -49,15 +49,16 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
     const isDraggingMouseRef = useRef(false);
     const lastMousePosRef = useRef({ x: 0, y: 0 });
 
-    // Coordinate & Physics state
+    // Coordinate, Physics & Rotation state
     const thetaRef = useRef(initialTheta);
     const phiRef = useRef(initialPhi);
     const heightOffsetRef = useRef(0);
     const verticalVelocityRef = useRef(0);
-    const headingAngleRef = useRef(0);
     const isGroundedRef = useRef(true);
     const currentEmoteRef = useRef<string | null>(null);
     const emoteTimerRef = useRef<number | null>(null);
+    const currentQuatRef = useRef(new THREE.Quaternion());
+    const lastMoveVecRef = useRef(new THREE.Vector3(0, 0, 1));
 
     // Keyboard & Virtual Inputs
     const inputRef = useRef({
@@ -81,8 +82,8 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
         const key = e.key.toLowerCase();
         if (key === 'w' || key === 'arrowup') inputRef.current.forward = 1;
         if (key === 's' || key === 'arrowdown') inputRef.current.forward = -1;
-        if (key === 'a' || key === 'arrowleft') inputRef.current.turn = -1;
-        if (key === 'd' || key === 'arrowright') inputRef.current.turn = 1;
+        if (key === 'a' || key === 'arrowleft') inputRef.current.turn = -1; // Left
+        if (key === 'd' || key === 'arrowright') inputRef.current.turn = 1;  // Right
         if (key === ' ' || key === 'spacebar') inputRef.current.jump = true;
         if (key === 'shift') inputRef.current.sprint = true;
       };
@@ -114,7 +115,7 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
         const dy = e.clientY - lastMousePosRef.current.y;
         lastMousePosRef.current = { x: e.clientX, y: e.clientY };
 
-        // Mouse drag rotates camera orbit
+        // Mouse drag rotates camera orbit (yaw and pitch)
         cameraOrbitYawRef.current -= dx * 0.006;
         cameraOrbitPitchRef.current = Math.max(
           -0.05,
@@ -179,6 +180,29 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
     useFrame((_, delta) => {
       if (!playerGroupRef.current) return;
 
+      // Current position vector & surface normal
+      const currentRadius = PLANET_RADIUS + heightOffsetRef.current;
+      const rawPos = sphericalToCartesian(currentRadius, thetaRef.current, phiRef.current);
+      const pos = new THREE.Vector3(...rawPos);
+      const normal = pos.clone().normalize();
+
+      // Tangent frame on sphere: North vector (along -theta) and East vector (along +phi)
+      const sinTheta = Math.sin(thetaRef.current);
+      const cosTheta = Math.cos(thetaRef.current);
+      const sinPhi = Math.sin(phiRef.current);
+      const cosPhi = Math.cos(phiRef.current);
+
+      const northVec = new THREE.Vector3(-cosTheta * cosPhi, sinTheta, -cosTheta * sinPhi).normalize();
+      const eastVec = new THREE.Vector3(-sinPhi, 0, cosPhi).normalize();
+
+      // Camera Horizontal Forward & Right vectors in Tangent Space
+      const yaw = cameraOrbitYawRef.current;
+      const pitch = cameraOrbitPitchRef.current;
+      const dist = cameraDistanceRef.current;
+
+      const camForward = northVec.clone().multiplyScalar(Math.cos(yaw)).add(eastVec.clone().multiplyScalar(Math.sin(yaw))).normalize();
+      const camRight = eastVec.clone().multiplyScalar(Math.cos(yaw)).sub(northVec.clone().multiplyScalar(Math.sin(yaw))).normalize();
+
       // Combine keyboard and virtual joystick inputs
       const fwd = inputRef.current.forward || -virtualInputRef.current.y;
       const right = inputRef.current.turn || virtualInputRef.current.x;
@@ -187,28 +211,26 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
 
       const inputLen = Math.hypot(fwd, right);
       const isMoving = inputLen > 0.08;
-      const speed = (spr ? 5.2 : 3.2) * delta;
+      const speed = (spr ? 5.5 : 3.5) * delta;
 
-      // Camera-relative movement direction
+      // Calculate desired movement vector in tangent plane
+      let moveVec = new THREE.Vector3();
       if (isMoving) {
-        // Angle of input relative to camera forward (W is 0, D is +PI/2, S is PI, A is -PI/2)
-        const inputAngle = Math.atan2(right, fwd);
-        // Desired world movement angle in tangent space
-        const targetWorldHeading = cameraOrbitYawRef.current + inputAngle;
+        moveVec = camForward.clone().multiplyScalar(fwd).add(camRight.clone().multiplyScalar(right)).normalize();
+        lastMoveVecRef.current.copy(moveVec);
 
-        // Smoothly rotate character mesh heading towards movement direction
-        let angleDiff = (targetWorldHeading - headingAngleRef.current) % (Math.PI * 2);
-        if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-        if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-        headingAngleRef.current += angleDiff * Math.min(1, 14 * delta);
+        // Project displacement onto North and East
+        const dNorth = moveVec.dot(northVec);
+        const dEast = moveVec.dot(eastVec);
 
-        // Displace along spherical surface
         const moveDist = Math.min(1, inputLen) * speed;
-        const dTheta = -(moveDist / PLANET_RADIUS) * Math.cos(targetWorldHeading);
-        const dPhi = (moveDist / (PLANET_RADIUS * Math.max(0.15, Math.sin(thetaRef.current)))) * Math.sin(targetWorldHeading);
+        const dTheta = -(moveDist / PLANET_RADIUS) * dNorth;
+        const dPhi = (moveDist / (PLANET_RADIUS * Math.max(0.15, Math.sin(thetaRef.current)))) * dEast;
 
         thetaRef.current = Math.max(0.12, Math.min(Math.PI - 0.12, thetaRef.current + dTheta));
         phiRef.current = (phiRef.current + dPhi + Math.PI * 2) % (Math.PI * 2);
+      } else {
+        moveVec.copy(lastMoveVecRef.current);
       }
 
       // Jump & Gravity physics
@@ -228,33 +250,21 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
         }
       }
 
-      // Compute 3D Cartesian position on sphere
-      const currentRadius = PLANET_RADIUS + heightOffsetRef.current;
-      const rawPos = sphericalToCartesian(currentRadius, thetaRef.current, phiRef.current);
-      const pos = new THREE.Vector3(...rawPos);
+      // Recompute position after displacement
+      const updatedPos = new THREE.Vector3(...sphericalToCartesian(PLANET_RADIUS + heightOffsetRef.current, thetaRef.current, phiRef.current));
+      const updatedNormal = updatedPos.clone().normalize();
 
-      // Normal vector pointing straight out from sphere center
-      const normal = pos.clone().normalize();
+      // Orient character to face moveVec on tangent plane
+      const faceDir = moveVec.clone().projectOnPlane(updatedNormal).normalize();
+      if (faceDir.lengthSq() > 0.01) {
+        const sideDir = updatedNormal.clone().cross(faceDir).normalize();
+        const rotMatrix = new THREE.Matrix4().makeBasis(sideDir, updatedNormal, faceDir.clone().negate());
+        const targetQuat = new THREE.Quaternion().setFromRotationMatrix(rotMatrix);
+        currentQuatRef.current.slerp(targetQuat, Math.min(1, 14 * delta));
+      }
 
-      // Tangent frame on sphere: North vector (along -theta) and East vector (along +phi)
-      const sinTheta = Math.sin(thetaRef.current);
-      const cosTheta = Math.cos(thetaRef.current);
-      const sinPhi = Math.sin(phiRef.current);
-      const cosPhi = Math.cos(phiRef.current);
-
-      const northVec = new THREE.Vector3(-cosTheta * cosPhi, sinTheta, -cosTheta * sinPhi).normalize();
-      const eastVec = new THREE.Vector3(-sinPhi, 0, cosPhi).normalize();
-
-      // Orient player upright perpendicular to spherical surface
-      const up = new THREE.Vector3(0, 1, 0);
-      const surfaceQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-
-      // Apply character heading orientation on tangent plane
-      const headingQuat = new THREE.Quaternion().setFromAxisAngle(normal, -headingAngleRef.current);
-      const fullQuat = headingQuat.multiply(surfaceQuat);
-
-      playerGroupRef.current.position.copy(pos);
-      playerGroupRef.current.quaternion.copy(fullQuat);
+      playerGroupRef.current.position.copy(updatedPos);
+      playerGroupRef.current.quaternion.copy(currentQuatRef.current);
 
       // Procedural walking/running animation
       const animTime = Date.now() * 0.009 * (spr ? 1.6 : 1.0);
@@ -288,10 +298,6 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
       onPositionChange?.(pos, thetaRef.current, phiRef.current);
 
       // Smooth Orbit Camera following player and mouse orbit angles
-      const yaw = cameraOrbitYawRef.current;
-      const pitch = cameraOrbitPitchRef.current;
-      const dist = cameraDistanceRef.current;
-
       // Camera horizontal offset direction in tangent plane
       const camHorizDir = northVec.clone().multiplyScalar(Math.cos(yaw)).add(eastVec.clone().multiplyScalar(Math.sin(yaw))).normalize();
 

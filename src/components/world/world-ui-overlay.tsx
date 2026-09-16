@@ -255,52 +255,52 @@ export function WorldUIOverlay({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md"
+            className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
           >
-            <div className="relative w-full max-w-lg rounded-[32px] border border-amber-400/30 bg-gradient-to-b from-[#241f17]/98 via-[#1a1813]/98 to-[#10100d]/98 p-6 sm:p-8 text-white shadow-[0_25px_70px_rgba(0,0,0,0.8)]">
+            <div className="relative w-full max-w-md rounded-[28px] border border-amber-400/30 bg-gradient-to-b from-[#1c1813]/98 via-[#14120e]/98 to-[#0d0c0a]/98 p-6 text-white shadow-[0_25px_70px_rgba(0,0,0,0.8)]">
               <button
                 type="button"
                 onClick={onCloseLetter}
-                className="absolute top-5 right-5 grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white/80 hover:bg-white/20 transition-all"
+                className="absolute top-4 right-4 grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white/80 hover:bg-white/20 transition-all"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
 
-              <div className="flex items-center gap-2.5 border-b border-amber-400/20 pb-4">
-                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-400/20 text-amber-300 border border-amber-400/30 shadow-md">
-                  <Mail size={20} />
+              <div className="flex items-center gap-2.5 border-b border-amber-400/20 pb-3">
+                <span className="grid h-9 w-9 place-items-center rounded-2xl bg-amber-400/20 text-amber-300 border border-amber-400/30 shadow-md">
+                  <Mail size={18} />
                 </span>
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-amber-200">{activeLetter.title}</h3>
-                  <p className="text-xs text-amber-400/70">Người gửi: {activeLetter.sender}</p>
+                  <h3 className="text-base font-bold text-amber-200">{activeLetter.title}</h3>
+                  <p className="text-[11px] text-amber-400/70">Người gửi: {activeLetter.sender}</p>
                 </div>
               </div>
 
-              <div className="my-5 space-y-4 text-xs sm:text-sm text-amber-100/90 leading-relaxed max-h-[42vh] overflow-y-auto pr-1">
+              <div className="my-4 space-y-3 text-xs text-amber-100/90 leading-relaxed max-h-[38vh] overflow-y-auto pr-1">
                 <blockquote className="rounded-2xl border-l-4 border-amber-400 bg-amber-400/10 p-3 italic text-amber-200">
                   {activeLetter.content}
                 </blockquote>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                   <p className="font-bold text-amber-300">💡 Câu hỏi suy ngẫm:</p>
                   <p className="mt-1 text-calm-fog">{activeLetter.reflectionQuestion}</p>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2">
+              <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => handleLetterToChat(activeLetter)}
-                  className="w-full flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 py-3 text-xs font-bold text-slate-950 shadow-lg hover:bg-amber-300 active:scale-95 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 py-2.5 text-xs font-bold text-slate-950 shadow hover:bg-amber-300 active:scale-95 transition-all"
                 >
-                  <MessageCircleHeart size={15} />
-                  <span>Ngồi Xuống Mở Lòng Với AI</span>
+                  <MessageCircleHeart size={14} />
+                  <span>Trò Chuyện Cùng AI</span>
                 </button>
                 <button
                   type="button"
                   onClick={onCloseLetter}
-                  className="w-full sm:w-auto rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-xs font-semibold text-calm-fog hover:text-white"
+                  className="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-semibold text-calm-fog hover:text-white"
                 >
-                  Cất vào túi thư
+                  Cất thư
                 </button>
               </div>
             </div>
@@ -308,66 +308,91 @@ export function WorldUIOverlay({
         )}
       </AnimatePresence>
 
-      {/* Bottom Controls Bar (Mobile Joystick + Emote Bar + Actions) */}
-      <footer className="pointer-events-auto flex items-end justify-between gap-3 pt-4">
-        {/* Virtual Touch Joystick (Visible on touch devices / mobile) */}
-        <div className="relative flex items-center justify-center">
-          <div
-            ref={joystickBaseRef}
-            onTouchStart={handleJoystickTouchStart}
-            onTouchMove={handleJoystickMove}
-            onTouchEnd={handleJoystickEnd}
-            onMouseDown={handleJoystickTouchStart}
-            onMouseMove={isDraggingJoystick ? handleJoystickMove : undefined}
-            onMouseUp={handleJoystickEnd}
-            className="relative grid h-28 w-28 place-items-center rounded-full border-2 border-white/20 bg-slate-950/60 backdrop-blur-lg shadow-2xl touch-none select-none active:border-emerald-400/50"
-          >
-            <div
-              className="h-12 w-12 rounded-full bg-gradient-to-tr from-emerald-500 to-calm-lichen shadow-lg border border-white/40 transition-transform"
-              style={{
-                transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Emote Quick Bar (Center) */}
-        <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-slate-950/80 p-1.5 backdrop-blur-xl shadow-2xl">
-          {EMOTE_OPTIONS.map((emote) => (
-            <button
-              key={emote.id}
-              type="button"
-              onClick={() => onTriggerEmote(emote.emoji)}
-              className="grid h-9 w-9 place-items-center rounded-full text-base hover:bg-white/15 active:scale-125 transition-all"
-              title={emote.label}
+      {/* Bottom Container: Active Zone Floating Pill + Emote Bar & Controls */}
+      <footer className="pointer-events-none flex flex-col items-center gap-3 w-full pb-1">
+        {/* Active Zone Notification Banner (Floating Minimalist Card) */}
+        <AnimatePresence>
+          {currentZone && (
+            <motion.div
+              initial={{ opacity: 0, y: 15, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 15, scale: 0.96 }}
+              className="pointer-events-auto w-full max-w-md px-2"
             >
-              {emote.emoji}
-            </button>
-          ))}
-        </div>
+              <div className="flex items-center justify-between gap-3 rounded-full border border-white/20 bg-slate-950/85 px-4 py-2.5 backdrop-blur-2xl text-white shadow-[0_12px_35px_rgba(0,0,0,0.5)]">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_8px_currentColor]"
+                    style={{ backgroundColor: currentZone.color, color: currentZone.color }}
+                  />
+                  <div className="truncate">
+                    <h2 className="text-xs font-bold text-white truncate">{currentZone.name}</h2>
+                    <p className="text-[10px] text-calm-lichen/90 truncate">{currentZone.subtitle}</p>
+                  </div>
+                </div>
 
-        {/* Jump & Action Buttons (Right) */}
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setIsSprinting(!isSprinting)}
-            className={`grid h-12 w-12 place-items-center rounded-full border text-xs font-bold shadow-xl backdrop-blur-md active:scale-90 transition-all ${
-              isSprinting
-                ? 'border-amber-400 bg-amber-400 text-slate-950 shadow-amber-500/30'
-                : 'border-white/20 bg-slate-950/70 text-white hover:bg-white/15'
-            }`}
-            title="Chạy nhanh"
-          >
-            <Zap size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={handleJumpPress}
-            className="grid h-14 w-14 place-items-center rounded-full border-2 border-emerald-400/60 bg-gradient-to-tr from-emerald-600 to-teal-400 text-white font-bold shadow-xl active:scale-90 transition-all"
-            title="Nhảy (Space)"
-          >
-            <span className="text-sm">JUMP</span>
-          </button>
+                <button
+                  type="button"
+                  onClick={() => handleZoneAction(currentZone)}
+                  className="shrink-0 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-400 to-calm-lichen px-3.5 py-1.5 text-[11px] font-bold text-slate-950 shadow hover:opacity-90 active:scale-95 transition-all"
+                >
+                  <span>{currentZone.actionLabel}</span>
+                  <ArrowRight size={11} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Bottom Bar: Joystick (Mobile) + Emote Bar + Jump */}
+        <div className="flex items-center justify-between w-full">
+          {/* Virtual Touch Joystick (Visible on touch/mobile) */}
+          <div className="pointer-events-auto">
+            <div
+              ref={joystickBaseRef}
+              onTouchStart={handleJoystickTouchStart}
+              onTouchMove={handleJoystickMove}
+              onTouchEnd={handleJoystickEnd}
+              onMouseDown={handleJoystickTouchStart}
+              onMouseMove={isDraggingJoystick ? handleJoystickMove : undefined}
+              onMouseUp={handleJoystickEnd}
+              className="relative grid h-20 w-20 place-items-center rounded-full border border-white/15 bg-slate-950/50 backdrop-blur-md shadow-xl touch-none select-none"
+            >
+              <div
+                className="h-9 w-9 rounded-full bg-gradient-to-tr from-emerald-500 to-calm-lichen shadow-md border border-white/40 transition-transform"
+                style={{
+                  transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Emote Quick Bar (Center) */}
+          <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-white/15 bg-slate-950/75 p-1 backdrop-blur-xl shadow-xl">
+            {EMOTE_OPTIONS.map((emote) => (
+              <button
+                key={emote.id}
+                type="button"
+                onClick={() => onTriggerEmote(emote.emoji)}
+                className="grid h-8 w-8 place-items-center rounded-full text-sm hover:bg-white/15 active:scale-125 transition-all"
+                title={emote.label}
+              >
+                {emote.emoji}
+              </button>
+            ))}
+          </div>
+
+          {/* Jump Button (Right) */}
+          <div className="pointer-events-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleJumpPress}
+              className="grid h-12 w-12 place-items-center rounded-full border border-emerald-400/50 bg-gradient-to-tr from-emerald-600/90 to-teal-400/90 text-white font-bold text-xs shadow-lg active:scale-90 transition-all"
+              title="Nhảy (Space)"
+            >
+              <span>JUMP</span>
+            </button>
+          </div>
         </div>
       </footer>
     </div>

@@ -207,48 +207,48 @@ function Windmill() {
 
   useFrame((_, delta) => {
     if (bladesRef.current) {
-      bladesRef.current.rotation.z += delta * 1.1;
+      bladesRef.current.rotation.z += delta * 0.9;
     }
   });
 
   return (
-    <group scale={1.3}>
+    <group scale={0.7}>
       {/* Octagonal Base */}
-      <mesh position={[0, 1.8, 0]}>
-        <cylinderGeometry args={[0.85, 1.4, 3.6, 8]} />
-        <meshStandardMaterial color="#f8fafc" roughness={0.6} />
+      <mesh position={[0, 1.8, 0]} castShadow>
+        <cylinderGeometry args={[0.85, 1.35, 3.6, 8]} />
+        <meshStandardMaterial color="#fefce8" roughness={0.7} />
       </mesh>
       {/* Timber bands */}
       <mesh position={[0, 1.2, 0]}>
         <cylinderGeometry args={[1.05, 1.15, 0.12, 8]} />
-        <meshStandardMaterial color="#78350f" />
+        <meshStandardMaterial color="#78350f" roughness={0.8} />
       </mesh>
       <mesh position={[0, 2.6, 0]}>
         <cylinderGeometry args={[0.88, 0.95, 0.12, 8]} />
-        <meshStandardMaterial color="#78350f" />
+        <meshStandardMaterial color="#78350f" roughness={0.8} />
       </mesh>
       {/* Conical Roof */}
-      <mesh position={[0, 4.2, 0]}>
-        <coneGeometry args={[1.15, 1.5, 8]} />
+      <mesh position={[0, 4.1, 0]} castShadow>
+        <coneGeometry args={[1.15, 1.4, 8]} />
         <meshStandardMaterial color="#b91c1c" roughness={0.6} />
       </mesh>
       {/* Blades Hub */}
-      <group position={[0, 3.3, 0.95]}>
+      <group position={[0, 3.2, 0.95]}>
         <mesh>
-          <sphereGeometry args={[0.22, 8, 8]} />
+          <sphereGeometry args={[0.2, 8, 8]} />
           <meshStandardMaterial color="#78350f" />
         </mesh>
         <group ref={bladesRef}>
           {[0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].map((angle, i) => (
             <group key={i} rotation={[0, 0, angle]}>
-              <mesh position={[0, 1.25, 0]}>
-                <boxGeometry args={[0.32, 2.3, 0.04]} />
-                <meshStandardMaterial color="#fef08a" roughness={0.4} />
+              <mesh position={[0, 1.15, 0]} castShadow>
+                <boxGeometry args={[0.28, 2.1, 0.03]} />
+                <meshStandardMaterial color="#fef3c7" roughness={0.5} />
               </mesh>
               {/* Lattice crossbars */}
-              {[-0.6, 0, 0.6].map((offset, j) => (
-                <mesh key={j} position={[0, 1.25 + offset, 0.02]}>
-                  <boxGeometry args={[0.42, 0.04, 0.02]} />
+              {[-0.5, 0, 0.5].map((offset, j) => (
+                <mesh key={j} position={[0, 1.15 + offset, 0.02]}>
+                  <boxGeometry args={[0.36, 0.03, 0.02]} />
                   <meshStandardMaterial color="#78350f" />
                 </mesh>
               ))}
@@ -661,19 +661,18 @@ export function PlanetBiomes() {
   return (
     <group>
       {/* 1. Main Spherical Planet Mesh */}
-      <mesh geometry={terrainGeo} receiveShadow castShadow>
+      <mesh geometry={terrainGeo} receiveShadow>
         <meshStandardMaterial
-          color="#387a52"
-          roughness={0.8}
-          metalness={0.08}
-          flatShading
+          color="#529465"
+          roughness={0.85}
+          metalness={0.04}
         />
       </mesh>
 
-      {/* 2. Soft Atmospheric Rim */}
+      {/* 2. Soft Atmospheric Rim Glow */}
       <mesh>
-        <sphereGeometry args={[PLANET_RADIUS + 0.4, 32, 32]} />
-        <meshBasicMaterial color="#a7f3d0" transparent opacity={0.12} side={THREE.BackSide} />
+        <sphereGeometry args={[PLANET_RADIUS + 0.35, 32, 32]} />
+        <meshBasicMaterial color="#a7f3d0" transparent opacity={0.15} side={THREE.BackSide} />
       </mesh>
 
       {/* =======================================================
