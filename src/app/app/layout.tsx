@@ -12,6 +12,7 @@ import {
   FileText,
   FlaskConical,
   FolderArchive,
+  Globe,
   GraduationCap,
   History,
   Home,
@@ -38,6 +39,7 @@ const navigation: Array<{ label: string; items: NavItem[] }> = [
   {
     label: 'Hôm nay',
     items: [
+      { label: 'Hành tinh 3D Live', href: '/app/world', icon: Globe },
       { label: 'Tổng quan', href: '/app', icon: Home },
       { label: 'Trò chuyện cùng AI', href: '/app/conversations', icon: MessageCircleHeart },
     ],
@@ -70,6 +72,7 @@ const navigation: Array<{ label: string; items: NavItem[] }> = [
 ];
 
 const mobileNavigation = [
+  { label: 'Hành tinh 3D', href: '/app/world', icon: Globe },
   { label: 'Hôm nay', href: '/app', icon: Home },
   { label: 'Trò chuyện', href: '/app/conversations', icon: MessageCircleHeart },
   { label: 'Bản đồ', href: '/app/life-map', icon: Compass },
@@ -191,7 +194,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = React.useRef<HTMLDivElement>(null);
 
-  const isConversationRoom = pathname.startsWith('/app/conversations/') && pathname !== '/app/conversations';
+  const isConversationRoom =
+    (pathname.startsWith('/app/conversations/') && pathname !== '/app/conversations') ||
+    pathname.startsWith('/app/world');
   const hideBottomNav = isConversationRoom || isKeyboardOpen;
 
   const handleLogout = async () => {
