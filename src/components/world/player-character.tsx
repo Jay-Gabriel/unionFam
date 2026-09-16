@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useEffect, useImperativeHandle, forwardRef, useMemo, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html, useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
-import { PLANET_RADIUS, cartesianToSpherical, sphericalToCartesian } from './spherical-math';
+import { PLANET_RADIUS, sphericalToCartesian } from './spherical-math';
 
 export interface PlayerControlsHandle {
   getPosition: () => THREE.Vector3;
@@ -20,6 +20,77 @@ interface PlayerCharacterProps {
   onEmoteTrigger?: (emoji: string) => void;
 }
 
+/** 3D Animated Fox Courier Model */
+function FoxAvatar({ isMoving, isSprinting }: { isMoving: boolean; isSprinting: boolean }) {
+  const group = useRef<THREE.Group>(null);
+  const gltf = useGLTF('/models/fox.glb');
+  const clone = useMemo(() => gltf.scene.clone(), [gltf.scene]);
+  const { actions } = useAnimations(gltf.animations, group);
+
+  useEffect(() => {
+    const animName = isMoving ? (isSprinting ? 'Run' : 'Walk') : 'Survey';
+    const action = actions[animName];
+    if (action) {
+      action.reset().fadeIn(0.2).play();
+    }
+    return () => {
+      action?.fadeOut(0.2);
+    };
+  }, [isMoving, isSprinting, actions]);
+
+  return (
+    <group ref={group} position={[0, 0, 0]}>
+      {/* Ground Contact Shadow */}
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.5, 16]} />
+        <meshBasicMaterial color="#0b1726" transparent opacity={0.35} depthWrite={false} />
+      </mesh>
+
+      {/* 3D Animated Fox Model */}
+      <primitive object={clone} scale={0.015} position={[0, 0, 0]} rotation={[0, Math.PI / 2, 0]} />
+
+      {/* Cute Courier Accessories */}
+      {/* Teal Postman Beret */}
+      <group position={[0, 0.7, 0.22]} rotation={[-0.2, 0, 0]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.16, 0.18, 0.07, 12]} />
+          <meshStandardMaterial color="#0d9488" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, -0.02, 0.12]} rotation={[0.25, 0, 0]}>
+          <boxGeometry args={[0.18, 0.02, 0.09]} />
+          <meshStandardMaterial color="#0f766e" />
+        </mesh>
+        <mesh position={[0, 0.02, 0.15]}>
+          <boxGeometry args={[0.04, 0.03, 0.01]} />
+          <meshStandardMaterial color="#fbbf24" metalness={0.8} roughness={0.2} emissive="#f59e0b" emissiveIntensity={0.5} />
+        </mesh>
+      </group>
+
+      {/* Warm Cozy Red Scarf */}
+      <group position={[0, 0.46, 0.14]}>
+        <mesh castShadow>
+          <torusGeometry args={[0.16, 0.05, 8, 16]} />
+          <meshStandardMaterial color="#dc2626" roughness={0.7} />
+        </mesh>
+      </group>
+
+      {/* Leather Courier Mailbag */}
+      <group position={[0.2, 0.35, 0.04]} rotation={[0.1, -0.2, 0]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.16, 0.14, 0.08]} />
+          <meshStandardMaterial color="#78350f" roughness={0.7} />
+        </mesh>
+        <mesh position={[-0.02, 0.05, 0.02]} rotation={[0.1, 0, 0.15]}>
+          <boxGeometry args={[0.07, 0.07, 0.01]} />
+          <meshStandardMaterial color="#fffbeb" emissive="#fef08a" emissiveIntensity={0.6} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+useGLTF.preload('/models/fox.glb');
+
 export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterProps>(
   function PlayerCharacter(
     {
@@ -32,22 +103,20 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
   ) {
     const { camera } = useThree();
 
-    // Player 3D group and submesh refs
+    // Player 3D group refs
     const playerGroupRef = useRef<THREE.Group>(null);
-    const bodyMeshRef = useRef<THREE.Group>(null);
-    const bagRef = useRef<THREE.Group>(null);
-    const tailRef = useRef<THREE.Group>(null);
-    const leftLegRef = useRef<THREE.Group>(null);
-    const rightLegRef = useRef<THREE.Group>(null);
-    const leftArmRef = useRef<THREE.Group>(null);
-    const rightArmRef = useRef<THREE.Group>(null);
 
     // Camera orbit & distance state
-    const cameraOrbitYawRef = useRef(0); // Horizontal orbit angle (radians)
-    const cameraOrbitPitchRef = useRef(0.35); // Vertical pitch angle (radians)
-    const cameraDistanceRef = useRef(7.5); // Distance from player
+    const cameraOrbitYawRef = useRef(0);
+    const cameraOrbitPitchRef = useRef(0.35);
+    const cameraDistanceRef = useRef(7.5);
     const isDraggingMouseRef = useRef(false);
     const lastMousePosRef = useRef({ x: 0, y: 0 });
+
+    // State for animation
+    const [movingState, setMovingState] = useState({ isMoving: false, isSprinting: false });
+    const lastMovingRef = useRef(false);
+    const lastSprintingRef = useRef(false);
 
     // Coordinate, Physics & Rotation state
     const thetaRef = useRef(initialTheta);
@@ -115,7 +184,6 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
         const dy = e.clientY - lastMousePosRef.current.y;
         lastMousePosRef.current = { x: e.clientX, y: e.clientY };
 
-        // Mouse drag rotates camera orbit (yaw and pitch)
         cameraOrbitYawRef.current -= dx * 0.006;
         cameraOrbitPitchRef.current = Math.max(
           -0.05,
@@ -186,7 +254,7 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
       const pos = new THREE.Vector3(...rawPos);
       const normal = pos.clone().normalize();
 
-      // Tangent frame on sphere: North vector (along -theta) and East vector (along +phi)
+      // Tangent frame on sphere
       const sinTheta = Math.sin(thetaRef.current);
       const cosTheta = Math.cos(thetaRef.current);
       const sinPhi = Math.sin(phiRef.current);
@@ -203,7 +271,7 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
       const camForward = northVec.clone().multiplyScalar(Math.cos(yaw)).add(eastVec.clone().multiplyScalar(Math.sin(yaw))).normalize();
       const camRight = eastVec.clone().multiplyScalar(Math.cos(yaw)).sub(northVec.clone().multiplyScalar(Math.sin(yaw))).normalize();
 
-      // Combine keyboard and virtual joystick inputs
+      // Inputs
       const fwd = inputRef.current.forward || -virtualInputRef.current.y;
       const right = inputRef.current.turn || virtualInputRef.current.x;
       const jmp = inputRef.current.jump || virtualInputRef.current.jump;
@@ -213,13 +281,18 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
       const isMoving = inputLen > 0.08;
       const speed = (spr ? 5.5 : 3.5) * delta;
 
+      if (isMoving !== lastMovingRef.current || spr !== lastSprintingRef.current) {
+        lastMovingRef.current = isMoving;
+        lastSprintingRef.current = spr;
+        setMovingState({ isMoving, isSprinting: spr });
+      }
+
       // Calculate desired movement vector in tangent plane
       let moveVec = new THREE.Vector3();
       if (isMoving) {
         moveVec = camForward.clone().multiplyScalar(fwd).add(camRight.clone().multiplyScalar(right)).normalize();
         lastMoveVecRef.current.copy(moveVec);
 
-        // Project displacement onto North and East
         const dNorth = moveVec.dot(northVec);
         const dEast = moveVec.dot(eastVec);
 
@@ -241,7 +314,7 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
 
       if (!isGroundedRef.current) {
         heightOffsetRef.current += verticalVelocityRef.current * delta;
-        verticalVelocityRef.current -= 17.0 * delta; // Gravity
+        verticalVelocityRef.current -= 17.0 * delta;
 
         if (heightOffsetRef.current <= 0) {
           heightOffsetRef.current = 0;
@@ -266,42 +339,12 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
       playerGroupRef.current.position.copy(updatedPos);
       playerGroupRef.current.quaternion.copy(currentQuatRef.current);
 
-      // Procedural walking/running animation
-      const animTime = Date.now() * 0.009 * (spr ? 1.6 : 1.0);
-      if (isMoving && isGroundedRef.current) {
-        const legSwing = Math.sin(animTime) * 0.55;
-        const armSwing = Math.sin(animTime) * 0.45;
-        if (leftLegRef.current) leftLegRef.current.rotation.x = legSwing;
-        if (rightLegRef.current) rightLegRef.current.rotation.x = -legSwing;
-        if (leftArmRef.current) leftArmRef.current.rotation.x = -armSwing;
-        if (rightArmRef.current) rightArmRef.current.rotation.x = armSwing;
-        if (bagRef.current) bagRef.current.rotation.z = Math.sin(animTime * 1.5) * 0.2;
-        if (tailRef.current) {
-          tailRef.current.rotation.y = Math.sin(animTime * 1.6) * 0.45;
-          tailRef.current.rotation.z = 0.2 + Math.cos(animTime * 1.2) * 0.15;
-        }
-        if (bodyMeshRef.current) bodyMeshRef.current.position.y = 0.55 + Math.abs(Math.sin(animTime)) * 0.08;
-      } else {
-        if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
-        if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
-        if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
-        if (rightArmRef.current) rightArmRef.current.rotation.x = 0;
-        if (bagRef.current) bagRef.current.rotation.z = 0;
-        if (tailRef.current) {
-          tailRef.current.rotation.y = Math.sin(Date.now() * 0.003) * 0.2;
-          tailRef.current.rotation.z = 0.15;
-        }
-        if (bodyMeshRef.current) bodyMeshRef.current.position.y = 0.55 + Math.sin(Date.now() * 0.003) * 0.02; // Idle breathing
-      }
-
       // Notify parent of updated position
       onPositionChange?.(pos, thetaRef.current, phiRef.current);
 
       // Smooth Orbit Camera following player and mouse orbit angles
-      // Camera horizontal offset direction in tangent plane
       const camHorizDir = northVec.clone().multiplyScalar(Math.cos(yaw)).add(eastVec.clone().multiplyScalar(Math.sin(yaw))).normalize();
 
-      // Camera position: behind the view direction, and elevated by pitch
       const camPos = pos
         .clone()
         .add(normal.clone().multiplyScalar(Math.sin(pitch) * dist + 1.6))
@@ -316,246 +359,12 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
 
     return (
       <group ref={playerGroupRef}>
-        {/* Spirit Fox-Cat Creature Messenger Model */}
-        <group ref={bodyMeshRef} position={[0, 0.55, 0]}>
-          {/* Ground Contact Shadow Disc */}
-          <mesh position={[0, -0.52, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[0.48, 16]} />
-            <meshBasicMaterial color="#0b1726" transparent opacity={0.4} depthWrite={false} />
-          </mesh>
-
-          {/* Cute Round Animal Body (Cream Fur) */}
-          <mesh position={[0, 0.22, 0]} castShadow>
-            <sphereGeometry args={[0.34, 16, 16]} />
-            <meshStandardMaterial color="#fffbeb" roughness={0.6} />
-          </mesh>
-          {/* White Fur Belly Patch */}
-          <mesh position={[0, 0.2, 0.16]} rotation={[0.2, 0, 0]}>
-            <sphereGeometry args={[0.22, 12, 12]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.8} />
-          </mesh>
-
-          {/* Cute Spirit Animal Head */}
-          <group position={[0, 0.68, 0]}>
-            {/* Head Base Sphere */}
-            <mesh castShadow>
-              <sphereGeometry args={[0.32, 16, 16]} />
-              <meshStandardMaterial color="#fffbeb" roughness={0.5} />
-            </mesh>
-            {/* Left Cheek Fur Tuft */}
-            <mesh position={[-0.3, -0.06, 0.05]} rotation={[0, 0, 0.6]}>
-              <coneGeometry args={[0.12, 0.22, 4]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.7} />
-            </mesh>
-            {/* Right Cheek Fur Tuft */}
-            <mesh position={[0.3, -0.06, 0.05]} rotation={[0, 0, -0.6]}>
-              <coneGeometry args={[0.12, 0.22, 4]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.7} />
-            </mesh>
-
-            {/* Pointy Fluffy Left Ear */}
-            <group position={[-0.2, 0.32, -0.02]} rotation={[-0.1, 0, 0.35]}>
-              {/* Outer Ear */}
-              <mesh castShadow>
-                <coneGeometry args={[0.13, 0.34, 6]} />
-                <meshStandardMaterial color="#fffbeb" roughness={0.5} />
-              </mesh>
-              {/* Inner Pink Ear */}
-              <mesh position={[0, -0.02, 0.04]} rotation={[0.15, 0, 0]}>
-                <coneGeometry args={[0.08, 0.24, 4]} />
-                <meshStandardMaterial color="#f472b6" roughness={0.6} />
-              </mesh>
-            </group>
-
-            {/* Pointy Fluffy Right Ear */}
-            <group position={[0.2, 0.32, -0.02]} rotation={[-0.1, 0, -0.35]}>
-              {/* Outer Ear */}
-              <mesh castShadow>
-                <coneGeometry args={[0.13, 0.34, 6]} />
-                <meshStandardMaterial color="#fffbeb" roughness={0.5} />
-              </mesh>
-              {/* Inner Pink Ear */}
-              <mesh position={[0, -0.02, 0.04]} rotation={[0.15, 0, 0]}>
-                <coneGeometry args={[0.08, 0.24, 4]} />
-                <meshStandardMaterial color="#f472b6" roughness={0.6} />
-              </mesh>
-            </group>
-
-            {/* Big Expressive Anime Eyes with Golden Iris */}
-            <group position={[0, 0.02, 0.28]}>
-              {/* Left Eye */}
-              <group position={[-0.11, 0, 0]}>
-                <mesh>
-                  <sphereGeometry args={[0.052, 12, 12]} />
-                  <meshStandardMaterial color="#d97706" emissive="#f59e0b" emissiveIntensity={0.4} />
-                </mesh>
-                {/* Pupil */}
-                <mesh position={[0, 0, 0.035]}>
-                  <sphereGeometry args={[0.032, 8, 8]} />
-                  <meshBasicMaterial color="#0f172a" />
-                </mesh>
-                {/* Highlight Sparkle */}
-                <mesh position={[-0.015, 0.018, 0.046]}>
-                  <sphereGeometry args={[0.014, 6, 6]} />
-                  <meshBasicMaterial color="#ffffff" />
-                </mesh>
-              </group>
-
-              {/* Right Eye */}
-              <group position={[0.11, 0, 0]}>
-                <mesh>
-                  <sphereGeometry args={[0.052, 12, 12]} />
-                  <meshStandardMaterial color="#d97706" emissive="#f59e0b" emissiveIntensity={0.4} />
-                </mesh>
-                {/* Pupil */}
-                <mesh position={[0, 0, 0.035]}>
-                  <sphereGeometry args={[0.032, 8, 8]} />
-                  <meshBasicMaterial color="#0f172a" />
-                </mesh>
-                {/* Highlight Sparkle */}
-                <mesh position={[-0.015, 0.018, 0.046]}>
-                  <sphereGeometry args={[0.014, 6, 6]} />
-                  <meshBasicMaterial color="#ffffff" />
-                </mesh>
-              </group>
-
-              {/* Rosy Blush Cheeks */}
-              <mesh position={[-0.17, -0.08, -0.04]}>
-                <sphereGeometry args={[0.045, 8, 8]} />
-                <meshBasicMaterial color="#fb7185" transparent opacity={0.65} />
-              </mesh>
-              <mesh position={[0.17, -0.08, -0.04]}>
-                <sphereGeometry args={[0.045, 8, 8]} />
-                <meshBasicMaterial color="#fb7185" transparent opacity={0.65} />
-              </mesh>
-
-              {/* Cute Little Dark Nose */}
-              <mesh position={[0, -0.05, 0.04]}>
-                <sphereGeometry args={[0.025, 8, 8]} />
-                <meshBasicMaterial color="#1e293b" />
-              </mesh>
-            </group>
-
-            {/* Teal Messenger Cap perched between ears */}
-            <group position={[0, 0.28, -0.04]} rotation={[-0.12, 0, 0]}>
-              <mesh castShadow>
-                <cylinderGeometry args={[0.22, 0.24, 0.12, 14]} />
-                <meshStandardMaterial color="#0d9488" roughness={0.4} />
-              </mesh>
-              {/* Visor */}
-              <mesh position={[0, -0.04, 0.18]} rotation={[0.25, 0, 0]}>
-                <boxGeometry args={[0.24, 0.03, 0.14]} />
-                <meshStandardMaterial color="#0f766e" roughness={0.3} />
-              </mesh>
-              {/* Gold Wing Badge on Cap */}
-              <mesh position={[0, 0.02, 0.23]}>
-                <boxGeometry args={[0.07, 0.04, 0.02]} />
-                <meshStandardMaterial color="#fbbf24" metalness={0.8} roughness={0.2} emissive="#f59e0b" emissiveIntensity={0.6} />
-              </mesh>
-            </group>
-          </group>
-
-          {/* Chunky Warm Red Knitted Scarf */}
-          <group position={[0, 0.46, 0]}>
-            <mesh castShadow>
-              <torusGeometry args={[0.26, 0.085, 10, 18]} />
-              <meshStandardMaterial color="#e11d48" roughness={0.7} />
-            </mesh>
-            {/* Scarf Tail waving back with motion */}
-            <mesh position={[0.16, -0.14, -0.22]} rotation={[0.45, 0.2, 0.1]}>
-              <boxGeometry args={[0.11, 0.28, 0.04]} />
-              <meshStandardMaterial color="#be123c" roughness={0.7} />
-            </mesh>
-          </group>
-
-          {/* Big Fluffy Bushy Fox Tail with Wagging Physics */}
-          <group ref={tailRef} position={[0, 0.12, -0.24]} rotation={[0.2, 0, 0]}>
-            {/* Base Tail Segment */}
-            <mesh castShadow position={[0, 0.12, -0.1]}>
-              <sphereGeometry args={[0.18, 12, 12]} />
-              <meshStandardMaterial color="#fffbeb" roughness={0.6} />
-            </mesh>
-            {/* Mid Plump Tail Segment */}
-            <mesh castShadow position={[0, 0.28, -0.18]}>
-              <sphereGeometry args={[0.22, 12, 12]} />
-              <meshStandardMaterial color="#fffbeb" roughness={0.6} />
-            </mesh>
-            {/* Glowing Golden White Tail Tip */}
-            <mesh castShadow position={[0, 0.46, -0.14]} rotation={[-0.3, 0, 0]}>
-              <coneGeometry args={[0.16, 0.28, 10]} />
-              <meshStandardMaterial color="#fef08a" emissive="#fef08a" emissiveIntensity={0.3} roughness={0.5} />
-            </mesh>
-          </group>
-
-          {/* Crossbody Postman Bag with Glowing Letter */}
-          <group ref={bagRef} position={[0.28, 0.14, 0.1]} rotation={[0.1, -0.25, -0.15]}>
-            <mesh castShadow>
-              <boxGeometry args={[0.26, 0.22, 0.13]} />
-              <meshStandardMaterial color="#78350f" roughness={0.7} />
-            </mesh>
-            {/* Bag Flap & Brass Buckle */}
-            <mesh position={[0, 0.02, 0.07]}>
-              <boxGeometry args={[0.24, 0.12, 0.02]} />
-              <meshStandardMaterial color="#92400e" roughness={0.6} />
-            </mesh>
-            <mesh position={[0, -0.02, 0.082]}>
-              <boxGeometry args={[0.06, 0.06, 0.02]} />
-              <meshStandardMaterial color="#fbbf24" metalness={0.8} roughness={0.2} />
-            </mesh>
-            {/* Glowing Golden Letter peeking out */}
-            <mesh position={[-0.04, 0.1, 0.02]} rotation={[0.1, 0, 0.15]}>
-              <boxGeometry args={[0.12, 0.1, 0.02]} />
-              <meshStandardMaterial color="#fffbeb" emissive="#fef08a" emissiveIntensity={0.5} />
-            </mesh>
-          </group>
-          {/* Leather Bag Strap across chest */}
-          <mesh position={[-0.02, 0.25, 0.02]} rotation={[0.2, 0, 0.75]}>
-            <boxGeometry args={[0.06, 0.65, 0.03]} />
-            <meshStandardMaterial color="#78350f" roughness={0.8} />
-          </mesh>
-
-          {/* Cute Little Animal Front Paws */}
-          <group ref={leftArmRef} position={[-0.26, 0.18, 0.06]}>
-            <mesh castShadow>
-              <sphereGeometry args={[0.085, 10, 10]} />
-              <meshStandardMaterial color="#fffbeb" roughness={0.6} />
-            </mesh>
-          </group>
-          <group ref={rightArmRef} position={[0.26, 0.18, 0.06]}>
-            <mesh castShadow>
-              <sphereGeometry args={[0.085, 10, 10]} />
-              <meshStandardMaterial color="#fffbeb" roughness={0.6} />
-            </mesh>
-          </group>
-
-          {/* Left Back Paw & Leg */}
-          <group ref={leftLegRef} position={[-0.14, -0.18, 0]}>
-            <mesh position={[0, 0.04, 0]} castShadow>
-              <capsuleGeometry args={[0.08, 0.18, 4, 6]} />
-              <meshStandardMaterial color="#fffbeb" />
-            </mesh>
-            <mesh position={[0, -0.1, 0.04]} castShadow>
-              <boxGeometry args={[0.12, 0.12, 0.16]} />
-              <meshStandardMaterial color="#fef08a" roughness={0.6} />
-            </mesh>
-          </group>
-
-          {/* Right Back Paw & Leg */}
-          <group ref={rightLegRef} position={[0.14, -0.18, 0]}>
-            <mesh position={[0, 0.04, 0]} castShadow>
-              <capsuleGeometry args={[0.08, 0.18, 4, 6]} />
-              <meshStandardMaterial color="#fffbeb" />
-            </mesh>
-            <mesh position={[0, -0.1, 0.04]} castShadow>
-              <boxGeometry args={[0.12, 0.12, 0.16]} />
-              <meshStandardMaterial color="#fef08a" roughness={0.6} />
-            </mesh>
-          </group>
-        </group>
+        {/* 3D Animated Fox Courier Avatar */}
+        <FoxAvatar isMoving={movingState.isMoving} isSprinting={movingState.isSprinting} />
 
         {/* Emote Bubble Overlay floating above head */}
         {currentEmoteRef.current && (
-          <Html position={[0, 2.0, 0]} center distanceFactor={15}>
+          <Html position={[0, 1.8, 0]} center distanceFactor={15}>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 p-1 text-2xl shadow-xl border border-calm-lichen/60 animate-bounce">
               {currentEmoteRef.current}
             </div>
