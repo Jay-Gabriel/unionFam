@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useState, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Stars, Float } from '@react-three/drei';
 import * as THREE from 'three';
@@ -86,6 +86,69 @@ function DynamicDayNightSun() {
   );
 }
 
+/** Glowing Moon in the celestial sky */
+function CelestialMoon() {
+  return (
+    <group position={[-50, 45, -70]}>
+      <mesh>
+        <sphereGeometry args={[7, 16, 16]} />
+        <meshBasicMaterial color="#fef08a" />
+      </mesh>
+      {/* Outer Moon Glow Halo */}
+      <mesh>
+        <sphereGeometry args={[8.8, 16, 16]} />
+        <meshBasicMaterial color="#fef9c3" transparent opacity={0.2} />
+      </mesh>
+      <pointLight color="#fef08a" intensity={1.5} distance={150} decay={2} />
+    </group>
+  );
+}
+
+/** Fireflies / Spirit motes floating in the atmosphere */
+function SpiritFireflies() {
+  const pointsRef = useRef<THREE.Points>(null);
+
+  const particles = useMemo(() => {
+    const count = 70;
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const radius = PLANET_RADIUS + 0.8 + Math.random() * 4.5;
+      const theta = Math.random() * Math.PI;
+      const phi = Math.random() * Math.PI * 2;
+      positions[i * 3] = radius * Math.sin(theta) * Math.cos(phi);
+      positions[i * 3 + 1] = radius * Math.cos(theta);
+      positions[i * 3 + 2] = radius * Math.sin(theta) * Math.sin(phi);
+    }
+    return positions;
+  }, []);
+
+  useFrame((_, delta) => {
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y += delta * 0.02;
+    }
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={particles.length / 3}
+          array={particles}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.25}
+        color="#a7f3d0"
+        transparent
+        opacity={0.85}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
 export const PlanetScene = forwardRef<PlanetSceneHandle, PlanetSceneProps>(
   function PlanetScene(
     {
@@ -134,18 +197,27 @@ export const PlanetScene = forwardRef<PlanetSceneHandle, PlanetSceneProps>(
       <div className="relative h-full w-full select-none">
         <Canvas
           shadows
-          camera={{ position: [0, 10, PLANET_RADIUS + 12], fov: 50, near: 0.1, far: 300 }}
+          camera={{ position: [0, 10, PLANET_RADIUS + 12], fov: 48, near: 0.1, far: 300 }}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-          style={{ background: 'linear-gradient(to bottom, #090e17 0%, #111e2e 50%, #0d1a15 100%)' }}
+          style={{ background: 'linear-gradient(to bottom, #111d2e 0%, #1e2f47 50%, #142334 100%)' }}
         >
+          {/* Atmospheric Dreamy Fog */}
+          <fog attach="fog" args={['#182638', 22, 92]} />
+
           {/* Deep Space Stars */}
-          <Stars radius={150} depth={60} count={3000} factor={4} saturation={0.5} fade speed={1} />
+          <Stars radius={150} depth={50} count={2500} factor={3.5} saturation={0.6} fade speed={0.8} />
+
+          {/* Celestial Moon */}
+          <CelestialMoon />
 
           {/* Dynamic Day/Night Lighting */}
           <DynamicDayNightSun />
 
           {/* Atmospheric Floating Clouds */}
           <OrbitingClouds />
+
+          {/* Spirit Fireflies motes */}
+          <SpiritFireflies />
 
           {/* The Spherical Planet with 6 Biomes */}
           <PlanetBiomes />
