@@ -256,17 +256,24 @@ export const PlanetScene = forwardRef<PlanetSceneHandle, PlanetSceneProps>(
     }
 
     return (
-      <div className="relative h-full w-full select-none">
+      <div className="relative h-full w-full select-none overflow-hidden">
         <Canvas
           shadows
+          dpr={[1, 2]}
           camera={{ position: [0, 10, PLANET_RADIUS + 12], fov: 48, near: 0.1, far: 350 }}
-          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+          gl={{
+            antialias: true,
+            alpha: false,
+            powerPreference: 'high-performance',
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.2,
+          }}
         >
           {/* Explicit Background Color in Three.js renderer */}
           <color attach="background" args={['#08101e']} />
 
           {/* Dreamy Atmospheric Fog */}
-          <fog attach="fog" args={['#0d192c', 25, 95]} />
+          <fog attach="fog" args={['#0e1b2e', 28, 95]} />
 
           {/* 360 Sky Dome */}
           <CelestialSkyDome />
@@ -289,7 +296,7 @@ export const PlanetScene = forwardRef<PlanetSceneHandle, PlanetSceneProps>(
           {/* Spirit Fireflies motes */}
           <SpiritFireflies />
 
-          {/* The Spherical Planet with 6 Biomes */}
+          {/* The Spherical Planet with 6 Biomes & Cobblestone Paths */}
           <PlanetBiomes />
 
           {/* Player Controlled Character */}
