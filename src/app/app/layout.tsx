@@ -194,10 +194,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = React.useRef<HTMLDivElement>(null);
 
+  const isWorldRoute = pathname.startsWith('/app/world');
   const isConversationRoom =
     (pathname.startsWith('/app/conversations/') && pathname !== '/app/conversations') ||
-    pathname.startsWith('/app/world');
+    isWorldRoute;
   const hideBottomNav = isConversationRoom || isKeyboardOpen;
+
+  // Standalone full-screen 3D immersive world mode
+  if (isWorldRoute) {
+    return (
+      <div
+        className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-[#0c1524] select-none"
+        style={{
+          height: 'var(--app-viewport-height, 100dvh)',
+          maxHeight: 'var(--app-viewport-height, 100dvh)',
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     cachedUserProfile = null;

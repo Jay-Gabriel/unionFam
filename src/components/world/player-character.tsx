@@ -36,8 +36,11 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
     const playerGroupRef = useRef<THREE.Group>(null);
     const bodyMeshRef = useRef<THREE.Group>(null);
     const bagRef = useRef<THREE.Group>(null);
+    const tailRef = useRef<THREE.Group>(null);
     const leftLegRef = useRef<THREE.Group>(null);
     const rightLegRef = useRef<THREE.Group>(null);
+    const leftArmRef = useRef<THREE.Group>(null);
+    const rightArmRef = useRef<THREE.Group>(null);
 
     // Coordinate & Physics state
     const thetaRef = useRef(initialTheta);
@@ -186,14 +189,27 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
       const animTime = Date.now() * 0.009 * (spr ? 1.6 : 1.0);
       if (isMoving && isGroundedRef.current) {
         const legSwing = Math.sin(animTime) * 0.55;
+        const armSwing = Math.sin(animTime) * 0.45;
         if (leftLegRef.current) leftLegRef.current.rotation.x = legSwing;
         if (rightLegRef.current) rightLegRef.current.rotation.x = -legSwing;
+        if (leftArmRef.current) leftArmRef.current.rotation.x = -armSwing;
+        if (rightArmRef.current) rightArmRef.current.rotation.x = armSwing;
         if (bagRef.current) bagRef.current.rotation.z = Math.sin(animTime * 1.5) * 0.2;
+        if (tailRef.current) {
+          tailRef.current.rotation.y = Math.sin(animTime * 1.6) * 0.45;
+          tailRef.current.rotation.z = 0.2 + Math.cos(animTime * 1.2) * 0.15;
+        }
         if (bodyMeshRef.current) bodyMeshRef.current.position.y = 0.55 + Math.abs(Math.sin(animTime)) * 0.08;
       } else {
         if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
         if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
+        if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
+        if (rightArmRef.current) rightArmRef.current.rotation.x = 0;
         if (bagRef.current) bagRef.current.rotation.z = 0;
+        if (tailRef.current) {
+          tailRef.current.rotation.y = Math.sin(Date.now() * 0.003) * 0.2;
+          tailRef.current.rotation.z = 0.15;
+        }
         if (bodyMeshRef.current) bodyMeshRef.current.position.y = 0.55 + Math.sin(Date.now() * 0.003) * 0.02; // Idle breathing
       }
 
@@ -211,133 +227,239 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
 
     return (
       <group ref={playerGroupRef}>
-        {/* Messenger Character Model */}
+        {/* Spirit Fox-Cat Creature Messenger Model */}
         <group ref={bodyMeshRef} position={[0, 0.55, 0]}>
           {/* Ground Contact Shadow Disc */}
           <mesh position={[0, -0.52, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[0.45, 16]} />
-            <meshBasicMaterial color="#0b1726" transparent opacity={0.35} depthWrite={false} />
+            <circleGeometry args={[0.48, 16]} />
+            <meshBasicMaterial color="#0b1726" transparent opacity={0.4} depthWrite={false} />
           </mesh>
 
-          {/* Main Poncho / Coat Body */}
+          {/* Cute Round Animal Body (Cream Fur) */}
           <mesh position={[0, 0.22, 0]} castShadow>
-            <capsuleGeometry args={[0.3, 0.42, 6, 8]} />
-            <meshStandardMaterial color="#f59e0b" roughness={0.6} />
+            <sphereGeometry args={[0.34, 16, 16]} />
+            <meshStandardMaterial color="#fffbeb" roughness={0.6} />
+          </mesh>
+          {/* White Fur Belly Patch */}
+          <mesh position={[0, 0.2, 0.16]} rotation={[0.2, 0, 0]}>
+            <sphereGeometry args={[0.22, 12, 12]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.8} />
           </mesh>
 
-          {/* Head */}
-          <mesh position={[0, 0.72, 0]} castShadow>
-            <sphereGeometry args={[0.26, 16, 16]} />
-            <meshStandardMaterial color="#fed7aa" roughness={0.4} />
-          </mesh>
-
-          {/* Cute Face: Eyes */}
-          <group position={[0, 0.72, 0.23]}>
-            {/* Left Eye */}
-            <mesh position={[-0.08, 0.02, 0.02]}>
-              <sphereGeometry args={[0.032, 8, 8]} />
-              <meshBasicMaterial color="#0f172a" />
-            </mesh>
-            {/* Right Eye */}
-            <mesh position={[0.08, 0.02, 0.02]}>
-              <sphereGeometry args={[0.032, 8, 8]} />
-              <meshBasicMaterial color="#0f172a" />
-            </mesh>
-            {/* Rosy Blush Cheeks */}
-            <mesh position={[-0.13, -0.04, 0]}>
-              <sphereGeometry args={[0.038, 8, 8]} />
-              <meshBasicMaterial color="#fb7185" transparent opacity={0.7} />
-            </mesh>
-            <mesh position={[0.13, -0.04, 0]}>
-              <sphereGeometry args={[0.038, 8, 8]} />
-              <meshBasicMaterial color="#fb7185" transparent opacity={0.7} />
-            </mesh>
-          </group>
-
-          {/* Messenger Cap with Visor & Golden Pin */}
-          <group position={[0, 0.9, -0.02]} rotation={[-0.15, 0, 0]}>
+          {/* Cute Spirit Animal Head */}
+          <group position={[0, 0.68, 0]}>
+            {/* Head Base Sphere */}
             <mesh castShadow>
-              <cylinderGeometry args={[0.28, 0.29, 0.14, 12]} />
-              <meshStandardMaterial color="#047857" roughness={0.5} />
+              <sphereGeometry args={[0.32, 16, 16]} />
+              <meshStandardMaterial color="#fffbeb" roughness={0.5} />
             </mesh>
-            {/* Visor */}
-            <mesh position={[0, -0.04, 0.22]} rotation={[0.25, 0, 0]}>
-              <boxGeometry args={[0.3, 0.04, 0.16]} />
-              <meshStandardMaterial color="#065f46" roughness={0.4} />
+            {/* Left Cheek Fur Tuft */}
+            <mesh position={[-0.3, -0.06, 0.05]} rotation={[0, 0, 0.6]}>
+              <coneGeometry args={[0.12, 0.22, 4]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.7} />
             </mesh>
-            {/* Golden Star/Badge on Cap */}
-            <mesh position={[0, 0.04, 0.29]}>
-              <sphereGeometry args={[0.03, 8, 8]} />
-              <meshStandardMaterial color="#fbbf24" metalness={0.8} roughness={0.2} emissive="#f59e0b" emissiveIntensity={0.5} />
+            {/* Right Cheek Fur Tuft */}
+            <mesh position={[0.3, -0.06, 0.05]} rotation={[0, 0, -0.6]}>
+              <coneGeometry args={[0.12, 0.22, 4]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.7} />
             </mesh>
+
+            {/* Pointy Fluffy Left Ear */}
+            <group position={[-0.2, 0.32, -0.02]} rotation={[-0.1, 0, 0.35]}>
+              {/* Outer Ear */}
+              <mesh castShadow>
+                <coneGeometry args={[0.13, 0.34, 6]} />
+                <meshStandardMaterial color="#fffbeb" roughness={0.5} />
+              </mesh>
+              {/* Inner Pink Ear */}
+              <mesh position={[0, -0.02, 0.04]} rotation={[0.15, 0, 0]}>
+                <coneGeometry args={[0.08, 0.24, 4]} />
+                <meshStandardMaterial color="#f472b6" roughness={0.6} />
+              </mesh>
+            </group>
+
+            {/* Pointy Fluffy Right Ear */}
+            <group position={[0.2, 0.32, -0.02]} rotation={[-0.1, 0, -0.35]}>
+              {/* Outer Ear */}
+              <mesh castShadow>
+                <coneGeometry args={[0.13, 0.34, 6]} />
+                <meshStandardMaterial color="#fffbeb" roughness={0.5} />
+              </mesh>
+              {/* Inner Pink Ear */}
+              <mesh position={[0, -0.02, 0.04]} rotation={[0.15, 0, 0]}>
+                <coneGeometry args={[0.08, 0.24, 4]} />
+                <meshStandardMaterial color="#f472b6" roughness={0.6} />
+              </mesh>
+            </group>
+
+            {/* Big Expressive Anime Eyes with Golden Iris */}
+            <group position={[0, 0.02, 0.28]}>
+              {/* Left Eye */}
+              <group position={[-0.11, 0, 0]}>
+                <mesh>
+                  <sphereGeometry args={[0.052, 12, 12]} />
+                  <meshStandardMaterial color="#d97706" emissive="#f59e0b" emissiveIntensity={0.4} />
+                </mesh>
+                {/* Pupil */}
+                <mesh position={[0, 0, 0.035]}>
+                  <sphereGeometry args={[0.032, 8, 8]} />
+                  <meshBasicMaterial color="#0f172a" />
+                </mesh>
+                {/* Highlight Sparkle */}
+                <mesh position={[-0.015, 0.018, 0.046]}>
+                  <sphereGeometry args={[0.014, 6, 6]} />
+                  <meshBasicMaterial color="#ffffff" />
+                </mesh>
+              </group>
+
+              {/* Right Eye */}
+              <group position={[0.11, 0, 0]}>
+                <mesh>
+                  <sphereGeometry args={[0.052, 12, 12]} />
+                  <meshStandardMaterial color="#d97706" emissive="#f59e0b" emissiveIntensity={0.4} />
+                </mesh>
+                {/* Pupil */}
+                <mesh position={[0, 0, 0.035]}>
+                  <sphereGeometry args={[0.032, 8, 8]} />
+                  <meshBasicMaterial color="#0f172a" />
+                </mesh>
+                {/* Highlight Sparkle */}
+                <mesh position={[-0.015, 0.018, 0.046]}>
+                  <sphereGeometry args={[0.014, 6, 6]} />
+                  <meshBasicMaterial color="#ffffff" />
+                </mesh>
+              </group>
+
+              {/* Rosy Blush Cheeks */}
+              <mesh position={[-0.17, -0.08, -0.04]}>
+                <sphereGeometry args={[0.045, 8, 8]} />
+                <meshBasicMaterial color="#fb7185" transparent opacity={0.65} />
+              </mesh>
+              <mesh position={[0.17, -0.08, -0.04]}>
+                <sphereGeometry args={[0.045, 8, 8]} />
+                <meshBasicMaterial color="#fb7185" transparent opacity={0.65} />
+              </mesh>
+
+              {/* Cute Little Dark Nose */}
+              <mesh position={[0, -0.05, 0.04]}>
+                <sphereGeometry args={[0.025, 8, 8]} />
+                <meshBasicMaterial color="#1e293b" />
+              </mesh>
+            </group>
+
+            {/* Teal Messenger Cap perched between ears */}
+            <group position={[0, 0.28, -0.04]} rotation={[-0.12, 0, 0]}>
+              <mesh castShadow>
+                <cylinderGeometry args={[0.22, 0.24, 0.12, 14]} />
+                <meshStandardMaterial color="#0d9488" roughness={0.4} />
+              </mesh>
+              {/* Visor */}
+              <mesh position={[0, -0.04, 0.18]} rotation={[0.25, 0, 0]}>
+                <boxGeometry args={[0.24, 0.03, 0.14]} />
+                <meshStandardMaterial color="#0f766e" roughness={0.3} />
+              </mesh>
+              {/* Gold Wing Badge on Cap */}
+              <mesh position={[0, 0.02, 0.23]}>
+                <boxGeometry args={[0.07, 0.04, 0.02]} />
+                <meshStandardMaterial color="#fbbf24" metalness={0.8} roughness={0.2} emissive="#f59e0b" emissiveIntensity={0.6} />
+              </mesh>
+            </group>
           </group>
 
-          {/* Warm Flowing Scarf & Dynamic Tail */}
-          <group position={[0, 0.52, 0]}>
-            <mesh>
-              <torusGeometry args={[0.22, 0.07, 8, 16]} />
-              <meshStandardMaterial color="#dc2626" roughness={0.7} />
-            </mesh>
-            {/* Scarf tail floating back with wind */}
-            <mesh position={[0.12, -0.12, -0.2]} rotation={[0.4, 0.2, 0.1]}>
-              <boxGeometry args={[0.1, 0.26, 0.04]} />
-              <meshStandardMaterial color="#b91c1c" roughness={0.7} />
-            </mesh>
-          </group>
-
-          {/* Crossbody Mailbag & Diagonal Strap */}
-          <group ref={bagRef} position={[0.26, 0.16, 0.12]} rotation={[0.1, -0.25, -0.15]}>
+          {/* Chunky Warm Red Knitted Scarf */}
+          <group position={[0, 0.46, 0]}>
             <mesh castShadow>
-              <boxGeometry args={[0.24, 0.22, 0.12]} />
+              <torusGeometry args={[0.26, 0.085, 10, 18]} />
+              <meshStandardMaterial color="#e11d48" roughness={0.7} />
+            </mesh>
+            {/* Scarf Tail waving back with motion */}
+            <mesh position={[0.16, -0.14, -0.22]} rotation={[0.45, 0.2, 0.1]}>
+              <boxGeometry args={[0.11, 0.28, 0.04]} />
+              <meshStandardMaterial color="#be123c" roughness={0.7} />
+            </mesh>
+          </group>
+
+          {/* Big Fluffy Bushy Fox Tail with Wagging Physics */}
+          <group ref={tailRef} position={[0, 0.12, -0.24]} rotation={[0.2, 0, 0]}>
+            {/* Base Tail Segment */}
+            <mesh castShadow position={[0, 0.12, -0.1]}>
+              <sphereGeometry args={[0.18, 12, 12]} />
+              <meshStandardMaterial color="#fffbeb" roughness={0.6} />
+            </mesh>
+            {/* Mid Plump Tail Segment */}
+            <mesh castShadow position={[0, 0.28, -0.18]}>
+              <sphereGeometry args={[0.22, 12, 12]} />
+              <meshStandardMaterial color="#fffbeb" roughness={0.6} />
+            </mesh>
+            {/* Glowing Golden White Tail Tip */}
+            <mesh castShadow position={[0, 0.46, -0.14]} rotation={[-0.3, 0, 0]}>
+              <coneGeometry args={[0.16, 0.28, 10]} />
+              <meshStandardMaterial color="#fef08a" emissive="#fef08a" emissiveIntensity={0.3} roughness={0.5} />
+            </mesh>
+          </group>
+
+          {/* Crossbody Postman Bag with Glowing Letter */}
+          <group ref={bagRef} position={[0.28, 0.14, 0.1]} rotation={[0.1, -0.25, -0.15]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.26, 0.22, 0.13]} />
               <meshStandardMaterial color="#78350f" roughness={0.7} />
             </mesh>
             {/* Bag Flap & Brass Buckle */}
-            <mesh position={[0, 0.02, 0.065]}>
-              <boxGeometry args={[0.22, 0.12, 0.02]} />
+            <mesh position={[0, 0.02, 0.07]}>
+              <boxGeometry args={[0.24, 0.12, 0.02]} />
               <meshStandardMaterial color="#92400e" roughness={0.6} />
             </mesh>
-            <mesh position={[0, -0.02, 0.078]}>
-              <boxGeometry args={[0.05, 0.05, 0.02]} />
-              <meshStandardMaterial color="#fbbf24" metalness={0.7} roughness={0.3} />
+            <mesh position={[0, -0.02, 0.082]}>
+              <boxGeometry args={[0.06, 0.06, 0.02]} />
+              <meshStandardMaterial color="#fbbf24" metalness={0.8} roughness={0.2} />
+            </mesh>
+            {/* Glowing Golden Letter peeking out */}
+            <mesh position={[-0.04, 0.1, 0.02]} rotation={[0.1, 0, 0.15]}>
+              <boxGeometry args={[0.12, 0.1, 0.02]} />
+              <meshStandardMaterial color="#fffbeb" emissive="#fef08a" emissiveIntensity={0.5} />
             </mesh>
           </group>
           {/* Leather Bag Strap across chest */}
           <mesh position={[-0.02, 0.25, 0.02]} rotation={[0.2, 0, 0.75]}>
-            <boxGeometry args={[0.06, 0.62, 0.03]} />
+            <boxGeometry args={[0.06, 0.65, 0.03]} />
             <meshStandardMaterial color="#78350f" roughness={0.8} />
           </mesh>
 
-          {/* Cute Little Hands/Mittens */}
-          <mesh position={[-0.32, 0.2, 0.08]} castShadow>
-            <sphereGeometry args={[0.08, 8, 8]} />
-            <meshStandardMaterial color="#fed7aa" roughness={0.5} />
-          </mesh>
-          <mesh position={[0.32, 0.2, 0.08]} castShadow>
-            <sphereGeometry args={[0.08, 8, 8]} />
-            <meshStandardMaterial color="#fed7aa" roughness={0.5} />
-          </mesh>
-
-          {/* Left Leg & Leather Boot */}
-          <group ref={leftLegRef} position={[-0.14, -0.22, 0]}>
-            <mesh position={[0, 0.05, 0]} castShadow>
-              <capsuleGeometry args={[0.07, 0.2, 4, 6]} />
-              <meshStandardMaterial color="#1e293b" />
+          {/* Cute Little Animal Front Paws */}
+          <group ref={leftArmRef} position={[-0.26, 0.18, 0.06]}>
+            <mesh castShadow>
+              <sphereGeometry args={[0.085, 10, 10]} />
+              <meshStandardMaterial color="#fffbeb" roughness={0.6} />
             </mesh>
-            <mesh position={[0, -0.12, 0.04]} castShadow>
-              <boxGeometry args={[0.11, 0.14, 0.18]} />
-              <meshStandardMaterial color="#5c3010" roughness={0.7} />
+          </group>
+          <group ref={rightArmRef} position={[0.26, 0.18, 0.06]}>
+            <mesh castShadow>
+              <sphereGeometry args={[0.085, 10, 10]} />
+              <meshStandardMaterial color="#fffbeb" roughness={0.6} />
             </mesh>
           </group>
 
-          {/* Right Leg & Leather Boot */}
-          <group ref={rightLegRef} position={[0.14, -0.22, 0]}>
-            <mesh position={[0, 0.05, 0]} castShadow>
-              <capsuleGeometry args={[0.07, 0.2, 4, 6]} />
-              <meshStandardMaterial color="#1e293b" />
+          {/* Left Back Paw & Leg */}
+          <group ref={leftLegRef} position={[-0.14, -0.18, 0]}>
+            <mesh position={[0, 0.04, 0]} castShadow>
+              <capsuleGeometry args={[0.08, 0.18, 4, 6]} />
+              <meshStandardMaterial color="#fffbeb" />
             </mesh>
-            <mesh position={[0, -0.12, 0.04]} castShadow>
-              <boxGeometry args={[0.11, 0.14, 0.18]} />
-              <meshStandardMaterial color="#5c3010" roughness={0.7} />
+            <mesh position={[0, -0.1, 0.04]} castShadow>
+              <boxGeometry args={[0.12, 0.12, 0.16]} />
+              <meshStandardMaterial color="#fef08a" roughness={0.6} />
+            </mesh>
+          </group>
+
+          {/* Right Back Paw & Leg */}
+          <group ref={rightLegRef} position={[0.14, -0.18, 0]}>
+            <mesh position={[0, 0.04, 0]} castShadow>
+              <capsuleGeometry args={[0.08, 0.18, 4, 6]} />
+              <meshStandardMaterial color="#fffbeb" />
+            </mesh>
+            <mesh position={[0, -0.1, 0.04]} castShadow>
+              <boxGeometry args={[0.12, 0.12, 0.16]} />
+              <meshStandardMaterial color="#fef08a" roughness={0.6} />
             </mesh>
           </group>
         </group>
