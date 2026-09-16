@@ -9,8 +9,25 @@ export const dynamic = 'force-dynamic';
  * The navigation entry point resumes the user's latest active conversation.
  * `/app/conversations/new` remains the explicit action for starting a new one.
  */
-export default async function ConversationsEntryPage() {
-  if (isDemoMode()) redirect('/app/conversations/new');
+export default async function ConversationsEntryPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
+  const query = searchParams
+    ? new URLSearchParams(
+        Object.entries(searchParams).flatMap(([k, v]) =>
+          Array.isArray(v)
+            ? v.map((item) => [k, item])
+            : v !== undefined
+              ? [[k, v]]
+              : []
+        )
+      ).toString()
+    : '';
+  const queryString = query ? `?${query}` : '';
+
+  if (isDemoMode()) redirect(`/app/conversations/new${queryString}`);
 
   let user;
   try {
@@ -35,5 +52,5 @@ export default async function ConversationsEntryPage() {
   const latestConversation =
     conversations?.find((conversation) => conversation.status === 'active') || conversations?.[0];
 
-  redirect(latestConversation ? `/app/conversations/${latestConversation.id}` : '/app/conversations/new');
+  redirect(latestConversation ? `/app/conversations/${latestConversation.id}${queryString}` : `/app/conversations/new${queryString}`);
 }

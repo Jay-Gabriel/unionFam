@@ -20,15 +20,12 @@ import {
   Sparkles,
   Sprout,
   UserRound,
-  Volume2,
-  VolumeX,
   Wallet,
   XCircle,
 } from 'lucide-react';
 import { LeafLoader } from '@/components/calm/leaf-loader';
 import { SanctuaryAudioPlayer } from '@/components/calm/sanctuary-audio-player';
 import { SanctuaryMusicPromptModal } from '@/components/calm/sanctuary-music-prompt-modal';
-import { speakVietnamese, stopSpeaking } from '@/lib/calm-speech';
 import { labelDimension } from '@/lib/i18n';
 
 interface Observation {
@@ -355,8 +352,6 @@ function ConversationPageContent() {
   const [retryContent, setRetryContent] = useState('');
   const [isFromChoiceIdentity, setIsFromChoiceIdentity] = useState(false);
   const [isMusicPromptOpen, setIsMusicPromptOpen] = useState(false);
-  const [isAutoVoiceEnabled, setIsAutoVoiceEnabled] = useState(true);
-  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
 
   const activeLoadedIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -378,26 +373,6 @@ function ConversationPageContent() {
       const timer = setTimeout(() => setIsMusicPromptOpen(true), 600);
       return () => clearTimeout(timer);
     }
-  }, []);
-
-  const handleToggleVoice = useCallback((messageId: string, content: string) => {
-    if (speakingMessageId === messageId) {
-      stopSpeaking();
-      setSpeakingMessageId(null);
-    } else {
-      speakVietnamese(content, {
-        onStart: () => setSpeakingMessageId(messageId),
-        onEnd: () => setSpeakingMessageId(null),
-        onError: () => setSpeakingMessageId(null),
-      });
-    }
-  }, [speakingMessageId]);
-
-  // Clean up speech on unmount
-  useEffect(() => {
-    return () => {
-      stopSpeaking();
-    };
   }, []);
 
   // Auto-grow textarea freely and smoothly on content change
@@ -753,14 +728,6 @@ function ConversationPageContent() {
         );
       });
 
-      if (isAutoVoiceEnabled && stream.responseText) {
-        speakVietnamese(stream.responseText, {
-          onStart: () => setSpeakingMessageId(assistantMsgId),
-          onEnd: () => setSpeakingMessageId(null),
-          onError: () => setSpeakingMessageId(null),
-        });
-      }
-
       if (stream.observation || stream.experimentProposal || stream.reflectionProposal || stream.resourceProposal) {
         setMessages((previous) =>
           previous.map((message) =>
@@ -1012,22 +979,6 @@ function ConversationPageContent() {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              if (speakingMessageId) stopSpeaking();
-              setIsAutoVoiceEnabled(!isAutoVoiceEnabled);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] sm:text-[11px] font-medium transition-all ${
-              isAutoVoiceEnabled
-                ? 'border-calm-lichen/40 bg-calm-lichen/20 text-calm-warm-ivory shadow-sm'
-                : 'border-white/10 bg-white/5 text-calm-fog hover:text-white'
-            }`}
-            title="Tự động đọc giọng nói AI truyền cảm khi trả lời"
-          >
-            {isAutoVoiceEnabled ? <Volume2 size={13} className="text-calm-lichen" /> : <VolumeX size={13} />}
-            <span className="hidden sm:inline">{isAutoVoiceEnabled ? 'Giọng đọc: Bật' : 'Giọng đọc: Tắt'}</span>
-          </button>
           <SanctuaryAudioPlayer />
           {isDemoConversation && (
             <div className="rounded-full border border-calm-pollen/30 bg-calm-pollen/15 px-2 py-0.5 sm:px-3 sm:py-1 text-[8.5px] sm:text-[9px] font-semibold uppercase tracking-[0.1em] text-calm-pollen shadow-sm">
@@ -1079,30 +1030,6 @@ function ConversationPageContent() {
                     </div>
                     <div className="flex items-center justify-between gap-2 px-2 text-[10.5px] sm:text-[11px] font-semibold text-calm-warm-ivory/80">
                       <span>{message.timestamp}</span>
-                      {message.content && (
-                        <button
-                          type="button"
-                          onClick={() => handleToggleVoice(message.id, message.content)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-medium transition-all ${
-                            speakingMessageId === message.id
-                              ? 'bg-calm-lichen/30 text-calm-warm-ivory border border-calm-lichen/50 animate-pulse'
-                              : 'bg-white/10 text-calm-fog hover:text-calm-lichen hover:bg-white/15'
-                          }`}
-                          title={speakingMessageId === message.id ? 'Dừng đọc' : 'Nghe AI đọc truyền cảm'}
-                        >
-                          {speakingMessageId === message.id ? (
-                            <>
-                              <VolumeX size={12} className="text-calm-lichen" />
-                              <span>Đang đọc...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Volume2 size={12} />
-                              <span>Nghe đọc</span>
-                            </>
-                          )}
-                        </button>
-                      )}
                     </div>
 
                     {/* ONLY Micro-Experiment Card is displayed */}

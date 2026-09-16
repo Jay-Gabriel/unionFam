@@ -634,7 +634,7 @@ export function ChoiceIdentityGame({ onClose, isModal = false }: ChoiceIdentityG
 
     if (onClose) onClose();
     router.push(
-      `/app/conversations/new?fromGame=choice_identity&top1=${top1.key}&top2=${top2.key}&ageGroup=${ageGroup || '25-35'}`
+      `/app/conversations?fromGame=choice_identity&top1=${top1.key}&top2=${top2.key}&ageGroup=${ageGroup || '25-35'}&prompt=${encodeURIComponent(personalizedPrompt)}`
     );
   }, [top1, top2, tradeOff.nextQuestion, ageGroup, onClose, router]);
 

@@ -185,7 +185,7 @@ export function SoulKnotGame({
     if (typeof window !== 'undefined') {
       window.sessionStorage.setItem('lifelab_preloaded_prompt', selectedKnot.starterPrompt);
     }
-    router.push(`/app/conversations/new?prompt=${encodeURIComponent(selectedKnot.starterPrompt)}`);
+    router.push(`/app/conversations?prompt=${encodeURIComponent(selectedKnot.starterPrompt)}`);
     onClose?.();
   };
 

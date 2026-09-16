@@ -21,3 +21,5 @@ supabase/.temp/
 *.tsbuildinfo
 
 
+.vercel
+.env*

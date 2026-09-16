@@ -260,7 +260,7 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
     if (typeof window !== 'undefined') {
       window.sessionStorage.setItem('lifelab_preloaded_prompt', prompt);
     }
-    router.push(`/app/conversations/new?prompt=${encodeURIComponent(prompt)}`);
+    router.push(`/app/conversations?prompt=${encodeURIComponent(prompt)}`);
     onClose?.();
   };
 
