@@ -42,6 +42,13 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
     const leftArmRef = useRef<THREE.Group>(null);
     const rightArmRef = useRef<THREE.Group>(null);
 
+    // Camera orbit & distance state
+    const cameraOrbitYawRef = useRef(0); // Horizontal orbit angle (radians)
+    const cameraOrbitPitchRef = useRef(0.35); // Vertical pitch angle (radians)
+    const cameraDistanceRef = useRef(7.5); // Distance from player
+    const isDraggingMouseRef = useRef(false);
+    const lastMousePosRef = useRef({ x: 0, y: 0 });
+
     // Coordinate & Physics state
     const thetaRef = useRef(initialTheta);
     const phiRef = useRef(initialPhi);
@@ -67,7 +74,7 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
       sprint: false,
     });
 
-    // Keyboard event listeners
+    // Keyboard & Mouse Drag event listeners
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -92,11 +99,56 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
         if (key === 'shift') inputRef.current.sprint = false;
       };
 
+      const handlePointerDown = (e: PointerEvent) => {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'BUTTON' || target.tagName === 'A' || target.closest('button') || target.closest('a') || target.closest('[data-interactive="true"]'))) {
+          return;
+        }
+        isDraggingMouseRef.current = true;
+        lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+      };
+
+      const handlePointerMove = (e: PointerEvent) => {
+        if (!isDraggingMouseRef.current) return;
+        const dx = e.clientX - lastMousePosRef.current.x;
+        const dy = e.clientY - lastMousePosRef.current.y;
+        lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+
+        // Mouse drag rotates camera orbit
+        cameraOrbitYawRef.current -= dx * 0.006;
+        cameraOrbitPitchRef.current = Math.max(
+          -0.05,
+          Math.min(1.15, cameraOrbitPitchRef.current + dy * 0.005)
+        );
+      };
+
+      const handlePointerUp = () => {
+        isDraggingMouseRef.current = false;
+      };
+
+      const handleWheel = (e: WheelEvent) => {
+        cameraDistanceRef.current = Math.max(
+          4.0,
+          Math.min(15.0, cameraDistanceRef.current + e.deltaY * 0.008)
+        );
+      };
+
       window.addEventListener('keydown', handleKeyDown);
       window.addEventListener('keyup', handleKeyUp);
+      window.addEventListener('pointerdown', handlePointerDown);
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+      window.addEventListener('pointercancel', handlePointerUp);
+      window.addEventListener('wheel', handleWheel, { passive: true });
+
       return () => {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('keyup', handleKeyUp);
+        window.removeEventListener('pointerdown', handlePointerDown);
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerup', handlePointerUp);
+        window.removeEventListener('pointercancel', handlePointerUp);
+        window.removeEventListener('wheel', handleWheel);
       };
     }, []);
 
@@ -129,37 +181,45 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
 
       // Combine keyboard and virtual joystick inputs
       const fwd = inputRef.current.forward || -virtualInputRef.current.y;
-      const trn = inputRef.current.turn || virtualInputRef.current.x;
+      const right = inputRef.current.turn || virtualInputRef.current.x;
       const jmp = inputRef.current.jump || virtualInputRef.current.jump;
       const spr = inputRef.current.sprint || virtualInputRef.current.sprint;
 
-      const isMoving = Math.abs(fwd) > 0.05 || Math.abs(trn) > 0.05;
-      const speed = (spr ? 4.5 : 2.8) * delta;
+      const inputLen = Math.hypot(fwd, right);
+      const isMoving = inputLen > 0.08;
+      const speed = (spr ? 5.2 : 3.2) * delta;
 
-      // Update heading angle
-      if (Math.abs(trn) > 0.05) {
-        headingAngleRef.current += trn * 3.0 * delta;
-      }
+      // Camera-relative movement direction
+      if (isMoving) {
+        // Angle of input relative to camera forward (W is 0, D is +PI/2, S is PI, A is -PI/2)
+        const inputAngle = Math.atan2(right, fwd);
+        // Desired world movement angle in tangent space
+        const targetWorldHeading = cameraOrbitYawRef.current + inputAngle;
 
-      // Move on sphere surface in heading direction
-      if (Math.abs(fwd) > 0.05) {
-        const moveDist = fwd * speed;
-        const dTheta = (moveDist / PLANET_RADIUS) * Math.cos(headingAngleRef.current);
-        const dPhi = (moveDist / (PLANET_RADIUS * Math.sin(Math.max(0.1, thetaRef.current)))) * Math.sin(headingAngleRef.current);
+        // Smoothly rotate character mesh heading towards movement direction
+        let angleDiff = (targetWorldHeading - headingAngleRef.current) % (Math.PI * 2);
+        if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        headingAngleRef.current += angleDiff * Math.min(1, 14 * delta);
 
-        thetaRef.current = Math.max(0.1, Math.min(Math.PI - 0.1, thetaRef.current + dTheta));
-        phiRef.current = (phiRef.current + dPhi) % (Math.PI * 2);
+        // Displace along spherical surface
+        const moveDist = Math.min(1, inputLen) * speed;
+        const dTheta = -(moveDist / PLANET_RADIUS) * Math.cos(targetWorldHeading);
+        const dPhi = (moveDist / (PLANET_RADIUS * Math.max(0.15, Math.sin(thetaRef.current)))) * Math.sin(targetWorldHeading);
+
+        thetaRef.current = Math.max(0.12, Math.min(Math.PI - 0.12, thetaRef.current + dTheta));
+        phiRef.current = (phiRef.current + dPhi + Math.PI * 2) % (Math.PI * 2);
       }
 
       // Jump & Gravity physics
       if (jmp && isGroundedRef.current) {
-        verticalVelocityRef.current = 6.0;
+        verticalVelocityRef.current = 6.5;
         isGroundedRef.current = false;
       }
 
       if (!isGroundedRef.current) {
         heightOffsetRef.current += verticalVelocityRef.current * delta;
-        verticalVelocityRef.current -= 16.0 * delta; // Gravity
+        verticalVelocityRef.current -= 17.0 * delta; // Gravity
 
         if (heightOffsetRef.current <= 0) {
           heightOffsetRef.current = 0;
@@ -168,22 +228,33 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
         }
       }
 
-      // Compute 3D Cartesian position from spherical coordinates
+      // Compute 3D Cartesian position on sphere
       const currentRadius = PLANET_RADIUS + heightOffsetRef.current;
       const rawPos = sphericalToCartesian(currentRadius, thetaRef.current, phiRef.current);
       const pos = new THREE.Vector3(...rawPos);
 
-      // Orient player upright perpendicular to spherical surface
+      // Normal vector pointing straight out from sphere center
       const normal = pos.clone().normalize();
-      const up = new THREE.Vector3(0, 1, 0);
-      const quat = new THREE.Quaternion().setFromUnitVectors(up, normal);
 
-      // Apply heading orientation
+      // Tangent frame on sphere: North vector (along -theta) and East vector (along +phi)
+      const sinTheta = Math.sin(thetaRef.current);
+      const cosTheta = Math.cos(thetaRef.current);
+      const sinPhi = Math.sin(phiRef.current);
+      const cosPhi = Math.cos(phiRef.current);
+
+      const northVec = new THREE.Vector3(-cosTheta * cosPhi, sinTheta, -cosTheta * sinPhi).normalize();
+      const eastVec = new THREE.Vector3(-sinPhi, 0, cosPhi).normalize();
+
+      // Orient player upright perpendicular to spherical surface
+      const up = new THREE.Vector3(0, 1, 0);
+      const surfaceQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+
+      // Apply character heading orientation on tangent plane
       const headingQuat = new THREE.Quaternion().setFromAxisAngle(normal, -headingAngleRef.current);
-      quat.premultiply(headingQuat);
+      const fullQuat = headingQuat.multiply(surfaceQuat);
 
       playerGroupRef.current.position.copy(pos);
-      playerGroupRef.current.quaternion.copy(quat);
+      playerGroupRef.current.quaternion.copy(fullQuat);
 
       // Procedural walking/running animation
       const animTime = Date.now() * 0.009 * (spr ? 1.6 : 1.0);
@@ -216,13 +287,25 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
       // Notify parent of updated position
       onPositionChange?.(pos, thetaRef.current, phiRef.current);
 
-      // Smooth third-person follow camera
-      const cameraOffset = new THREE.Vector3(0, 3.2, 6.2); // Up and Back
-      cameraOffset.applyQuaternion(playerGroupRef.current.quaternion);
-      const targetCameraPos = pos.clone().add(cameraOffset);
+      // Smooth Orbit Camera following player and mouse orbit angles
+      const yaw = cameraOrbitYawRef.current;
+      const pitch = cameraOrbitPitchRef.current;
+      const dist = cameraDistanceRef.current;
 
-      camera.position.lerp(targetCameraPos, 0.08);
-      camera.lookAt(pos.clone().add(normal.clone().multiplyScalar(1.2)));
+      // Camera horizontal offset direction in tangent plane
+      const camHorizDir = northVec.clone().multiplyScalar(Math.cos(yaw)).add(eastVec.clone().multiplyScalar(Math.sin(yaw))).normalize();
+
+      // Camera position: behind the view direction, and elevated by pitch
+      const camPos = pos
+        .clone()
+        .add(normal.clone().multiplyScalar(Math.sin(pitch) * dist + 1.6))
+        .sub(camHorizDir.clone().multiplyScalar(Math.cos(pitch) * dist));
+
+      const targetLookAt = pos.clone().add(normal.clone().multiplyScalar(1.2));
+
+      camera.position.lerp(camPos, 0.1);
+      camera.up.copy(normal);
+      camera.lookAt(targetLookAt);
     });
 
     return (
