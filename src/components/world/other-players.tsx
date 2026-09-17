@@ -63,11 +63,13 @@ function RemotePlayerModel({
 }
 
 function useMemoVector(pos: [number, number, number]) {
-  return React.useMemo(() => new THREE.Vector3(...pos), [pos[0], pos[1], pos[2]]);
+  const [x, y, z] = pos;
+  return React.useMemo(() => new THREE.Vector3(x, y, z), [x, y, z]);
 }
 
 function useMemoQuaternion(rot: [number, number, number, number]) {
-  return React.useMemo(() => new THREE.Quaternion(...rot), [rot[0], rot[1], rot[2], rot[3]]);
+  const [x, y, z, w] = rot;
+  return React.useMemo(() => new THREE.Quaternion(x, y, z, w), [x, y, z, w]);
 }
 
 /** Pre-populated cozy companions that wander slowly on the planet */

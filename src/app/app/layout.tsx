@@ -200,21 +200,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     isWorldRoute;
   const hideBottomNav = isConversationRoom || isKeyboardOpen;
 
-  // Standalone full-screen 3D immersive world mode
-  if (isWorldRoute) {
-    return (
-      <div
-        className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-[#0c1524] select-none"
-        style={{
-          height: 'var(--app-viewport-height, 100dvh)',
-          maxHeight: 'var(--app-viewport-height, 100dvh)',
-        }}
-      >
-        {children}
-      </div>
-    );
-  }
-
   const handleLogout = async () => {
     cachedUserProfile = null;
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
@@ -262,6 +247,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       document.removeEventListener('keydown', closeOnEscape);
     };
   }, [profileMenuOpen]);
+
+  // Standalone full-screen 3D immersive world mode. Keep this return after
+  // hooks so route transitions never change the component's hook order.
+  if (isWorldRoute) {
+    return (
+      <div
+        className="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-[#0c1524] select-none"
+        style={{
+          height: 'var(--app-viewport-height, 100dvh)',
+          maxHeight: 'var(--app-viewport-height, 100dvh)',
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div

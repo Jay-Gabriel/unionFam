@@ -2,14 +2,14 @@
 
 import React, { useRef, useImperativeHandle, forwardRef, useState, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Stars, Float } from '@react-three/drei';
+import { Stars, Float, Loader } from '@react-three/drei';
 import * as THREE from 'three';
-import { PlanetBiomes, ZONES } from './planet-biomes';
+import { PlanetBiomes, PlacedOnSphere, ZONES } from './planet-biomes';
 import { PlayerCharacter, type PlayerControlsHandle } from './player-character';
 import { InteractiveLetters } from './interactive-letters';
 import { OtherPlayers } from './other-players';
 import { PLANET_RADIUS, greatCircleDistance } from './spherical-math';
-import type { LostLetter, OnlinePlayer, PlanetZone } from './world-types';
+import type { AvatarStyle, LostLetter, OnlinePlayer, PlanetZone, PlanetZoneId } from './world-types';
 
 export interface PlanetSceneHandle {
   setVirtualInput: (input: { x: number; y: number; jump: boolean; sprint: boolean }) => void;
@@ -19,6 +19,9 @@ export interface PlanetSceneHandle {
 interface PlanetSceneProps {
   collectedLetterIds: string[];
   onlinePlayers?: OnlinePlayer[];
+  worldEnergy?: number;
+  avatarStyle?: AvatarStyle;
+  questZoneIds?: PlanetZoneId[];
   onZoneChange?: (zone: PlanetZone | null) => void;
   onOpenLetter?: (letter: LostLetter) => void;
   onEmoteTrigger?: (emoji: string) => void;
@@ -207,11 +210,40 @@ function SpiritFireflies() {
   );
 }
 
+/** Guiding pillars reveal where unfinished real-life quests live. */
+function QuestBeacons({ zoneIds }: { zoneIds: PlanetZoneId[] }) {
+  const activeZones = ZONES.filter((zone) => zoneIds.includes(zone.id));
+  return (
+    <group>
+      {activeZones.map((zone) => (
+        <PlacedOnSphere key={zone.id} theta={zone.theta} phi={zone.phi} heightOffset={0.12}>
+          <Float speed={1.25} floatIntensity={0.35} rotationIntensity={0.08}>
+            <group>
+              <mesh position={[0, 2.8, 0]}>
+                <cylinderGeometry args={[0.04, 0.22, 5.2, 10, 1, true]} />
+                <meshBasicMaterial color={zone.accentColor} transparent opacity={0.28} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+              </mesh>
+              <mesh position={[0, 5.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[0.55, 0.07, 10, 32]} />
+                <meshBasicMaterial color={zone.color} toneMapped={false} />
+              </mesh>
+              <pointLight position={[0, 4.8, 0]} color={zone.color} intensity={1.4} distance={6} />
+            </group>
+          </Float>
+        </PlacedOnSphere>
+      ))}
+    </group>
+  );
+}
+
 export const PlanetScene = forwardRef<PlanetSceneHandle, PlanetSceneProps>(
   function PlanetScene(
     {
       collectedLetterIds,
       onlinePlayers = [],
+      worldEnergy = 0,
+      avatarStyle = 'human',
+      questZoneIds = [],
       onZoneChange,
       onOpenLetter,
       onEmoteTrigger,
@@ -259,7 +291,7 @@ export const PlanetScene = forwardRef<PlanetSceneHandle, PlanetSceneProps>(
       <div className="relative h-full w-full select-none overflow-hidden">
         <Canvas
           shadows
-          dpr={[1, 2]}
+          dpr={[1, 1.5]}
           camera={{ position: [0, 10, PLANET_RADIUS + 12], fov: 48, near: 0.1, far: 350 }}
           gl={{
             antialias: true,
@@ -296,12 +328,16 @@ export const PlanetScene = forwardRef<PlanetSceneHandle, PlanetSceneProps>(
           {/* Spirit Fireflies motes */}
           <SpiritFireflies />
 
-          {/* The Spherical Planet with 6 Biomes & Cobblestone Paths */}
-          <PlanetBiomes />
+          {/* The Spherical Planet with 7 districts & connected paths */}
+          <PlanetBiomes worldEnergy={worldEnergy} />
+
+          {/* Beacons connect unfinished website goals to locations in the game world */}
+          <QuestBeacons zoneIds={questZoneIds} />
 
           {/* Player Controlled Character */}
           <PlayerCharacter
             ref={playerControlsRef}
+            avatarStyle={avatarStyle}
             onPositionChange={handlePositionChange}
             onEmoteTrigger={onEmoteTrigger}
           />
@@ -315,6 +351,13 @@ export const PlanetScene = forwardRef<PlanetSceneHandle, PlanetSceneProps>(
             onOpenLetter={(letter) => onOpenLetter?.(letter)}
           />
         </Canvas>
+        <Loader
+          dataInterpolation={(progress) => `Đang mở Thành Phố Mây ${progress.toFixed(0)}%`}
+          containerStyles={{ background: 'rgba(8, 16, 30, 0.96)' }}
+          innerStyles={{ width: 'min(360px, 72vw)', background: 'rgba(255,255,255,0.12)' }}
+          barStyles={{ background: 'linear-gradient(90deg, #34d399, #67e8f9, #a78bfa)', height: '5px' }}
+          dataStyles={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 700 }}
+        />
       </div>
     );
   }

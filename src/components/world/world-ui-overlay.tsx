@@ -17,8 +17,14 @@ import {
   Zap,
   Flame,
   HelpCircle,
+  CheckCircle2,
+  ChevronDown,
+  MapPinned,
+  Home,
+  UserRound,
+  Cat,
 } from 'lucide-react';
-import type { LostLetter, PlanetZone, EmoteOption } from './world-types';
+import type { AvatarStyle, LostLetter, PlanetZone, EmoteOption, WorldJourney } from './world-types';
 
 export const EMOTE_OPTIONS: EmoteOption[] = [
   { id: 'heart', emoji: '❤️', label: 'Thương yêu' },
@@ -32,7 +38,10 @@ interface WorldUIOverlayProps {
   currentZone: PlanetZone | null;
   activeLetter: LostLetter | null;
   collectedLetterIds: string[];
-  onlineCount?: number;
+  journey: WorldJourney;
+  companionCount?: number;
+  avatarStyle: AvatarStyle;
+  onAvatarChange: (avatar: AvatarStyle) => void;
   onCloseLetter: () => void;
   onTriggerEmote: (emoji: string) => void;
   onVirtualInputChange: (input: { x: number; y: number; jump: boolean; sprint: boolean }) => void;
@@ -42,13 +51,17 @@ export function WorldUIOverlay({
   currentZone,
   activeLetter,
   collectedLetterIds,
-  onlineCount = 4,
+  journey,
+  companionCount = 3,
+  avatarStyle,
+  onAvatarChange,
   onCloseLetter,
   onTriggerEmote,
   onVirtualInputChange,
 }: WorldUIOverlayProps) {
   const router = useRouter();
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isJourneyOpen, setIsJourneyOpen] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isSprinting, setIsSprinting] = useState(false);
 
@@ -56,6 +69,10 @@ export function WorldUIOverlay({
   const joystickBaseRef = useRef<HTMLDivElement>(null);
   const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
   const [isDraggingJoystick, setIsDraggingJoystick] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 639px)').matches) setIsJourneyOpen(false);
+  }, []);
 
   const handleJoystickTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
     setIsDraggingJoystick(true);
@@ -129,18 +146,61 @@ export function WorldUIOverlay({
     <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-between p-3 sm:p-6 overflow-hidden">
       {/* Top Header Bar */}
       <header className="pointer-events-auto flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/70 px-3.5 py-1.5 backdrop-blur-xl shadow-lg">
-          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-xs font-bold text-white tracking-tight">Hành Tinh Tâm Trí</span>
-          <span className="text-[10px] text-calm-fog/70 border-l border-white/10 pl-2">3D Living World</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.push('/app')}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/15 bg-slate-950/75 text-white shadow-lg backdrop-blur-xl transition hover:bg-white/15"
+            title="Về Tổng quan"
+            aria-label="Về Tổng quan"
+          >
+            <Home size={15} />
+          </button>
+          <div className="flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/70 px-3.5 py-1.5 backdrop-blur-xl shadow-lg">
+            <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-bold text-white tracking-tight">Hành Tinh Tâm Trí</span>
+            <span className="hidden text-[10px] text-calm-fog/70 border-l border-white/10 pl-2 sm:inline">3D Living World</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Online Players Counter */}
-          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-xs font-semibold text-calm-lichen backdrop-blur-md shadow">
+          {/* Honest companion counter — multiplayer is not enabled yet */}
+          <div className="hidden items-center gap-1.5 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-xs font-semibold text-calm-lichen backdrop-blur-md shadow sm:flex">
             <Users size={13} className="text-emerald-400" />
-            <span>{onlineCount} Online</span>
+            <span>{companionCount} Đồng hành</span>
           </div>
+
+          {/* Avatar switcher — persisted locally for the next visit */}
+          <div className="hidden items-center rounded-full border border-white/10 bg-slate-900/80 p-0.5 shadow backdrop-blur-md sm:flex">
+            <button
+              type="button"
+              onClick={() => onAvatarChange('human')}
+              className={`grid h-7 w-7 place-items-center rounded-full transition ${avatarStyle === 'human' ? 'bg-cyan-300 text-slate-950' : 'text-white/60 hover:text-white'}`}
+              title="Nhân vật người"
+              aria-label="Chọn nhân vật người"
+            >
+              <UserRound size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onAvatarChange('fox')}
+              className={`grid h-7 w-7 place-items-center rounded-full transition ${avatarStyle === 'fox' ? 'bg-amber-300 text-slate-950' : 'text-white/60 hover:text-white'}`}
+              title="Nhân vật cáo đưa thư"
+              aria-label="Chọn nhân vật cáo"
+            >
+              <Cat size={13} />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onAvatarChange(avatarStyle === 'human' ? 'fox' : 'human')}
+            className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-slate-900/80 text-white shadow backdrop-blur-md sm:hidden"
+            title={avatarStyle === 'human' ? 'Đổi sang nhân vật cáo' : 'Đổi sang nhân vật người'}
+            aria-label={avatarStyle === 'human' ? 'Đổi sang nhân vật cáo' : 'Đổi sang nhân vật người'}
+          >
+            {avatarStyle === 'human' ? <UserRound size={14} /> : <Cat size={14} />}
+          </button>
 
           {/* Letters Counter */}
           <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-950/60 px-3 py-1 text-xs font-bold text-amber-300 backdrop-blur-md shadow">
@@ -159,6 +219,79 @@ export function WorldUIOverlay({
           </button>
         </div>
       </header>
+
+      {/* Real Life Lab progress becomes the quest log of the 3D world */}
+      <div className="pointer-events-auto absolute left-3 top-[62px] z-20 w-[min(360px,calc(100vw-24px))] sm:left-6 sm:top-[76px]">
+        <div className="overflow-hidden rounded-[24px] border border-white/15 bg-slate-950/82 text-white shadow-[0_18px_55px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+          <button
+            type="button"
+            onClick={() => setIsJourneyOpen((open) => !open)}
+            className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.05]"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-200">
+              <MapPinned size={18} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center justify-between gap-3">
+                <strong className="text-xs text-calm-paper-white">Hành trình của bạn · Cấp {journey.level}</strong>
+                <span className="text-[10px] font-bold text-cyan-200">{journey.energy}% năng lượng</span>
+              </span>
+              <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-white/10">
+                <span className="block h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-300 to-violet-400 transition-all duration-700" style={{ width: `${journey.energy}%` }} />
+              </span>
+            </span>
+            <ChevronDown size={15} className={`shrink-0 text-white/55 transition-transform ${isJourneyOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          <AnimatePresence initial={false}>
+            {isJourneyOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="max-h-[42vh] space-y-2 overflow-y-auto border-t border-white/10 px-3 py-3">
+                  {journey.loading ? (
+                    <p className="px-2 py-3 text-xs text-calm-fog">Đang kết nối tiến độ Life Lab…</p>
+                  ) : journey.quests.map((quest) => (
+                    <button
+                      key={quest.id}
+                      type="button"
+                      onClick={() => {
+                        if (quest.targetHref !== '/app/world') router.push(quest.targetHref);
+                        else setIsJourneyOpen(false);
+                      }}
+                      className="group flex w-full items-start gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3 text-left transition hover:border-white/20 hover:bg-white/[0.08]"
+                    >
+                      <span
+                        className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-xl border text-[10px] font-black"
+                        style={{ borderColor: `${quest.accentColor}66`, color: quest.accentColor, backgroundColor: `${quest.accentColor}18` }}
+                      >
+                        {quest.completed ? <CheckCircle2 size={15} /> : `${quest.progressPercent}%`}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center justify-between gap-2">
+                          <strong className="truncate text-[11px] text-white">{quest.title}</strong>
+                          <span className="shrink-0 text-[9px] text-calm-fog/65">{quest.progress}/{quest.total}</span>
+                        </span>
+                        <span className="mt-1 block line-clamp-2 text-[10px] leading-4 text-calm-fog/75">{quest.description}</span>
+                        <span className="mt-1.5 block text-[9px] font-semibold" style={{ color: quest.accentColor }}>
+                          {quest.completed ? `Đã nhận: ${quest.reward}` : `Phần thưởng: ${quest.reward}`}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between border-t border-white/10 px-4 py-2 text-[10px] text-calm-fog/70">
+                  <span>{journey.completedQuests}/{journey.totalQuests} nhiệm vụ hoàn tất</span>
+                  <span>{journey.streak > 0 ? `🔥 ${journey.streak} ngày liên tiếp` : 'Bắt đầu nhịp hôm nay'}</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
       {/* Help Modal Guide */}
       <AnimatePresence>
@@ -196,7 +329,7 @@ export function WorldUIOverlay({
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                   <strong className="text-white">💌 Nhiệm Vụ & Tương Tác:</strong>
-                  <p className="mt-1">Đi khám phá 6 khu vực, nhặt 4 lá thư chưa gửi và kết nối trò chuyện sâu với AI Life Lab.</p>
+                  <p className="mt-1">Đi khám phá 7 khu vực, nhặt 4 lá thư chưa gửi và kết nối trò chuyện sâu với AI Life Lab.</p>
                 </div>
               </div>
               <button

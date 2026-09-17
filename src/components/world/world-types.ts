@@ -1,6 +1,9 @@
 import type { LucideIcon } from 'lucide-react';
 
+export type AvatarStyle = 'human' | 'fox';
+
 export type PlanetZoneId =
+  | 'city'         // Thành Phố Mây (Hub dữ liệu & hành trình hôm nay)
   | 'village'      // Làng Ban Mai (Onboarding & Question Graph)
   | 'forest'       // Rừng Lắng Nghe (AI Chat Sanctuary)
   | 'peak'         // Đỉnh Hải Đăng (Life Design Map)
@@ -52,4 +55,29 @@ export interface EmoteOption {
   id: string;
   emoji: string;
   label: string;
+}
+
+export interface WorldQuest {
+  id: string;
+  zoneId: PlanetZoneId;
+  title: string;
+  description: string;
+  actionLabel: string;
+  targetHref: string;
+  reward: string;
+  progress: number;
+  total: number;
+  progressPercent: number;
+  completed: boolean;
+  accentColor: string;
+}
+
+export interface WorldJourney {
+  level: number;
+  energy: number;
+  completedQuests: number;
+  totalQuests: number;
+  streak: number;
+  loading: boolean;
+  quests: WorldQuest[];
 }

@@ -8,6 +8,19 @@ import type { PlanetZone } from './world-types';
 
 export const ZONES: PlanetZone[] = [
   {
+    id: 'city',
+    name: 'Thành Phố Mây',
+    subtitle: 'Trung Tâm Hành Trình & Những Con Đường Mở',
+    description: 'Một thành phố sống thay đổi theo tiến độ Life Lab của bạn, với nhiều phố nhỏ, cửa hàng, quảng trường và lối rẽ để khám phá.',
+    color: '#7dd3fc',
+    accentColor: '#818cf8',
+    theta: 1.38,
+    phi: 5.72,
+    actionLabel: 'Mở Trung Tâm Hôm Nay',
+    targetHref: '/app',
+    aiPromptStarter: 'Chào Life Lab, mình đang ở Thành Phố Mây và muốn chọn một hướng đi có ý nghĩa nhất cho hôm nay.',
+  },
+  {
     id: 'village',
     name: 'Làng Ban Mai',
     subtitle: 'Nơi Bắt Đầu & Khám Phá Bản Thân',
@@ -653,6 +666,160 @@ function FlowerPatch({ color = '#f43f5e' }: { color?: string }) {
   );
 }
 
+/** Detailed pastel city block inspired by a cozy storybook exploration world. */
+function CityBuilding({
+  position,
+  size,
+  floors,
+  color,
+  accent,
+}: {
+  position: [number, number, number];
+  size: [number, number];
+  floors: number;
+  color: string;
+  accent: string;
+}) {
+  const height = 0.85 + floors * 0.72;
+  const [width, depth] = size;
+  const windowRows = Array.from({ length: floors }, (_, index) => index);
+  return (
+    <group position={position}>
+      <mesh position={[0, height / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[width, height, depth]} />
+        <meshStandardMaterial color={color} roughness={0.72} />
+      </mesh>
+      <mesh position={[0, height + 0.12, 0]} castShadow>
+        <boxGeometry args={[width + 0.16, 0.24, depth + 0.16]} />
+        <meshStandardMaterial color="#fff7ed" roughness={0.65} />
+      </mesh>
+      {windowRows.map((row) => (
+        <React.Fragment key={row}>
+          {[-0.28, 0.28].map((offset) => (
+            <mesh key={offset} position={[offset * width, 0.82 + row * 0.67, depth / 2 + 0.012]}>
+              <boxGeometry args={[Math.min(0.34, width * 0.22), 0.32, 0.035]} />
+              <meshStandardMaterial color="#bae6fd" emissive="#38bdf8" emissiveIntensity={0.2} roughness={0.18} />
+            </mesh>
+          ))}
+          <mesh position={[width / 2 + 0.012, 0.82 + row * 0.67, 0]} rotation={[0, Math.PI / 2, 0]}>
+            <boxGeometry args={[Math.min(0.4, depth * 0.3), 0.32, 0.035]} />
+            <meshStandardMaterial color="#dbeafe" emissive="#60a5fa" emissiveIntensity={0.16} roughness={0.2} />
+          </mesh>
+        </React.Fragment>
+      ))}
+      <mesh position={[0, 0.46, depth / 2 + 0.025]}>
+        <boxGeometry args={[0.42, 0.78, 0.06]} />
+        <meshStandardMaterial color="#713f12" roughness={0.7} />
+      </mesh>
+      <mesh position={[0, 1.04, depth / 2 + 0.16]} rotation={[-0.13, 0, 0]}>
+        <boxGeometry args={[width * 0.72, 0.13, 0.52]} />
+        <meshStandardMaterial color={accent} roughness={0.55} />
+      </mesh>
+      <mesh position={[0, 1.38, depth / 2 + 0.04]}>
+        <boxGeometry args={[width * 0.62, 0.28, 0.05]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.14} roughness={0.45} />
+      </mesh>
+      {floors > 3 && (
+        <mesh position={[width * 0.18, height + 0.42, 0]} castShadow>
+          <boxGeometry args={[0.55, 0.62, 0.55]} />
+          <meshStandardMaterial color="#94a3b8" roughness={0.82} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+function CityLamp({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.7, 0]} castShadow>
+        <cylinderGeometry args={[0.035, 0.055, 1.4, 8]} />
+        <meshStandardMaterial color="#334155" metalness={0.35} roughness={0.55} />
+      </mesh>
+      <mesh position={[0, 1.46, 0]}>
+        <sphereGeometry args={[0.13, 10, 8]} />
+        <meshStandardMaterial color="#fef3c7" emissive="#f59e0b" emissiveIntensity={1.5} />
+      </mesh>
+    </group>
+  );
+}
+
+function CloudCityDistrict({ energy = 0 }: { energy?: number }) {
+  const coreRef = useRef<THREE.Mesh>(null);
+  const normalizedEnergy = Math.max(0, Math.min(100, energy)) / 100;
+
+  useFrame(({ clock }) => {
+    if (!coreRef.current) return;
+    const pulse = 1 + Math.sin(clock.getElapsedTime() * 2) * 0.08;
+    coreRef.current.scale.setScalar(pulse * (0.85 + normalizedEnergy * 0.35));
+    coreRef.current.rotation.y += 0.008;
+  });
+
+  const buildings = [
+    { position: [-3.15, 0.18, -3.15] as [number, number, number], size: [2.25, 2.0] as [number, number], floors: 3, color: '#f5c2b3', accent: '#f97316' },
+    { position: [0, 0.18, -3.25] as [number, number, number], size: [2.2, 1.8] as [number, number], floors: 5, color: '#b9d9e8', accent: '#0ea5e9' },
+    { position: [3.15, 0.18, -3.1] as [number, number, number], size: [2.35, 2.1] as [number, number], floors: 4, color: '#d3c3eb', accent: '#8b5cf6' },
+    { position: [-3.2, 0.18, 0] as [number, number, number], size: [2.0, 2.3] as [number, number], floors: 4, color: '#c4dfc6', accent: '#22c55e' },
+    { position: [3.2, 0.18, 0] as [number, number, number], size: [2.0, 2.3] as [number, number], floors: 3, color: '#f4d6a6', accent: '#eab308' },
+    { position: [-3.15, 0.18, 3.15] as [number, number, number], size: [2.3, 2.0] as [number, number], floors: 3, color: '#efb9cc', accent: '#ec4899' },
+    { position: [0, 0.18, 3.2] as [number, number, number], size: [2.1, 1.9] as [number, number], floors: 4, color: '#b7ddd5', accent: '#14b8a6' },
+    { position: [3.15, 0.18, 3.1] as [number, number, number], size: [2.3, 2.05] as [number, number], floors: 5, color: '#c9c4ec', accent: '#6366f1' },
+  ];
+
+  return (
+    <group scale={0.82}>
+      <mesh position={[0, 0.02, 0]} receiveShadow>
+        <cylinderGeometry args={[6.2, 6.35, 0.28, 32]} />
+        <meshStandardMaterial color="#d9e8d0" roughness={0.9} />
+      </mesh>
+
+      {/* Connected road grid with multiple exploration routes */}
+      <mesh position={[0, 0.18, 0]} receiveShadow>
+        <boxGeometry args={[12.1, 0.12, 1.35]} />
+        <meshStandardMaterial color="#4b5f6c" roughness={0.93} />
+      </mesh>
+      <mesh position={[0, 0.18, 0]} receiveShadow>
+        <boxGeometry args={[1.35, 0.12, 12.1]} />
+        <meshStandardMaterial color="#4b5f6c" roughness={0.93} />
+      </mesh>
+      {[-2.45, 2.45].map((offset) => (
+        <React.Fragment key={offset}>
+          <mesh position={[offset, 0.17, 0]} receiveShadow>
+            <boxGeometry args={[0.72, 0.08, 12]} />
+            <meshStandardMaterial color="#697985" roughness={0.96} />
+          </mesh>
+          <mesh position={[0, 0.17, offset]} receiveShadow>
+            <boxGeometry args={[12, 0.08, 0.72]} />
+            <meshStandardMaterial color="#697985" roughness={0.96} />
+          </mesh>
+        </React.Fragment>
+      ))}
+
+      {buildings.map((building, index) => <CityBuilding key={index} {...building} />)}
+
+      {/* Central plaza and living energy core */}
+      <mesh position={[0, 0.3, 0]} receiveShadow>
+        <cylinderGeometry args={[1.02, 1.12, 0.32, 24]} />
+        <meshStandardMaterial color="#f1e7d7" roughness={0.72} />
+      </mesh>
+      <mesh ref={coreRef} position={[0, 1.28, 0]} castShadow>
+        <octahedronGeometry args={[0.52, 1]} />
+        <meshStandardMaterial color="#c4b5fd" emissive="#6366f1" emissiveIntensity={0.75 + normalizedEnergy * 1.7} metalness={0.35} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, 0.72, 0]}>
+        <torusGeometry args={[0.86, 0.055, 10, 36]} />
+        <meshBasicMaterial color="#a5f3fc" toneMapped={false} />
+      </mesh>
+      <pointLight position={[0, 1.45, 0]} color="#818cf8" intensity={1.4 + normalizedEnergy * 2.4} distance={8} />
+
+      {[
+        [-1.1, 0.2, -1.1], [1.1, 0.2, -1.1], [-1.1, 0.2, 1.1], [1.1, 0.2, 1.1],
+        [-5.2, 0.2, -1.1], [5.2, 0.2, 1.1], [-1.1, 0.2, 5.2], [1.1, 0.2, -5.2],
+      ].map((position, index) => <CityLamp key={index} position={position as [number, number, number]} />)}
+    </group>
+  );
+}
+
 /** Winding Cobblestone Road Segments */
 function CobblestonePathRing() {
   const stones = useMemo(() => {
@@ -682,10 +849,10 @@ function CobblestonePathRing() {
 }
 
 // -------------------------------------------------------------
-// PLANET MASTER COMPONENT WITH 6 BIOMES
+// PLANET MASTER COMPONENT WITH 7 DISTRICTS
 // -------------------------------------------------------------
 
-export function PlanetBiomes() {
+export function PlanetBiomes({ worldEnergy = 0 }: { worldEnergy?: number }) {
   const terrainGeo = useMemo(() => {
     const geo = new THREE.IcosahedronGeometry(PLANET_RADIUS, 6);
     const posAttr = geo.attributes.position;
@@ -727,6 +894,13 @@ export function PlanetBiomes() {
 
       {/* 3. Cobblestone Pathways */}
       <CobblestonePathRing />
+
+      {/* =======================================================
+          BIOME 0: THÀNH PHỐ MÂY (CONNECTED LIFE LAB HUB)
+      ======================================================= */}
+      <PlacedOnSphere theta={1.38} phi={5.72} heightOffset={0.08} headingAngle={0.42}>
+        <CloudCityDistrict energy={worldEnergy} />
+      </PlacedOnSphere>
 
       {/* =======================================================
           BIOME 1: LÀNG BAN MAI (THE DAWN VILLAGE)

@@ -4,8 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { WorldUIOverlay } from './world-ui-overlay';
 import { LeafLoader } from '@/components/calm/leaf-loader';
-import type { LostLetter, OnlinePlayer, PlanetZone } from './world-types';
+import type { AvatarStyle, LostLetter, PlanetZone } from './world-types';
 import type { PlanetSceneHandle } from './planet-scene';
+import { useWorldJourney } from './use-world-journey';
 
 // Dynamically import PlanetScene with SSR disabled for high-performance WebGL
 const PlanetScene = dynamic(
@@ -25,7 +26,8 @@ export function PlanetWorldView() {
   const [currentZone, setCurrentZone] = useState<PlanetZone | null>(null);
   const [activeLetter, setActiveLetter] = useState<LostLetter | null>(null);
   const [collectedLetterIds, setCollectedLetterIds] = useState<string[]>([]);
-  const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>([]);
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('human');
+  const journey = useWorldJourney(collectedLetterIds.length);
 
   // Load collected letters from localStorage on mount
   useEffect(() => {
@@ -35,6 +37,8 @@ export function PlanetWorldView() {
       if (saved) {
         setCollectedLetterIds(JSON.parse(saved));
       }
+      const savedAvatar = localStorage.getItem('lifelab_world_avatar');
+      if (savedAvatar === 'human' || savedAvatar === 'fox') setAvatarStyle(savedAvatar);
     } catch {
       // ignore
     }
@@ -57,6 +61,15 @@ export function PlanetWorldView() {
     sceneRef.current?.triggerEmote(emoji);
   };
 
+  const handleAvatarChange = (avatar: AvatarStyle) => {
+    setAvatarStyle(avatar);
+    try {
+      localStorage.setItem('lifelab_world_avatar', avatar);
+    } catch {
+      // The selected avatar still works for the current session.
+    }
+  };
+
   const handleVirtualInputChange = (input: { x: number; y: number; jump: boolean; sprint: boolean }) => {
     sceneRef.current?.setVirtualInput(input);
   };
@@ -67,7 +80,9 @@ export function PlanetWorldView() {
       <PlanetScene
         ref={sceneRef}
         collectedLetterIds={collectedLetterIds}
-        onlinePlayers={onlinePlayers}
+        worldEnergy={journey.energy}
+        avatarStyle={avatarStyle}
+        questZoneIds={journey.quests.filter((quest) => !quest.completed).map((quest) => quest.zoneId)}
         onZoneChange={setCurrentZone}
         onOpenLetter={handleOpenLetter}
       />
@@ -77,7 +92,10 @@ export function PlanetWorldView() {
         currentZone={currentZone}
         activeLetter={activeLetter}
         collectedLetterIds={collectedLetterIds}
-        onlineCount={3 + (collectedLetterIds.length > 0 ? 1 : 0)}
+        journey={journey}
+        companionCount={3}
+        avatarStyle={avatarStyle}
+        onAvatarChange={handleAvatarChange}
         onCloseLetter={() => setActiveLetter(null)}
         onTriggerEmote={handleTriggerEmote}
         onVirtualInputChange={handleVirtualInputChange}

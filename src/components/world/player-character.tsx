@@ -4,7 +4,9 @@ import React, { useRef, useEffect, useImperativeHandle, forwardRef, useMemo, use
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html, useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
+import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { PLANET_RADIUS, sphericalToCartesian } from './spherical-math';
+import type { AvatarStyle } from './world-types';
 
 export interface PlayerControlsHandle {
   getPosition: () => THREE.Vector3;
@@ -14,10 +16,67 @@ export interface PlayerControlsHandle {
 }
 
 interface PlayerCharacterProps {
+  avatarStyle?: AvatarStyle;
   initialTheta?: number;
   initialPhi?: number;
   onPositionChange?: (pos: THREE.Vector3, theta: number, phi: number) => void;
   onEmoteTrigger?: (emoji: string) => void;
+}
+
+const HUMAN_COLORS: Record<string, string> = {
+  skin: '#d99a72',
+  face: '#f1b98f',
+  shirt: '#4f8fc9',
+  pants: '#243a55',
+  belt: '#79513a',
+  hair: '#593728',
+};
+
+/** Commercial-safe CC0 human avatar with proper skin, clothes and animations. */
+function HumanAvatar({ isMoving, isSprinting }: { isMoving: boolean; isSprinting: boolean }) {
+  const group = useRef<THREE.Group>(null);
+  const gltf = useGLTF('/models/city-hero.gltf');
+  const clone = useMemo(() => {
+    const model = cloneSkeleton(gltf.scene);
+    model.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.castShadow = true;
+      object.receiveShadow = true;
+      const source = Array.isArray(object.material) ? object.material : [object.material];
+      const styled = source.map((material) => {
+        const name = (material?.name || '').toLowerCase();
+        const colorKey = Object.keys(HUMAN_COLORS).find((key) => name.includes(key));
+        return new THREE.MeshStandardMaterial({
+          name: material?.name,
+          color: colorKey ? HUMAN_COLORS[colorKey] : '#ffffff',
+          roughness: name.includes('hair') ? 0.68 : 0.78,
+          metalness: 0,
+          side: THREE.FrontSide,
+        });
+      });
+      object.material = Array.isArray(object.material) ? styled : styled[0];
+    });
+    return model;
+  }, [gltf.scene]);
+  const { actions } = useAnimations(gltf.animations, group);
+
+  useEffect(() => {
+    const action = actions[isMoving ? (isSprinting ? 'Run' : 'Walk') : 'Idle'];
+    action?.reset().fadeIn(0.18).play();
+    return () => {
+      action?.fadeOut(0.18);
+    };
+  }, [actions, isMoving, isSprinting]);
+
+  return (
+    <group ref={group}>
+      <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.48, 20]} />
+        <meshBasicMaterial color="#07101c" transparent opacity={0.28} depthWrite={false} />
+      </mesh>
+      <primitive object={clone} scale={0.64} rotation={[0, Math.PI, 0]} />
+    </group>
+  );
 }
 
 /** 3D Animated Fox Courier Model */
@@ -90,10 +149,12 @@ function FoxAvatar({ isMoving, isSprinting }: { isMoving: boolean; isSprinting: 
 }
 
 useGLTF.preload('/models/fox.glb');
+useGLTF.preload('/models/city-hero.gltf');
 
 export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterProps>(
   function PlayerCharacter(
     {
+      avatarStyle = 'human',
       initialTheta = Math.PI / 2.8 + 0.1,
       initialPhi = 0.05,
       onPositionChange,
@@ -359,8 +420,11 @@ export const PlayerCharacter = forwardRef<PlayerControlsHandle, PlayerCharacterP
 
     return (
       <group ref={playerGroupRef}>
-        {/* 3D Animated Fox Courier Avatar */}
-        <FoxAvatar isMoving={movingState.isMoving} isSprinting={movingState.isSprinting} />
+        {avatarStyle === 'human' ? (
+          <HumanAvatar isMoving={movingState.isMoving} isSprinting={movingState.isSprinting} />
+        ) : (
+          <FoxAvatar isMoving={movingState.isMoving} isSprinting={movingState.isSprinting} />
+        )}
 
         {/* Emote Bubble Overlay floating above head */}
         {currentEmoteRef.current && (
