@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef } from 'react';
-import { Float, Instance, Instances } from '@react-three/drei';
+import { Float, Html, Instance, Instances, RoundedBox } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CityNature } from './city-nature';
@@ -64,12 +64,12 @@ function Tree({ position, scale = 1 }: { position: [number, number, number]; sca
       </mesh>
       <mesh position={[0, 1.65, 0]} castShadow>
         <cylinderGeometry args={[0.16, 0.23, 2.15, 10]} />
-        <meshStandardMaterial color="#765039" roughness={0.95} />
+        <meshToonMaterial color="#765039" />
       </mesh>
       {[[0, 3, 0], [0.58, 2.72, 0], [-0.52, 2.78, 0.12], [0, 2.65, 0.55]].map((p, index) => (
         <mesh key={index} position={p as [number, number, number]} castShadow>
           <sphereGeometry args={[0.8, 14, 10]} />
-          <meshStandardMaterial color={index % 2 ? '#74b96c' : '#62a95f'} roughness={0.94} />
+          <meshToonMaterial color={index % 2 ? '#74b96c' : '#62a95f'} />
         </mesh>
       ))}
     </group>
@@ -117,14 +117,12 @@ function Bench({ position, rotation = 0 }: { position: [number, number, number];
 function CityCar({ position, rotation = 0, color = '#e76f51' }: { position: [number, number, number]; rotation?: number; color?: string }) {
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 0.62, 0]} castShadow>
-        <boxGeometry args={[1.75, 0.58, 3.35]} />
-        <meshStandardMaterial color={color} roughness={0.48} metalness={0.08} />
-      </mesh>
-      <mesh position={[0, 1.12, -0.18]} castShadow>
-        <boxGeometry args={[1.5, 0.68, 1.72]} />
-        <meshStandardMaterial color={color} roughness={0.48} metalness={0.08} />
-      </mesh>
+      <RoundedBox position={[0, 0.62, 0]} args={[1.75, 0.58, 3.35]} radius={0.18} smoothness={2} castShadow>
+        <meshToonMaterial color={color} />
+      </RoundedBox>
+      <RoundedBox position={[0, 1.12, -0.18]} args={[1.5, 0.68, 1.72]} radius={0.16} smoothness={2} castShadow>
+        <meshToonMaterial color={color} />
+      </RoundedBox>
       {[[-0.78, 0.45, -1.08], [0.78, 0.45, -1.08], [-0.78, 0.45, 1.08], [0.78, 0.45, 1.08]].map((p, index) => (
         <mesh key={index} position={p as [number, number, number]} rotation={[0, 0, Math.PI / 2]} castShadow>
           <cylinderGeometry args={[0.34, 0.34, 0.22, 16]} />
@@ -223,21 +221,20 @@ function Building({ position, size, floors, color, accent, rotation = 0 }: {
   const windowColumns = Array.from({ length: Math.max(2, Math.floor(width / 2.6)) }, (_, index) => index);
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, height / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[width, height, depth]} />
-        <meshStandardMaterial color={color} roughness={0.84} />
-      </mesh>
+      <RoundedBox position={[0, height / 2, 0]} args={[width, height, depth]} radius={0.22} smoothness={2} castShadow receiveShadow>
+        <meshToonMaterial color={color} />
+      </RoundedBox>
       <mesh position={[0, 0.24, 0]} receiveShadow>
         <boxGeometry args={[width + 0.42, 0.48, depth + 0.42]} />
         <meshStandardMaterial color="#c8b9a7" roughness={0.92} />
       </mesh>
       <mesh position={[0, height + 0.2, 0]} castShadow>
         <boxGeometry args={[width + 0.5, 0.4, depth + 0.5]} />
-        <meshStandardMaterial color="#fff5e7" roughness={0.76} />
+        <meshToonMaterial color="#fff5e7" />
       </mesh>
       <mesh position={[0, height + 0.48, 0]} castShadow>
         <boxGeometry args={[width - 0.7, 0.18, depth - 0.7]} />
-        <meshStandardMaterial color={accent} roughness={0.7} />
+        <meshToonMaterial color={accent} />
       </mesh>
       <Instances limit={windowRows.length * windowColumns.length + windowRows.length * 2} range={windowRows.length * windowColumns.length + windowRows.length * 2}>
         <boxGeometry args={[1.12, 1.18, 0.12]} />
@@ -269,7 +266,7 @@ function Building({ position, size, floors, color, accent, rotation = 0 }: {
       </mesh>
       <mesh position={[0, 2.58, depth / 2 + 0.5]} rotation={[-0.12, 0, 0]} castShadow>
         <boxGeometry args={[Math.min(width - 1, 4.8), 0.22, 1.1]} />
-        <meshStandardMaterial color={accent} roughness={0.65} />
+        <meshToonMaterial color={accent} />
       </mesh>
       <mesh position={[0, 3.28, depth / 2 + 0.1]}>
         <boxGeometry args={[3.2, 0.7, 0.16]} />
@@ -473,23 +470,35 @@ function Clouds({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function QuestBeacons({ zoneIds }: { zoneIds: CityZoneId[] }) {
+export function QuestBeacons({ zoneIds, activeZoneId }: { zoneIds: CityZoneId[]; activeZoneId?: CityZoneId }) {
   return (
     <group>
-      {CITY_ZONES.filter((zone) => zoneIds.includes(zone.id)).map((zone) => (
-        <Float key={zone.id} speed={1.2} floatIntensity={0.25} rotationIntensity={0.04}>
-          <group position={[zone.position[0], 5.8, zone.position[2]]}>
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[0.75, 0.08, 10, 36]} />
+      {CITY_ZONES.filter((zone) => zoneIds.includes(zone.id) || zone.id === activeZoneId).map((zone) => {
+        const active = zone.id === activeZoneId;
+        return (
+        <Float key={zone.id} speed={active ? 1.7 : 1.2} floatIntensity={active ? 0.42 : 0.25} rotationIntensity={0.04}>
+          <group position={[zone.position[0], active ? 7.2 : 5.8, zone.position[2]]}>
+            <mesh rotation={[Math.PI / 2, 0, 0]} scale={active ? 1.35 : 1}>
+              <torusGeometry args={[0.75, active ? 0.11 : 0.08, 10, 36]} />
               <meshBasicMaterial color={zone.color} toneMapped={false} />
             </mesh>
-            <mesh position={[0, -2.5, 0]}>
-              <cylinderGeometry args={[0.04, 0.28, 4.8, 10, 1, true]} />
-              <meshBasicMaterial color={zone.color} transparent opacity={0.2} side={THREE.DoubleSide} />
+            <mesh position={[0, active ? -3.45 : -2.5, 0]}>
+              <cylinderGeometry args={[0.04, active ? 0.5 : 0.28, active ? 6.8 : 4.8, 10, 1, true]} />
+              <meshBasicMaterial color={zone.color} transparent opacity={active ? 0.34 : 0.2} side={THREE.DoubleSide} depthWrite={false} />
             </mesh>
+            {active && <>
+              <mesh position={[0, -6.75, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[1.1, 1.5, 36]} />
+                <meshBasicMaterial color={zone.color} transparent opacity={0.65} side={THREE.DoubleSide} toneMapped={false} />
+              </mesh>
+              <pointLight color={zone.color} intensity={1.25} distance={10} />
+              <Html position={[0, 1.55, 0]} center distanceFactor={18} style={{ pointerEvents: 'none' }}>
+                <div className="whitespace-nowrap rounded-full border border-white/50 bg-[#102b3e]/90 px-3 py-1.5 text-[10px] font-black text-white shadow-xl backdrop-blur-md">✦ ĐIỂM ĐẾN · {zone.name}</div>
+              </Html>
+            </>}
           </group>
         </Float>
-      ))}
+      );})}
     </group>
   );
 }

@@ -26,11 +26,9 @@ function HumanModel({ moving, sprinting, jumping }: { moving: boolean; sprinting
       const styled = source.map((material) => {
         const name = (material?.name || '').toLowerCase();
         const key = Object.keys(HUMAN_COLORS).find((candidate) => name.includes(candidate));
-        return new THREE.MeshStandardMaterial({
+        return new THREE.MeshToonMaterial({
           name: material?.name,
           color: key ? HUMAN_COLORS[key] : '#ffffff',
-          roughness: name.includes('hair') ? 0.66 : 0.76,
-          metalness: 0,
           side: THREE.FrontSide,
         });
       });

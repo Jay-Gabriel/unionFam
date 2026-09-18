@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, BookOpen, Check, Compass, FlaskConical, Loader2,
-  MessageCircleHeart, Plus, Send, Sparkles, Star, WalletCards, X,
+  LockKeyhole, MessageCircleHeart, Plus, Send, Sparkles, Star, WalletCards, X,
 } from 'lucide-react';
 import { ChoiceIdentityGame } from '@/components/calm/choice-identity-game';
 import { EmotiveStoryGame } from '@/components/calm/emotive-story-game';
@@ -255,9 +255,19 @@ function Loading({ label }: { label: string }) { return <div className="grid min
 function Empty({ text }: { text: string }) { return <div className={`${panelClass} p-8 text-center text-sm text-white/50`}>{text}</div>; }
 function ErrorBox({ text }: { text: string }) { return <div className="rounded-xl border border-rose-300/20 bg-rose-400/10 p-3 text-xs font-bold text-rose-100">{text}</div>; }
 
-interface CityActivityPanelProps { zone: CityZone | null; journey: WorldJourney; onClose: () => void; onProgressChanged: () => void; }
+function LockedChapter({ reason, onClose }: { reason: string; onClose: () => void }) {
+  return <div className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center py-10 text-center">
+    <span className="grid h-20 w-20 place-items-center rounded-[28px] border border-white/15 bg-white/8 text-cyan-200"><LockKeyhole size={30} /></span>
+    <p className="mt-5 text-[10px] font-black uppercase tracking-[.22em] text-cyan-200">Chương chưa mở</p>
+    <h2 className="mt-2 text-2xl font-black">Màn sương vẫn còn quá dày</h2>
+    <p className="mt-3 max-w-md text-sm leading-6 text-white/60">{reason}</p>
+    <button type="button" onClick={onClose} className={`${primaryButton} mt-6`}><Compass size={14} />Trở lại và đi theo Mây</button>
+  </div>;
+}
 
-export function CityActivityPanel({ zone, journey, onClose, onProgressChanged }: CityActivityPanelProps) {
+interface CityActivityPanelProps { zone: CityZone | null; journey: WorldJourney; lockedReason?: string | null; onClose: () => void; onProgressChanged: () => void; }
+
+export function CityActivityPanel({ zone, journey, lockedReason, onClose, onProgressChanged }: CityActivityPanelProps) {
   const [view, setView] = useState<'story' | 'activity' | 'chat'>('story');
   const [chatPrompt, setChatPrompt] = useState('');
   useEffect(() => { setView('story'); setChatPrompt(''); }, [zone?.id]);
@@ -279,16 +289,18 @@ export function CityActivityPanel({ zone, journey, onClose, onProgressChanged }:
         <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/8"><X size={17} /></button>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6">
-        {view === 'story' && <StoryBrief zone={zone} onStart={() => setView('activity')} />}
-        {view === 'chat' && <ChatActivity starterPrompt={chatPrompt} onChanged={onProgressChanged} />}
-        {view === 'activity' && chapter.activity === 'overview' && <OverviewActivity journey={journey} />}
-        {view === 'activity' && chapter.activity === 'questions' && <QuestionsActivity onChanged={onProgressChanged} />}
-        {view === 'activity' && chapter.activity === 'chat' && <ChatActivity starterPrompt={zone.aiPromptStarter} onChanged={onProgressChanged} />}
-        {view === 'activity' && chapter.activity === 'life-map' && <LifeMapActivity />}
-        {view === 'activity' && chapter.activity === 'experiments' && <ExperimentsActivity onChanged={onProgressChanged} />}
-        {view === 'activity' && chapter.activity === 'reflections' && <ReflectionsActivity onChanged={onProgressChanged} />}
-        {view === 'activity' && chapter.activity === 'resources' && <ResourcesActivity onChanged={onProgressChanged} />}
-        {view === 'activity' && chapter.activity === 'arcade' && <ArcadeActivity onChat={openChat} />}
+        {lockedReason ? <LockedChapter reason={lockedReason} onClose={onClose} /> : <>
+          {view === 'story' && <StoryBrief zone={zone} onStart={() => setView('activity')} />}
+          {view === 'chat' && <ChatActivity starterPrompt={chatPrompt} onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'overview' && <OverviewActivity journey={journey} />}
+          {view === 'activity' && chapter.activity === 'questions' && <QuestionsActivity onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'chat' && <ChatActivity starterPrompt={zone.aiPromptStarter} onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'life-map' && <LifeMapActivity />}
+          {view === 'activity' && chapter.activity === 'experiments' && <ExperimentsActivity onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'reflections' && <ReflectionsActivity onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'resources' && <ResourcesActivity onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'arcade' && <ArcadeActivity onChat={openChat} />}
+        </>}
       </div>
     </motion.section>
   </motion.div></AnimatePresence>;

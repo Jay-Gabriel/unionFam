@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight, CheckCircle2, ChevronDown, Compass, Footprints, HelpCircle,
-  Home, Map, MapPinned, Sparkles, X, Zap,
+  Home, LockKeyhole, Map, MapPinned, RotateCcw, Sparkles, X, Zap,
 } from 'lucide-react';
 import type { CityZone, VirtualInput, WorldJourney } from './world-types';
 import { CITY_ZONES } from './world-data';
@@ -18,9 +18,13 @@ interface CityHudProps {
   onEmote: (emoji: string) => void;
   onVirtualInput: (input: VirtualInput) => void;
   onOpenZone: (zone: CityZone) => void;
+  guideZone: CityZone;
+  guideDistance: number;
+  getLockedReason: (zone: CityZone) => string | null;
+  onRestartTour: () => void;
 }
 
-export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirtualInput, onOpenZone }: CityHudProps) {
+export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirtualInput, onOpenZone, guideZone, guideDistance, getLockedReason, onRestartTour }: CityHudProps) {
   const [questsOpen, setQuestsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
@@ -128,6 +132,35 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
         </div>
       </section>
 
+      <section className="pointer-events-auto absolute right-3 top-[66px] hidden w-[min(310px,calc(100vw-24px))] sm:right-5 sm:top-[78px] sm:block">
+        <div className="rounded-[20px] border border-white/30 bg-[#112b3d]/90 p-3.5 shadow-[0_16px_42px_rgba(8,30,44,.3)] backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-cyan-200/30 bg-cyan-200/10 text-cyan-100">
+              <Compass size={18} />
+              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-ping rounded-full bg-cyan-300" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[9px] font-black uppercase tracking-[.18em] text-cyan-200">Mây đang dẫn đường</span>
+              <strong className="mt-0.5 block truncate text-xs">Chương tiếp theo · {guideZone.name}</strong>
+              <span className="mt-1 block text-[10px] text-white/55">Đi theo cột sáng · còn khoảng {Math.max(0, Math.round(guideDistance))}m</span>
+            </span>
+          </div>
+          {guideDistance <= guideZone.radius + 2 && (
+            <button type="button" onClick={() => onOpenZone(guideZone)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-300 to-cyan-300 py-2.5 text-[10px] font-black text-[#173246]">
+              Bắt đầu chương này <ArrowRight size={12} />
+            </button>
+          )}
+        </div>
+      </section>
+
+      {!questsOpen && <section className="pointer-events-auto absolute right-3 top-[132px] w-[min(240px,calc(100vw-96px))] sm:hidden">
+        <button type="button" onClick={() => { if (guideDistance <= guideZone.radius + 2) onOpenZone(guideZone); }} className="flex w-full items-center gap-2 rounded-2xl border border-white/25 bg-[#112b3d]/88 p-2.5 text-left shadow-xl backdrop-blur-xl">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-cyan-200/12 text-cyan-100"><Compass size={15} /></span>
+          <span className="min-w-0 flex-1"><strong className="block truncate text-[10px]">Tới {guideZone.name}</strong><span className="mt-0.5 block text-[9px] text-white/50">Cột sáng · {Math.max(0, Math.round(guideDistance))}m</span></span>
+          {guideDistance <= guideZone.radius + 2 && <ArrowRight size={13} className="text-cyan-200" />}
+        </button>
+      </section>}
+
       <AnimatePresence>
         {currentZone && (
           <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 18 }} className="pointer-events-auto absolute bottom-24 left-1/2 w-[min(520px,calc(100vw-24px))] -translate-x-1/2 sm:bottom-20">
@@ -139,8 +172,8 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
                   <span className="mt-0.5 block text-[10px] font-semibold" style={{ color: currentZone.color }}>{currentZone.subtitle}</span>
                   <span className="mt-1 hidden text-[10px] leading-4 text-white/65 sm:block">{currentZone.description}</span>
                 </span>
-                <button type="button" onClick={() => openZone(currentZone)} className="flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-300 to-cyan-300 px-4 py-2.5 text-[11px] font-black text-[#173246] shadow-lg active:scale-95">
-                  {currentZone.actionLabel}<ArrowRight size={12} />
+                <button type="button" onClick={() => openZone(currentZone)} className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-[11px] font-black shadow-lg active:scale-95 ${getLockedReason(currentZone) ? 'border border-white/15 bg-white/10 text-white/65' : 'bg-gradient-to-r from-emerald-300 to-cyan-300 text-[#173246]'}`}>
+                  {getLockedReason(currentZone) ? 'Chương bị khóa' : currentZone.actionLabel}{getLockedReason(currentZone) ? <LockKeyhole size={12} /> : <ArrowRight size={12} />}
                 </button>
               </div>
             </div>
@@ -186,14 +219,15 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
                     <p className="rounded-2xl bg-white/[0.06] p-4"><b className="text-white">Máy tính:</b> WASD hoặc phím mũi tên để đi, kéo chuột xoay camera, Shift chạy nhanh, Space nhảy.</p>
                     <p className="rounded-2xl bg-white/[0.06] p-4"><b className="text-white">Điện thoại:</b> dùng cần điều khiển trái, nút chạy và JUMP bên phải.</p>
                     <p className="rounded-2xl bg-white/[0.06] p-4"><b className="text-white">Mục tiêu:</b> tới các cột sáng để làm nhiệm vụ Life Lab và tìm 4 mảnh ký ức quanh thành phố.</p>
+                    <button type="button" onClick={() => { setHelpOpen(false); onRestartTour(); }} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-200/20 bg-cyan-200/10 p-3 text-xs font-black text-cyan-100"><RotateCcw size={14} />Xem lại phần mở đầu và tour</button>
                   </div>
                 </>
               ) : (
                 <>
                   <h2 className="flex items-center gap-2 text-lg font-black"><Map className="text-cyan-300" />Bản đồ Thành Phố Mây</h2>
                   <div className="mt-5 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-                    {['Học Viện Ban Mai', 'Vườn Lắng Nghe', 'Đài Quan Sát', 'Nhà Kính Dũng Khí', 'Ga Trò Chơi', 'Bến Hồ Phản Chiếu'].map((name, index) => (
-                      <div key={name} className="rounded-2xl border border-white/10 bg-white/[0.06] p-3"><span className="mb-2 block h-2 w-8 rounded-full" style={{ background: ['#34d399', '#5eead4', '#fde047', '#86efac', '#fb7185', '#38bdf8'][index] }} /><strong>{name}</strong></div>
+                    {CITY_ZONES.filter((zone) => zone.id !== 'square' && zone.id !== 'vault').map((zone) => (
+                      <button key={zone.id} type="button" onClick={() => { setMapOpen(false); onOpenZone(zone); }} className="rounded-2xl border border-white/10 bg-white/[0.06] p-3 text-left"><span className="mb-2 flex items-center justify-between"><span className="block h-2 w-8 rounded-full" style={{ background: zone.color }} />{getLockedReason(zone) && <LockKeyhole size={12} className="text-white/35" />}</span><strong>{zone.name}</strong></button>
                     ))}
                   </div>
                 </>

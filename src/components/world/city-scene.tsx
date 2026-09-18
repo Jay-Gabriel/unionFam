@@ -34,13 +34,14 @@ function MemoryShard({ position, color }: { position: [number, number, number]; 
 interface CitySceneProps {
   energy: number;
   questZoneIds: CityZoneId[];
+  activeGuideZoneId: CityZoneId;
   collectedShardIds: string[];
   onPositionChange: (position: THREE.Vector3) => void;
   paused?: boolean;
 }
 
 export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityScene(
-  { energy, questZoneIds, collectedShardIds, onPositionChange, paused = false }, ref
+  { energy, questZoneIds, activeGuideZoneId, collectedShardIds, onPositionChange, paused = false }, ref
 ) {
   const player = useRef<PlayerHandle>(null);
   const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 820px), (pointer: coarse)').matches);
@@ -84,7 +85,7 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
         <Sparkles count={30} scale={[120, 20, 120]} size={1.1} speed={0.12} color="#fff5c2" opacity={0.24} />
 
         <CityEnvironment energy={energy} compact={compact} />
-        <QuestBeacons zoneIds={questZoneIds} />
+        <QuestBeacons zoneIds={questZoneIds} activeZoneId={activeGuideZoneId} />
         {MEMORY_SHARDS.filter((shard) => !collectedShardIds.includes(shard.id)).map((shard) => (
           <MemoryShard key={shard.id} position={shard.position} color={shard.color} />
         ))}

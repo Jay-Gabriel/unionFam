@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import * as THREE from 'three';
 import { LeafLoader } from '@/components/calm/leaf-loader';
 import { CityHud } from './city-hud';
 import { CityActivityPanel } from './city-activity-panel';
+import { CityOnboarding } from './city-onboarding';
+import { buildCityStoryProgress } from './city-story-progress';
 import { CITY_ZONES, MEMORY_SHARDS } from './world-data';
 import { useWorldJourney } from './use-world-journey';
 import type { CityZone, PlayerHandle, VirtualInput } from './world-types';
@@ -26,8 +28,16 @@ export function CityWorldView() {
   const [currentZone, setCurrentZone] = useState<CityZone | null>(null);
   const [collectedShardIds, setCollectedShardIds] = useState<string[]>([]);
   const [activityZone, setActivityZone] = useState<CityZone | null>(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [playerPosition, setPlayerPosition] = useState({ x: 0, z: 55 });
   const [journeyRefreshToken, setJourneyRefreshToken] = useState(0);
   const journey = useWorldJourney(collectedShardIds.length, journeyRefreshToken);
+  const storyProgress = useMemo(() => buildCityStoryProgress(journey), [journey]);
+  const guideZone = useMemo(
+    () => CITY_ZONES.find((zone) => zone.id === storyProgress.activeZoneId) || CITY_ZONES[0],
+    [storyProgress.activeZoneId]
+  );
+  const guideDistance = Math.hypot(playerPosition.x - guideZone.position[0], playerPosition.z - guideZone.position[2]);
 
   useEffect(() => {
     try {
@@ -44,7 +54,18 @@ export function CityWorldView() {
     }
   }, []);
 
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('lifelab_city_story_tour_v1') !== 'seen') setOnboardingOpen(true);
+    } catch {
+      setOnboardingOpen(true);
+    }
+  }, []);
+
   const handlePositionChange = useCallback((position: THREE.Vector3) => {
+    setPlayerPosition((current) => Math.hypot(current.x - position.x, current.z - position.z) > 0.45
+      ? { x: position.x, z: position.z }
+      : current);
     const nearest = CITY_ZONES
       .map((zone) => ({ zone, distance: Math.hypot(position.x - zone.position[0], position.z - zone.position[2]) }))
       .filter(({ zone, distance }) => distance <= zone.radius)
@@ -67,6 +88,11 @@ export function CityWorldView() {
   }, []);
 
   const handleVirtualInput = (input: VirtualInput) => scene.current?.setVirtualInput(input);
+  const closeOnboarding = useCallback(() => {
+    setOnboardingOpen(false);
+    try { localStorage.setItem('lifelab_city_story_tour_v1', 'seen'); } catch { /* optional */ }
+  }, []);
+  const lockedReasonFor = useCallback((zone: CityZone) => storyProgress.lockedReason(zone.id), [storyProgress]);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-sky-200">
@@ -74,9 +100,10 @@ export function CityWorldView() {
         ref={scene}
         energy={journey.energy}
         questZoneIds={journey.quests.filter((quest) => !quest.completed).map((quest) => quest.zoneId)}
+        activeGuideZoneId={guideZone.id}
         collectedShardIds={collectedShardIds}
         onPositionChange={handlePositionChange}
-        paused={Boolean(activityZone)}
+        paused={Boolean(activityZone) || onboardingOpen}
       />
       <CityHud
         journey={journey}
@@ -85,13 +112,19 @@ export function CityWorldView() {
         onEmote={(emoji) => scene.current?.triggerEmote(emoji)}
         onVirtualInput={handleVirtualInput}
         onOpenZone={setActivityZone}
+        guideZone={guideZone}
+        guideDistance={guideDistance}
+        getLockedReason={lockedReasonFor}
+        onRestartTour={() => setOnboardingOpen(true)}
       />
       <CityActivityPanel
         zone={activityZone}
         journey={journey}
+        lockedReason={activityZone ? lockedReasonFor(activityZone) : null}
         onClose={() => setActivityZone(null)}
         onProgressChanged={() => setJourneyRefreshToken((token) => token + 1)}
       />
+      <CityOnboarding open={onboardingOpen} onClose={closeOnboarding} onBegin={closeOnboarding} />
     </div>
   );
 }
