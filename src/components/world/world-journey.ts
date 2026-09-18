@@ -1,4 +1,4 @@
-import type { PlanetZoneId, WorldJourney, WorldQuest } from './world-types';
+import type { CityZoneId, WorldJourney, WorldQuest } from './world-types';
 
 export interface WorldJourneySource {
   questionnaireProgress?: number;
@@ -15,7 +15,7 @@ function clamp(value: number, min: number, max: number) {
 
 function quest(
   id: string,
-  zoneId: PlanetZoneId,
+  zoneId: CityZoneId,
   title: string,
   description: string,
   actionLabel: string,
@@ -47,9 +47,9 @@ export function buildWorldJourney(source: WorldJourneySource, loading = false): 
   const quests = [
     quest(
       'awakening-path',
-      'village',
+      'academy',
       'Con đường thức tỉnh',
-      'Hoàn thành bộ câu hỏi để các ngôi nhà ở Làng Ban Mai sáng đèn.',
+      'Hoàn thành bộ câu hỏi để các ô cửa Học Viện Ban Mai sáng đèn.',
       'Tiếp tục bộ câu hỏi',
       '/app/questions',
       'Mở khóa Đèn Ban Mai',
@@ -59,9 +59,9 @@ export function buildWorldJourney(source: WorldJourneySource, loading = false): 
     ),
     quest(
       'listening-fire',
-      'forest',
+      'sanctuary',
       'Giữ lửa lắng nghe',
-      'Trò chuyện cùng Life Lab ba lần để Cổ Thụ Tâm Hồn thức giấc.',
+      'Trò chuyện cùng Life Lab ba lần để Vườn Lắng Nghe bừng sáng.',
       'Trò chuyện cùng AI',
       '/app/conversations',
       'Mở khóa Hạt Sáng',
@@ -71,9 +71,9 @@ export function buildWorldJourney(source: WorldJourneySource, loading = false): 
     ),
     quest(
       'life-map-stars',
-      'peak',
+      'observatory',
       'Thắp chòm sao cuộc đời',
-      'Làm rõ sáu chiều Life Map để ngọn hải đăng soi đường.',
+      'Làm rõ sáu chiều Life Map để Đài Quan Sát mở toàn cảnh.',
       'Mở Life Map',
       '/app/life-map',
       'Mở khóa Vương Miện Sao',
@@ -97,10 +97,10 @@ export function buildWorldJourney(source: WorldJourneySource, loading = false): 
       'lost-letters',
       'lake',
       'Những lá thư chưa gửi',
-      'Tìm bốn lá thư quanh hành tinh và mang câu hỏi của chúng vào cuộc sống.',
+      'Tìm bốn mảnh ký ức quanh thành phố và mang câu hỏi của chúng vào cuộc sống.',
       'Tiếp tục khám phá',
       '/app/world',
-      'Mở khóa Áo Choàng Người Đưa Thư',
+      'Mở khóa Dấu Ấn Thành Phố',
       source.collectedLetters || 0,
       4,
       '#fbbf24'

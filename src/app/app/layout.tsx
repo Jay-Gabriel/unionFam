@@ -39,7 +39,7 @@ const navigation: Array<{ label: string; items: NavItem[] }> = [
   {
     label: 'Hôm nay',
     items: [
-      { label: 'Hành tinh 3D Live', href: '/app/world', icon: Globe },
+      { label: 'Thành phố Mây 3D', href: '/app/world', icon: Globe },
       { label: 'Tổng quan', href: '/app', icon: Home },
       { label: 'Trò chuyện cùng AI', href: '/app/conversations', icon: MessageCircleHeart },
     ],
@@ -72,7 +72,7 @@ const navigation: Array<{ label: string; items: NavItem[] }> = [
 ];
 
 const mobileNavigation = [
-  { label: 'Hành tinh 3D', href: '/app/world', icon: Globe },
+  { label: 'Thành phố Mây', href: '/app/world', icon: Globe },
   { label: 'Hôm nay', href: '/app', icon: Home },
   { label: 'Trò chuyện', href: '/app/conversations', icon: MessageCircleHeart },
   { label: 'Bản đồ', href: '/app/life-map', icon: Compass },
