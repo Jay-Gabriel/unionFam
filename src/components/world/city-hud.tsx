@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight, CheckCircle2, ChevronDown, Compass, Footprints, HelpCircle,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import type { CityZone, VirtualInput, WorldJourney } from './world-types';
 import { CITY_ZONES } from './world-data';
+import { mergeVirtualInput } from './city-input';
 
 const EMOTES = ['❤️', '👋', '✨', '🕊️'];
 
@@ -29,39 +30,72 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
   const [helpOpen, setHelpOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [sprinting, setSprinting] = useState(false);
+  const [touchControls, setTouchControls] = useState(false);
   const [joystick, setJoystick] = useState({ x: 0, y: 0 });
   const joystickRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
+  const joystickPointerId = useRef<number | null>(null);
+  const virtualInput = useRef<VirtualInput>({ x: 0, y: 0, jump: false, sprint: false });
+  const jumpTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    const query = window.matchMedia('(pointer: coarse), (max-width: 900px)');
+    const update = () => setTouchControls(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => {
+      query.removeEventListener('change', update);
+      if (jumpTimer.current) window.clearTimeout(jumpTimer.current);
+    };
+  }, []);
+
+  const updateVirtualInput = (patch: Partial<VirtualInput>) => {
+    const next = mergeVirtualInput(virtualInput.current, patch);
+    virtualInput.current = next;
+    onVirtualInput(next);
+  };
 
   const openZone = (zone: CityZone) => {
     onOpenZone(zone);
   };
 
-  const moveJoystick = (event: React.TouchEvent | React.MouseEvent) => {
+  const moveJoystick = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!joystickRef.current) return;
+    if (joystickPointerId.current !== event.pointerId) return;
+    event.preventDefault();
     const rect = joystickRef.current.getBoundingClientRect();
-    const touch = 'touches' in event ? event.touches[0] : null;
-    const clientX = touch ? touch.clientX : (event as React.MouseEvent).clientX;
-    const clientY = touch ? touch.clientY : (event as React.MouseEvent).clientY;
-    const dx = clientX - (rect.left + rect.width / 2);
-    const dy = clientY - (rect.top + rect.height / 2);
+    const dx = event.clientX - (rect.left + rect.width / 2);
+    const dy = event.clientY - (rect.top + rect.height / 2);
     const distance = Math.min(42, Math.hypot(dx, dy));
     const angle = Math.atan2(dy, dx);
     const x = Math.cos(angle) * distance / 42;
     const y = Math.sin(angle) * distance / 42;
     setJoystick({ x: x * 30, y: y * 30 });
-    onVirtualInput({ x, y, jump: false, sprint: sprinting });
+    updateVirtualInput({ x, y });
   };
 
-  const stopJoystick = () => {
-    dragging.current = false;
+  const startJoystick = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (joystickPointerId.current !== null) return;
+    joystickPointerId.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    moveJoystick(event);
+  };
+
+  const stopJoystick = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (joystickPointerId.current !== event.pointerId) return;
+    joystickPointerId.current = null;
     setJoystick({ x: 0, y: 0 });
-    onVirtualInput({ x: 0, y: 0, jump: false, sprint: false });
+    updateVirtualInput({ x: 0, y: 0 });
   };
 
   const jump = () => {
-    onVirtualInput({ x: 0, y: 0, jump: true, sprint: sprinting });
-    window.setTimeout(() => onVirtualInput({ x: 0, y: 0, jump: false, sprint: sprinting }), 120);
+    if (jumpTimer.current) window.clearTimeout(jumpTimer.current);
+    updateVirtualInput({ jump: true });
+    jumpTimer.current = window.setTimeout(() => updateVirtualInput({ jump: false }), 180);
+  };
+
+  const setSprint = (active: boolean) => {
+    setSprinting(active);
+    updateVirtualInput({ sprint: active });
   };
 
   return (
@@ -182,29 +216,28 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
       </AnimatePresence>
 
       <footer className="pointer-events-none flex w-full items-end justify-between pb-1">
-        <div
+        {touchControls && <div
           ref={joystickRef}
-          onTouchStart={(event) => { dragging.current = true; moveJoystick(event); }}
-          onTouchMove={moveJoystick}
-          onTouchEnd={stopJoystick}
-          onMouseDown={(event) => { dragging.current = true; moveJoystick(event); }}
-          onMouseMove={(event) => { if (dragging.current) moveJoystick(event); }}
-          onMouseUp={stopJoystick}
-          onMouseLeave={stopJoystick}
-          className="pointer-events-auto relative grid h-20 w-20 place-items-center rounded-full border border-white/35 bg-[#173246]/72 shadow-xl backdrop-blur-xl touch-none sm:hidden"
+          data-interactive="true"
+          onPointerDown={startJoystick}
+          onPointerMove={moveJoystick}
+          onPointerUp={stopJoystick}
+          onPointerCancel={stopJoystick}
+          onLostPointerCapture={(event) => { if (joystickPointerId.current === event.pointerId) stopJoystick(event); }}
+          className="pointer-events-auto relative grid h-20 w-20 touch-none place-items-center rounded-full border border-white/35 bg-[#173246]/72 shadow-xl backdrop-blur-xl"
         >
           <span className="absolute inset-3 rounded-full border border-white/15" />
           <span className="h-10 w-10 rounded-full border border-white/55 bg-gradient-to-tr from-emerald-400 to-cyan-300 shadow-lg" style={{ transform: `translate(${joystick.x}px, ${joystick.y}px)` }} />
-        </div>
+        </div>}
 
-        <div className="pointer-events-auto mb-1 hidden items-center gap-1 rounded-full border border-white/30 bg-[#173246]/82 p-1 shadow-xl backdrop-blur-xl sm:flex">
+        {!touchControls && <div className="pointer-events-auto mb-1 flex items-center gap-1 rounded-full border border-white/30 bg-[#173246]/82 p-1 shadow-xl backdrop-blur-xl">
           {EMOTES.map((emoji) => <button key={emoji} type="button" onClick={() => onEmote(emoji)} className="grid h-8 w-8 place-items-center rounded-full text-sm hover:bg-white/15">{emoji}</button>)}
-        </div>
+        </div>}
 
-        <div className="pointer-events-auto flex items-end gap-2 sm:hidden">
-          <button type="button" onPointerDown={() => setSprinting(true)} onPointerUp={() => setSprinting(false)} onPointerLeave={() => setSprinting(false)} className={`grid h-11 w-11 place-items-center rounded-full border text-[9px] font-black shadow-xl backdrop-blur-xl ${sprinting ? 'border-amber-200 bg-amber-300 text-[#173246]' : 'border-white/35 bg-[#173246]/78'}`}><Footprints size={16} /></button>
-          <button type="button" onClick={jump} className="grid h-14 w-14 place-items-center rounded-full border border-white/45 bg-gradient-to-tr from-emerald-500 to-cyan-400 text-[10px] font-black shadow-xl active:scale-90">JUMP</button>
-        </div>
+        {touchControls && <div className="pointer-events-auto flex items-end gap-2">
+          <button type="button" data-interactive="true" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setSprint(true); }} onPointerUp={() => setSprint(false)} onPointerCancel={() => setSprint(false)} onLostPointerCapture={() => setSprint(false)} className={`grid h-11 w-11 touch-none place-items-center rounded-full border text-[9px] font-black shadow-xl backdrop-blur-xl ${sprinting ? 'border-amber-200 bg-amber-300 text-[#173246]' : 'border-white/35 bg-[#173246]/78'}`}><Footprints size={16} /></button>
+          <button type="button" data-interactive="true" onPointerDown={(event) => { event.preventDefault(); jump(); }} className="grid h-14 w-14 touch-none place-items-center rounded-full border border-white/45 bg-gradient-to-tr from-emerald-500 to-cyan-400 text-[10px] font-black shadow-xl active:scale-90">JUMP</button>
+        </div>}
       </footer>
 
       <AnimatePresence>

@@ -79,7 +79,7 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
   const cameraYaw = useRef(0);
   const cameraPitch = useRef(0.38);
   const cameraDistance = useRef(8.5);
-  const dragging = useRef(false);
+  const cameraPointerId = useRef<number | null>(null);
   const pointer = useRef({ x: 0, y: 0 });
   const rotationY = useRef(Math.PI);
   const cameraTarget = useRef(new THREE.Vector3(0, BASE_Y + 1.45, 55));
@@ -130,18 +130,23 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest('button, a, [data-interactive="true"]')) return;
-      dragging.current = true;
+      if (cameraPointerId.current !== null) return;
+      cameraPointerId.current = event.pointerId;
       pointer.current = { x: event.clientX, y: event.clientY };
     };
     const onPointerMove = (event: PointerEvent) => {
-      if (!dragging.current) return;
+      if (cameraPointerId.current !== event.pointerId) return;
+      if (event.pointerType === 'touch') event.preventDefault();
       const dx = event.clientX - pointer.current.x;
       const dy = event.clientY - pointer.current.y;
       pointer.current = { x: event.clientX, y: event.clientY };
-      cameraYaw.current -= dx * 0.006;
-      cameraPitch.current = THREE.MathUtils.clamp(cameraPitch.current + dy * 0.004, 0.12, 0.95);
+      const sensitivity = event.pointerType === 'touch' ? 0.008 : 0.006;
+      cameraYaw.current -= dx * sensitivity;
+      cameraPitch.current = THREE.MathUtils.clamp(cameraPitch.current + dy * sensitivity * 0.66, 0.12, 0.95);
     };
-    const stopDragging = () => { dragging.current = false; };
+    const stopDragging = (event: PointerEvent) => {
+      if (cameraPointerId.current === event.pointerId) cameraPointerId.current = null;
+    };
     const onWheel = (event: WheelEvent) => {
       cameraDistance.current = THREE.MathUtils.clamp(cameraDistance.current + event.deltaY * 0.008, 5.5, 14);
     };

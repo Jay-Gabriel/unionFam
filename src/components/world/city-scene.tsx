@@ -9,6 +9,16 @@ import { CityPlayer } from './city-player';
 import { MEMORY_SHARDS } from './world-data';
 import type { CityZoneId, PlayerHandle, VirtualInput } from './world-types';
 
+type RuntimeProfile = { mobile: boolean; lowPower: boolean };
+
+function readRuntimeProfile(): RuntimeProfile {
+  if (typeof window === 'undefined') return { mobile: false, lowPower: false };
+  const navigatorWithMemory = navigator as Navigator & { deviceMemory?: number };
+  const mobile = window.matchMedia('(max-width: 820px), (pointer: coarse)').matches;
+  const lowPower = (navigatorWithMemory.deviceMemory || 8) <= 3;
+  return { mobile, lowPower };
+}
+
 function MemoryShard({ position, color }: { position: [number, number, number]; color: string }) {
   const group = useRef<THREE.Group>(null);
   useFrame(({ clock }, delta) => {
@@ -44,11 +54,17 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
   { energy, questZoneIds, activeGuideZoneId, collectedShardIds, onPositionChange, paused = false }, ref
 ) {
   const player = useRef<PlayerHandle>(null);
-  const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 820px), (pointer: coarse)').matches);
+  const [profile, setProfile] = useState<RuntimeProfile>(readRuntimeProfile);
   useEffect(() => {
-    const navigatorWithMemory = navigator as Navigator & { deviceMemory?: number };
-    setCompact(window.matchMedia('(max-width: 820px), (pointer: coarse)').matches || (navigatorWithMemory.deviceMemory || 8) <= 4);
+    const query = window.matchMedia('(max-width: 820px), (pointer: coarse)');
+    const update = () => setProfile(readRuntimeProfile());
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
   }, []);
+  const compact = profile.mobile || profile.lowPower;
+  const maxMobileDpr = typeof window === 'undefined' ? 1.2 : Math.max(1, Math.min(1.35, window.devicePixelRatio || 1));
+  const renderDpr: [number, number] = profile.lowPower ? [0.85, 1] : profile.mobile ? [1, maxMobileDpr] : [1, 1.35];
   useImperativeHandle(ref, () => ({
     setVirtualInput(input: VirtualInput) { player.current?.setVirtualInput(input); },
     triggerEmote(emoji: string) { player.current?.triggerEmote(emoji); },
@@ -58,9 +74,9 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
     <div className="absolute inset-0 bg-[#9fd7ef]">
       <Canvas
         shadows={compact ? false : 'basic'}
-        dpr={compact ? [0.6, 0.8] : [0.75, 1]}
+        dpr={renderDpr}
         camera={{ position: [0, 7, 64], fov: 52, near: 0.1, far: 320 }}
-        gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.94 }}
+        gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.94 }}
       >
         <color attach="background" args={['#9fd7ef']} />
         <fog attach="fog" args={['#afddec', 105, 225]} />
