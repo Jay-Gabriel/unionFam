@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -21,17 +21,13 @@ interface CityHudProps {
 
 export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirtualInput }: CityHudProps) {
   const router = useRouter();
-  const [questsOpen, setQuestsOpen] = useState(true);
+  const [questsOpen, setQuestsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [sprinting, setSprinting] = useState(false);
   const [joystick, setJoystick] = useState({ x: 0, y: 0 });
   const joystickRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
-
-  useEffect(() => {
-    if (window.matchMedia('(max-width: 639px)').matches) setQuestsOpen(false);
-  }, []);
 
   const openZone = (zone: CityZone) => {
     if (zone.aiPromptStarter) {
@@ -103,10 +99,10 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
         </div>
       </header>
 
-      <section className="pointer-events-auto absolute left-3 top-[66px] w-[min(390px,calc(100vw-24px))] sm:left-5 sm:top-[78px]">
-        <div className="overflow-hidden rounded-[24px] border border-white/30 bg-[#173246]/88 shadow-[0_18px_48px_rgba(18,52,72,.28)] backdrop-blur-2xl">
-          <button type="button" onClick={() => setQuestsOpen((open) => !open)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.06]">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl border border-cyan-200/30 bg-cyan-200/10 text-cyan-100"><MapPinned size={18} /></span>
+      <section className="pointer-events-auto absolute left-3 top-[66px] w-[min(330px,calc(100vw-24px))] sm:left-5 sm:top-[78px]">
+        <div className="overflow-hidden rounded-[20px] border border-white/25 bg-[#112b3d]/92 shadow-[0_16px_42px_rgba(8,30,44,.3)] backdrop-blur-xl">
+          <button type="button" onClick={() => setQuestsOpen((open) => !open)} className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left hover:bg-white/[0.06]">
+            <span className="grid h-9 w-9 place-items-center rounded-xl border border-cyan-200/30 bg-cyan-200/10 text-cyan-100"><MapPinned size={16} /></span>
             <span className="min-w-0 flex-1">
               <span className="flex items-center justify-between gap-3 text-xs font-bold"><span>Hành trình · Cấp {journey.level}</span><span className="text-cyan-200">{journey.energy}%</span></span>
               <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white/12"><span className="block h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-300 to-violet-400 transition-all duration-700" style={{ width: `${journey.energy}%` }} /></span>
@@ -116,7 +112,7 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
           <AnimatePresence initial={false}>
             {questsOpen && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <div className="max-h-[48vh] space-y-2 overflow-y-auto border-t border-white/12 p-3">
+                <div className="max-h-[42vh] space-y-2 overflow-y-auto border-t border-white/12 p-2.5">
                   {journey.loading ? <p className="p-3 text-xs text-white/65">Đang kết nối dữ liệu Life Lab…</p> : journey.quests.map((quest) => (
                     <button key={quest.id} type="button" onClick={() => quest.targetHref === '/app/world' ? setQuestsOpen(false) : router.push(quest.targetHref)} className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.055] p-3 text-left hover:bg-white/[0.1]">
                       <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl border text-[10px] font-black" style={{ borderColor: `${quest.accentColor}66`, color: quest.accentColor, background: `${quest.accentColor}18` }}>
@@ -167,7 +163,7 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
           onMouseMove={(event) => { if (dragging.current) moveJoystick(event); }}
           onMouseUp={stopJoystick}
           onMouseLeave={stopJoystick}
-          className="pointer-events-auto relative grid h-20 w-20 place-items-center rounded-full border border-white/35 bg-[#173246]/72 shadow-xl backdrop-blur-xl touch-none sm:h-24 sm:w-24"
+          className="pointer-events-auto relative grid h-20 w-20 place-items-center rounded-full border border-white/35 bg-[#173246]/72 shadow-xl backdrop-blur-xl touch-none sm:hidden"
         >
           <span className="absolute inset-3 rounded-full border border-white/15" />
           <span className="h-10 w-10 rounded-full border border-white/55 bg-gradient-to-tr from-emerald-400 to-cyan-300 shadow-lg" style={{ transform: `translate(${joystick.x}px, ${joystick.y}px)` }} />
@@ -177,7 +173,7 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
           {EMOTES.map((emoji) => <button key={emoji} type="button" onClick={() => onEmote(emoji)} className="grid h-8 w-8 place-items-center rounded-full text-sm hover:bg-white/15">{emoji}</button>)}
         </div>
 
-        <div className="pointer-events-auto flex items-end gap-2">
+        <div className="pointer-events-auto flex items-end gap-2 sm:hidden">
           <button type="button" onPointerDown={() => setSprinting(true)} onPointerUp={() => setSprinting(false)} onPointerLeave={() => setSprinting(false)} className={`grid h-11 w-11 place-items-center rounded-full border text-[9px] font-black shadow-xl backdrop-blur-xl ${sprinting ? 'border-amber-200 bg-amber-300 text-[#173246]' : 'border-white/35 bg-[#173246]/78'}`}><Footprints size={16} /></button>
           <button type="button" onClick={jump} className="grid h-14 w-14 place-items-center rounded-full border border-white/45 bg-gradient-to-tr from-emerald-500 to-cyan-400 text-[10px] font-black shadow-xl active:scale-90">JUMP</button>
         </div>

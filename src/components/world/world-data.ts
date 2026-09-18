@@ -11,7 +11,7 @@ export const CITY_ZONES: CityZone[] = [
   {
     id: 'academy', name: 'Học Viện Ban Mai', subtitle: 'Hiểu mình qua những câu hỏi đúng',
     description: 'Mỗi câu trả lời thắp sáng thêm một ô cửa của học viện.', color: '#34d399',
-    position: [0, 0, 45], radius: 10, actionLabel: 'Tiếp tục câu hỏi', targetHref: '/app/questions',
+    position: [-15, 0, 45], radius: 10, actionLabel: 'Tiếp tục câu hỏi', targetHref: '/app/questions',
   },
   {
     id: 'sanctuary', name: 'Vườn Lắng Nghe', subtitle: 'Không gian trò chuyện cùng AI',
@@ -57,10 +57,10 @@ export const CITY_COLLIDERS = [
   { x: -45, z: -15, radius: 8 }, { x: -15, z: 15, radius: 8 },
   { x: 15, z: 15, radius: 8 }, { x: 15, z: -15, radius: 8 },
   { x: 15, z: 45, radius: 8 }, { x: 45, z: 45, radius: 8 },
-  { x: -15, z: 45, radius: 8 }, { x: -45, z: 45, radius: 8 },
+  { x: -15, z: 45, radius: 7 }, { x: -45, z: 45, radius: 8 },
   { x: 15, z: -45, radius: 8 },
   { x: -15, z: -45, radius: 8 },
-  { x: 0, z: 45, radius: 7 }, { x: -15, z: -15, radius: 3.5 },
+  { x: -15, z: -15, radius: 3.5 },
   { x: -45, z: 15, radius: 1.6 }, { x: -45, z: -45, radius: 5.5 },
   { x: 45, z: 15, radius: 5 }, { x: 45, z: -45, radius: 7 },
   { x: 45, z: -15, radius: 7 },

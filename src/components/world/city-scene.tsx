@@ -48,20 +48,20 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
   }));
 
   return (
-    <div className="absolute inset-0 bg-[#b9e5ff]">
+    <div className="absolute inset-0 bg-[#9fd7ef]">
       <Canvas
         shadows
         dpr={[1, 1.5]}
         camera={{ position: [0, 7, 64], fov: 52, near: 0.1, far: 320 }}
-        gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.08 }}
+        gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.94 }}
       >
-        <color attach="background" args={['#b9e5ff']} />
-        <fog attach="fog" args={['#b9e5ff', 80, 205]} />
-        <Sky distance={280} sunPosition={[-30, 36, 20]} inclination={0.54} azimuth={0.22} turbidity={5} rayleigh={1.2} mieCoefficient={0.006} mieDirectionalG={0.82} />
-        <hemisphereLight args={['#eaf8ff', '#55714d', 1.9]} />
+        <color attach="background" args={['#9fd7ef']} />
+        <fog attach="fog" args={['#afddec', 105, 225]} />
+        <Sky distance={280} sunPosition={[-30, 36, 20]} inclination={0.54} azimuth={0.22} turbidity={4} rayleigh={1.1} mieCoefficient={0.005} mieDirectionalG={0.8} />
+        <hemisphereLight args={['#e7f6ff', '#51664a', 1.25]} />
         <directionalLight
           position={[-25, 34, 18]}
-          intensity={3.4}
+          intensity={2.35}
           color="#fff1d5"
           castShadow
           shadow-mapSize-width={2048}
@@ -74,8 +74,8 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
           shadow-camera-far={160}
           shadow-bias={-0.0003}
         />
-        <directionalLight position={[24, 12, -24]} intensity={0.8} color="#a9c7ff" />
-        <Sparkles count={85} scale={[120, 20, 120]} size={1.4} speed={0.18} color="#fff5c2" opacity={0.36} />
+        <directionalLight position={[24, 12, -24]} intensity={0.42} color="#a9c7ff" />
+        <Sparkles count={55} scale={[120, 20, 120]} size={1.15} speed={0.15} color="#fff5c2" opacity={0.28} />
 
         <CityEnvironment energy={energy} />
         <QuestBeacons zoneIds={questZoneIds} />

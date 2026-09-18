@@ -49,7 +49,7 @@ function HumanModel({ moving, sprinting, jumping }: { moving: boolean; sprinting
 
   return (
     <group ref={group}>
-      <primitive object={model} scale={0.64} rotation={[0, Math.PI, 0]} />
+      <primitive object={model} scale={0.64} />
     </group>
   );
 }
@@ -74,6 +74,7 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
   const root = useRef<THREE.Group>(null);
   const { camera } = useThree();
   const position = useRef(new THREE.Vector3(0, BASE_Y, 55));
+  const horizontalVelocity = useRef(new THREE.Vector3());
   const velocityY = useRef(0);
   const grounded = useRef(true);
   const cameraYaw = useRef(0);
@@ -82,6 +83,7 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
   const dragging = useRef(false);
   const pointer = useRef({ x: 0, y: 0 });
   const rotationY = useRef(Math.PI);
+  const cameraTarget = useRef(new THREE.Vector3(0, BASE_Y + 1.45, 55));
   const keys = useRef({ forward: 0, right: 0, jump: false, sprint: false });
   const virtual = useRef<VirtualInput>({ x: 0, y: 0, jump: false, sprint: false });
   const [motion, setMotion] = useState({ moving: false, sprinting: false, jumping: false });
@@ -155,25 +157,37 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
 
   useFrame((_, rawDelta) => {
     if (!root.current) return;
-    const delta = Math.min(rawDelta, 0.05);
+    const delta = Math.min(rawDelta, 0.035);
     const forwardInput = keys.current.forward || -virtual.current.y;
     const rightInput = keys.current.right || virtual.current.x;
     const wantsJump = keys.current.jump || virtual.current.jump;
     const sprinting = keys.current.sprint || virtual.current.sprint;
     const inputLength = Math.hypot(forwardInput, rightInput);
-    const moving = inputLength > 0.08;
+    const hasInput = inputLength > 0.08;
+    const targetVelocity = new THREE.Vector3();
 
-    if (moving) {
+    if (hasInput) {
       const forward = new THREE.Vector3(-Math.sin(cameraYaw.current), 0, -Math.cos(cameraYaw.current));
       const right = new THREE.Vector3(Math.cos(cameraYaw.current), 0, -Math.sin(cameraYaw.current));
       const direction = forward.multiplyScalar(forwardInput).add(right.multiplyScalar(rightInput)).normalize();
-      const speed = (sprinting ? 11 : 6.5) * delta;
-      const nextX = position.current.x + direction.x * speed;
-      const nextZ = position.current.z + direction.z * speed;
-      if (canMoveTo(nextX, position.current.z)) position.current.x = nextX;
-      if (canMoveTo(position.current.x, nextZ)) position.current.z = nextZ;
-      const targetRotation = Math.atan2(direction.x, direction.z);
-      rotationY.current = lerpAngle(rotationY.current, targetRotation, Math.min(1, delta * 12));
+      targetVelocity.copy(direction).multiplyScalar(sprinting ? 8.2 : 5.2);
+    }
+
+    const acceleration = hasInput ? 10 : 14;
+    horizontalVelocity.current.lerp(targetVelocity, 1 - Math.exp(-acceleration * delta));
+    if (horizontalVelocity.current.lengthSq() < 0.0025) horizontalVelocity.current.set(0, 0, 0);
+
+    const nextX = position.current.x + horizontalVelocity.current.x * delta;
+    const nextZ = position.current.z + horizontalVelocity.current.z * delta;
+    if (canMoveTo(nextX, position.current.z)) position.current.x = nextX;
+    else horizontalVelocity.current.x = 0;
+    if (canMoveTo(position.current.x, nextZ)) position.current.z = nextZ;
+    else horizontalVelocity.current.z = 0;
+
+    const moving = horizontalVelocity.current.lengthSq() > 0.04;
+    if (moving) {
+      const targetRotation = Math.atan2(horizontalVelocity.current.x, horizontalVelocity.current.z);
+      rotationY.current = lerpAngle(rotationY.current, targetRotation, 1 - Math.exp(-14 * delta));
     }
 
     if (wantsJump && grounded.current) {
@@ -208,8 +222,12 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
       Math.cos(cameraYaw.current) * Math.cos(pitch) * distance
     );
     const desired = position.current.clone().add(offset);
-    camera.position.lerp(desired, 1 - Math.pow(0.001, delta));
-    camera.lookAt(position.current.x, position.current.y + 1.45, position.current.z);
+    camera.position.lerp(desired, 1 - Math.exp(-6.5 * delta));
+    cameraTarget.current.lerp(
+      new THREE.Vector3(position.current.x, position.current.y + 1.45, position.current.z),
+      1 - Math.exp(-9 * delta)
+    );
+    camera.lookAt(cameraTarget.current);
   });
 
   return (
