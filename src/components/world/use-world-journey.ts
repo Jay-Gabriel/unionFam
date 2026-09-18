@@ -18,7 +18,7 @@ type ProgressResponse = {
   };
 };
 
-export function useWorldJourney(collectedLetters: number) {
+export function useWorldJourney(collectedLetters: number, refreshToken = 0) {
   const [source, setSource] = useState<WorldJourneySource>({});
   const [loading, setLoading] = useState(true);
 
@@ -51,7 +51,7 @@ export function useWorldJourney(collectedLetters: number) {
       });
 
     return () => { cancelled = true; };
-  }, []);
+  }, [refreshToken]);
 
   return useMemo(
     () => buildWorldJourney({ ...source, collectedLetters }, loading),

@@ -119,9 +119,11 @@ export const SOUL_KNOTS: SoulKnot[] = [
 export function SoulKnotGame({
   onClose,
   isModal = false,
+  onStartConversation,
 }: {
   onClose?: () => void;
   isModal?: boolean;
+  onStartConversation?: (prompt: string) => void;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<'select' | 'charging' | 'revealed'>('select');
@@ -184,6 +186,10 @@ export function SoulKnotGame({
     if (!selectedKnot) return;
     if (typeof window !== 'undefined') {
       window.sessionStorage.setItem('lifelab_preloaded_prompt', selectedKnot.starterPrompt);
+    }
+    if (onStartConversation) {
+      onStartConversation(selectedKnot.starterPrompt);
+      return;
     }
     router.push(`/app/conversations?prompt=${encodeURIComponent(selectedKnot.starterPrompt)}`);
     onClose?.();

@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight, CheckCircle2, ChevronDown, Compass, Footprints, HelpCircle,
   Home, Map, MapPinned, Sparkles, X, Zap,
 } from 'lucide-react';
 import type { CityZone, VirtualInput, WorldJourney } from './world-types';
+import { CITY_ZONES } from './world-data';
 
 const EMOTES = ['❤️', '👋', '✨', '🕊️'];
 
@@ -17,10 +17,10 @@ interface CityHudProps {
   collectedShards: number;
   onEmote: (emoji: string) => void;
   onVirtualInput: (input: VirtualInput) => void;
+  onOpenZone: (zone: CityZone) => void;
 }
 
-export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirtualInput }: CityHudProps) {
-  const router = useRouter();
+export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirtualInput, onOpenZone }: CityHudProps) {
   const [questsOpen, setQuestsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
@@ -30,12 +30,7 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
   const dragging = useRef(false);
 
   const openZone = (zone: CityZone) => {
-    if (zone.aiPromptStarter) {
-      window.sessionStorage.setItem('lifelab_preloaded_prompt', zone.aiPromptStarter);
-      router.push(`${zone.targetHref}?prompt=${encodeURIComponent(zone.aiPromptStarter)}`);
-      return;
-    }
-    router.push(zone.targetHref);
+    onOpenZone(zone);
   };
 
   const moveJoystick = (event: React.TouchEvent | React.MouseEvent) => {
@@ -69,7 +64,7 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
     <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-between overflow-hidden p-3 text-white sm:p-5">
       <header className="pointer-events-auto flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => router.push('/app')} className="grid h-10 w-10 place-items-center rounded-full border border-white/35 bg-[#173246]/80 shadow-lg backdrop-blur-xl hover:bg-[#173246]" aria-label="Về tổng quan">
+          <button type="button" onClick={() => { const square = CITY_ZONES.find((zone) => zone.id === 'square'); if (square) onOpenZone(square); }} className="grid h-10 w-10 place-items-center rounded-full border border-white/35 bg-[#173246]/80 shadow-lg backdrop-blur-xl hover:bg-[#173246]" aria-label="Mở hành trình">
             <Home size={16} />
           </button>
           <div className="rounded-full border border-white/35 bg-[#173246]/82 px-4 py-2 shadow-lg backdrop-blur-xl">
@@ -114,7 +109,7 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                 <div className="max-h-[42vh] space-y-2 overflow-y-auto border-t border-white/12 p-2.5">
                   {journey.loading ? <p className="p-3 text-xs text-white/65">Đang kết nối dữ liệu Life Lab…</p> : journey.quests.map((quest) => (
-                    <button key={quest.id} type="button" onClick={() => quest.targetHref === '/app/world' ? setQuestsOpen(false) : router.push(quest.targetHref)} className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.055] p-3 text-left hover:bg-white/[0.1]">
+                    <button key={quest.id} type="button" onClick={() => { const zone = CITY_ZONES.find((item) => item.id === quest.zoneId); if (zone) onOpenZone(zone); setQuestsOpen(false); }} className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.055] p-3 text-left hover:bg-white/[0.1]">
                       <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl border text-[10px] font-black" style={{ borderColor: `${quest.accentColor}66`, color: quest.accentColor, background: `${quest.accentColor}18` }}>
                         {quest.completed ? <CheckCircle2 size={16} /> : `${quest.progressPercent}%`}
                       </span>

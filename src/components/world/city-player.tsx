@@ -68,9 +68,10 @@ function lerpAngle(current: number, target: number, amount: number) {
 
 interface CityPlayerProps {
   onPositionChange?: (position: THREE.Vector3) => void;
+  paused?: boolean;
 }
 
-export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function CityPlayer({ onPositionChange }, ref) {
+export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function CityPlayer({ onPositionChange, paused = false }, ref) {
   const root = useRef<THREE.Group>(null);
   const { camera } = useThree();
   const position = useRef(new THREE.Vector3(0, BASE_Y, 55));
@@ -170,9 +171,9 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
     const delta = Math.min(rawDelta, 0.035);
     const forwardInput = keys.current.forward || -virtual.current.y;
     const rightInput = keys.current.right || virtual.current.x;
-    const wantsJump = keys.current.jump || virtual.current.jump;
-    const sprinting = keys.current.sprint || virtual.current.sprint;
-    const inputLength = Math.hypot(forwardInput, rightInput);
+    const wantsJump = !paused && (keys.current.jump || virtual.current.jump);
+    const sprinting = !paused && (keys.current.sprint || virtual.current.sprint);
+    const inputLength = paused ? 0 : Math.hypot(forwardInput, rightInput);
     const hasInput = inputLength > 0.08;
     const vectors = frameVectors.current;
     const targetVelocity = vectors.targetVelocity.set(0, 0, 0);

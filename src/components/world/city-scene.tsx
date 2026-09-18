@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Loader, Sky, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
@@ -36,12 +36,18 @@ interface CitySceneProps {
   questZoneIds: CityZoneId[];
   collectedShardIds: string[];
   onPositionChange: (position: THREE.Vector3) => void;
+  paused?: boolean;
 }
 
 export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityScene(
-  { energy, questZoneIds, collectedShardIds, onPositionChange }, ref
+  { energy, questZoneIds, collectedShardIds, onPositionChange, paused = false }, ref
 ) {
   const player = useRef<PlayerHandle>(null);
+  const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 820px), (pointer: coarse)').matches);
+  useEffect(() => {
+    const navigatorWithMemory = navigator as Navigator & { deviceMemory?: number };
+    setCompact(window.matchMedia('(max-width: 820px), (pointer: coarse)').matches || (navigatorWithMemory.deviceMemory || 8) <= 4);
+  }, []);
   useImperativeHandle(ref, () => ({
     setVirtualInput(input: VirtualInput) { player.current?.setVirtualInput(input); },
     triggerEmote(emoji: string) { player.current?.triggerEmote(emoji); },
@@ -50,8 +56,8 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
   return (
     <div className="absolute inset-0 bg-[#9fd7ef]">
       <Canvas
-        shadows="basic"
-        dpr={[0.75, 1]}
+        shadows={compact ? false : 'basic'}
+        dpr={compact ? [0.6, 0.8] : [0.75, 1]}
         camera={{ position: [0, 7, 64], fov: 52, near: 0.1, far: 320 }}
         gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.94 }}
       >
@@ -77,12 +83,12 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
         <directionalLight position={[24, 12, -24]} intensity={0.42} color="#a9c7ff" />
         <Sparkles count={30} scale={[120, 20, 120]} size={1.1} speed={0.12} color="#fff5c2" opacity={0.24} />
 
-        <CityEnvironment energy={energy} />
+        <CityEnvironment energy={energy} compact={compact} />
         <QuestBeacons zoneIds={questZoneIds} />
         {MEMORY_SHARDS.filter((shard) => !collectedShardIds.includes(shard.id)).map((shard) => (
           <MemoryShard key={shard.id} position={shard.position} color={shard.color} />
         ))}
-        <CityPlayer ref={player} onPositionChange={onPositionChange} />
+        <CityPlayer ref={player} onPositionChange={onPositionChange} paused={paused} />
       </Canvas>
       <Loader
         dataInterpolation={(progress) => `Đang dựng Thành Phố Mây ${progress.toFixed(0)}%`}

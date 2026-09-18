@@ -165,9 +165,11 @@ const STORY_SCENES: StoryScene[] = [
 export function EmotiveStoryGame({
   onClose,
   isModal = false,
+  onStartConversation,
 }: {
   onClose?: () => void;
   isModal?: boolean;
+  onStartConversation?: (prompt: string) => void;
 }) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0); // 0: Intro, 1-3: Scenes, 4: Reflection/Climax
@@ -259,6 +261,10 @@ Mình đang cảm thấy thực sự mệt mỏi và cần một khoảng lặng
     const prompt = getPersonalizedPrompt();
     if (typeof window !== 'undefined') {
       window.sessionStorage.setItem('lifelab_preloaded_prompt', prompt);
+    }
+    if (onStartConversation) {
+      onStartConversation(prompt);
+      return;
     }
     router.push(`/app/conversations?prompt=${encodeURIComponent(prompt)}`);
     onClose?.();

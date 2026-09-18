@@ -80,22 +80,21 @@ function AssetScatter({ path, placements, castShadow = false }: { path: string; 
   );
 }
 
-export function CityNature() {
+export function CityNature({ compact = false }: { compact?: boolean }) {
+  const trees = TREE_PLACEMENTS.filter((_, index) => index % (compact ? 4 : 2) === 0 || (!compact && index >= 16));
   return (
     <group>
       <AssetScatter
         path="/models/environment/trees.glb"
-        placements={TREE_PLACEMENTS.filter((_, index) => index % 2 === 0 || index >= 16)}
-        castShadow
+        placements={trees}
+        castShadow={!compact}
       />
-      <AssetScatter path="/models/environment/rocks.glb" placements={ROCK_PLACEMENTS.filter((_, index) => index % 2 === 0)} />
-      <AssetScatter path="/models/environment/bushes.glb" placements={BUSH_PLACEMENTS.filter((_, index) => index % 2 === 0)} />
-      <AssetScatter path="/models/environment/flowers.glb" placements={FLOWER_PLACEMENTS.slice(0, 4)} />
+      {!compact && <AssetScatter path="/models/environment/rocks.glb" placements={ROCK_PLACEMENTS.filter((_, index) => index % 2 === 0)} />}
+      <AssetScatter path="/models/environment/bushes.glb" placements={BUSH_PLACEMENTS.filter((_, index) => index % (compact ? 4 : 2) === 0)} />
+      {!compact && <AssetScatter path="/models/environment/flowers.glb" placements={FLOWER_PLACEMENTS.slice(0, 4)} />}
     </group>
   );
 }
 
 useGLTF.preload('/models/environment/trees.glb');
-useGLTF.preload('/models/environment/rocks.glb');
 useGLTF.preload('/models/environment/bushes.glb');
-useGLTF.preload('/models/environment/flowers.glb');

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef } from 'react';
-import { Float } from '@react-three/drei';
+import { Float, Instance, Instances } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CityNature } from './city-nature';
@@ -239,54 +239,30 @@ function Building({ position, size, floors, color, accent, rotation = 0 }: {
         <boxGeometry args={[width - 0.7, 0.18, depth - 0.7]} />
         <meshStandardMaterial color={accent} roughness={0.7} />
       </mesh>
-      {windowRows.map((row) => {
-        const y = 1.65 + row * 2.2;
-        return windowColumns.map((column) => {
+      <Instances limit={windowRows.length * windowColumns.length + windowRows.length * 2} range={windowRows.length * windowColumns.length + windowRows.length * 2}>
+        <boxGeometry args={[1.12, 1.18, 0.12]} />
+        <meshStandardMaterial color="#9ddff0" emissive="#315d70" emissiveIntensity={0.12} roughness={0.18} />
+        {windowRows.flatMap((row) => windowColumns.map((column) => {
           const x = (column - (windowColumns.length - 1) / 2) * (width / (windowColumns.length + 0.3));
-          return (
-            <group key={`${row}-${column}`}>
-              <mesh position={[x, y, depth / 2 + 0.065]}>
-                <boxGeometry args={[1.12, 1.18, 0.12]} />
-                <meshStandardMaterial color="#9ddff0" emissive="#315d70" emissiveIntensity={0.12} roughness={0.18} />
-              </mesh>
-              <mesh position={[x, y - 0.66, depth / 2 + 0.12]}>
-                <boxGeometry args={[1.38, 0.11, 0.22]} />
-                <meshStandardMaterial color="#fff5e7" roughness={0.76} />
-              </mesh>
-              {(row + column) % 3 === 0 && (
-                <group position={[x, y - 0.88, depth / 2 + 0.55]}>
-                  <mesh castShadow>
-                    <boxGeometry args={[1.65, 0.12, 0.82]} />
-                    <meshStandardMaterial color="#f4eadb" roughness={0.8} />
-                  </mesh>
-                  {[-0.68, 0.68].map((railX) => (
-                    <mesh key={railX} position={[railX, 0.42, 0.32]} castShadow>
-                      <boxGeometry args={[0.06, 0.82, 0.06]} />
-                      <meshStandardMaterial color="#596d73" metalness={0.25} roughness={0.55} />
-                    </mesh>
-                  ))}
-                  <mesh position={[0, 0.78, 0.32]} castShadow>
-                    <boxGeometry args={[1.42, 0.06, 0.06]} />
-                    <meshStandardMaterial color="#596d73" metalness={0.25} roughness={0.55} />
-                  </mesh>
-                </group>
-              )}
-            </group>
-          );
-        });
-      })}
-      {windowRows.slice(0, Math.max(1, floors - 1)).map((row) => (
-        <React.Fragment key={`side-${row}`}>
-          <mesh position={[width / 2 + 0.065, 1.7 + row * 2.2, 0]} rotation={[0, Math.PI / 2, 0]}>
-            <boxGeometry args={[1.15, 1.15, 0.12]} />
-            <meshStandardMaterial color="#8fcddd" emissive="#264a57" emissiveIntensity={0.1} roughness={0.2} />
-          </mesh>
-          <mesh position={[-width / 2 - 0.065, 1.7 + row * 2.2, 0]} rotation={[0, Math.PI / 2, 0]}>
-            <boxGeometry args={[1.15, 1.15, 0.12]} />
-            <meshStandardMaterial color="#8fcddd" emissive="#264a57" emissiveIntensity={0.1} roughness={0.2} />
-          </mesh>
-        </React.Fragment>
-      ))}
+          return <Instance key={`front-${row}-${column}`} position={[x, 1.65 + row * 2.2, depth / 2 + 0.065]} />;
+        }))}
+        {windowRows.map((row) => <Instance key={`side-r-${row}`} position={[width / 2 + 0.065, 1.7 + row * 2.2, 0]} rotation={[0, Math.PI / 2, 0]} />)}
+        {windowRows.map((row) => <Instance key={`side-l-${row}`} position={[-width / 2 - 0.065, 1.7 + row * 2.2, 0]} rotation={[0, Math.PI / 2, 0]} />)}
+      </Instances>
+      <Instances limit={windowRows.length * windowColumns.length} range={windowRows.length * windowColumns.length}>
+        <boxGeometry args={[1.38, 0.11, 0.22]} />
+        <meshStandardMaterial color="#fff5e7" roughness={0.76} />
+        {windowRows.flatMap((row) => windowColumns.map((column) => {
+          const x = (column - (windowColumns.length - 1) / 2) * (width / (windowColumns.length + 0.3));
+          return <Instance key={`sill-${row}-${column}`} position={[x, 0.99 + row * 2.2, depth / 2 + 0.12]} />;
+        }))}
+      </Instances>
+      {floors > 3 && (
+        <group position={[width * 0.2, 3.1, depth / 2 + 0.48]}>
+          <mesh castShadow><boxGeometry args={[2.2, 0.12, 0.72]} /><meshStandardMaterial color="#f4eadb" roughness={0.8} /></mesh>
+          <mesh position={[0, 0.48, 0.3]}><boxGeometry args={[1.9, 0.06, 0.06]} /><meshStandardMaterial color="#596d73" metalness={0.25} roughness={0.55} /></mesh>
+        </group>
+      )}
       <mesh position={[0, 1.08, depth / 2 + 0.09]}>
         <boxGeometry args={[1.35, 2.15, 0.16]} />
         <meshStandardMaterial color="#4b6470" roughness={0.58} />
@@ -473,13 +449,14 @@ function LakeBoardwalk() {
   );
 }
 
-function Clouds() {
+function Clouds({ compact = false }: { compact?: boolean }) {
   const group = useRef<THREE.Group>(null);
   useFrame((_, delta) => { if (group.current) group.current.rotation.y += delta * 0.012; });
+  const count = compact ? 4 : 6;
   return (
     <group ref={group}>
-      {Array.from({ length: 6 }, (_, index) => {
-        const angle = index / 6 * Math.PI * 2;
+      {Array.from({ length: count }, (_, index) => {
+        const angle = index / count * Math.PI * 2;
         const radius = 44 + index % 3 * 8;
         return (
           <group key={index} position={[Math.sin(angle) * radius, 17 + index % 3 * 2.2, Math.cos(angle) * radius]}>
@@ -517,7 +494,7 @@ export function QuestBeacons({ zoneIds }: { zoneIds: CityZoneId[] }) {
   );
 }
 
-export function CityEnvironment({ energy }: { energy: number }) {
+export function CityEnvironment({ energy, compact = false }: { energy: number; compact?: boolean }) {
   const buildings = useMemo(() => {
     const positions: Array<{ x: number; z: number }> = [];
     for (const x of BLOCKS) for (const z of BLOCKS) {
@@ -559,7 +536,7 @@ export function CityEnvironment({ energy }: { energy: number }) {
         </mesh>
       )))}
 
-      {buildings.map(({ x, z }, index) => (
+      {buildings.filter((_, index) => !compact || index % 2 === 0).map(({ x, z }, index) => (
         <Building
           key={`${x}-${z}`}
           position={[x, 0.4, z]}
@@ -599,8 +576,8 @@ export function CityEnvironment({ energy }: { energy: number }) {
         <Lamp key={`c-${value}`} position={[-25, 0.3, value - 9]} flip={1} />,
         <Lamp key={`d-${value}`} position={[25, 0.3, value + 9]} flip={-1} />,
       ])}
-      <CityNature />
-      <Clouds />
+      <CityNature compact={compact} />
+      <Clouds compact={compact} />
     </group>
   );
 }

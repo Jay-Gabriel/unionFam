@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import * as THREE from 'three';
 import { LeafLoader } from '@/components/calm/leaf-loader';
 import { CityHud } from './city-hud';
+import { CityActivityPanel } from './city-activity-panel';
 import { CITY_ZONES, MEMORY_SHARDS } from './world-data';
 import { useWorldJourney } from './use-world-journey';
 import type { CityZone, PlayerHandle, VirtualInput } from './world-types';
@@ -24,7 +25,9 @@ export function CityWorldView() {
   const collectedRef = useRef<string[]>([]);
   const [currentZone, setCurrentZone] = useState<CityZone | null>(null);
   const [collectedShardIds, setCollectedShardIds] = useState<string[]>([]);
-  const journey = useWorldJourney(collectedShardIds.length);
+  const [activityZone, setActivityZone] = useState<CityZone | null>(null);
+  const [journeyRefreshToken, setJourneyRefreshToken] = useState(0);
+  const journey = useWorldJourney(collectedShardIds.length, journeyRefreshToken);
 
   useEffect(() => {
     try {
@@ -73,6 +76,7 @@ export function CityWorldView() {
         questZoneIds={journey.quests.filter((quest) => !quest.completed).map((quest) => quest.zoneId)}
         collectedShardIds={collectedShardIds}
         onPositionChange={handlePositionChange}
+        paused={Boolean(activityZone)}
       />
       <CityHud
         journey={journey}
@@ -80,6 +84,13 @@ export function CityWorldView() {
         collectedShards={collectedShardIds.length}
         onEmote={(emoji) => scene.current?.triggerEmote(emoji)}
         onVirtualInput={handleVirtualInput}
+        onOpenZone={setActivityZone}
+      />
+      <CityActivityPanel
+        zone={activityZone}
+        journey={journey}
+        onClose={() => setActivityZone(null)}
+        onProgressChanged={() => setJourneyRefreshToken((token) => token + 1)}
       />
     </div>
   );

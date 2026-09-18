@@ -531,9 +531,10 @@ function playGentleChord(freq: number) {
 interface ChoiceIdentityGameProps {
   onClose?: () => void;
   isModal?: boolean;
+  onStartConversation?: (prompt: string) => void;
 }
 
-export function ChoiceIdentityGame({ onClose, isModal = false }: ChoiceIdentityGameProps) {
+export function ChoiceIdentityGame({ onClose, isModal = false, onStartConversation }: ChoiceIdentityGameProps) {
   const router = useRouter();
 
   const [step, setStep] = useState<'intro' | 'select_age' | 'scenarios' | 'result'>('intro');
@@ -632,11 +633,15 @@ export function ChoiceIdentityGame({ onClose, isModal = false }: ChoiceIdentityG
       })
     );
 
+    if (onStartConversation) {
+      onStartConversation(personalizedPrompt);
+      return;
+    }
     if (onClose) onClose();
     router.push(
       `/app/conversations?fromGame=choice_identity&top1=${top1.key}&top2=${top2.key}&ageGroup=${ageGroup || '25-35'}&prompt=${encodeURIComponent(personalizedPrompt)}`
     );
-  }, [top1, top2, tradeOff.nextQuestion, ageGroup, onClose, router]);
+  }, [top1, top2, tradeOff.nextQuestion, ageGroup, onClose, onStartConversation, router]);
 
   return (
     <div className="relative w-full max-w-2xl mx-auto overflow-hidden rounded-[32px] border border-calm-lichen/30 bg-gradient-to-b from-[#1b261d]/95 via-[#141e16]/95 to-[#0d140e]/95 p-5 sm:p-8 backdrop-blur-2xl text-calm-paper-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]">
