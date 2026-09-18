@@ -523,6 +523,37 @@ function Academy() {
   );
 }
 
+function DawnHome() {
+  return (
+    <group position={[-45, 0.25, -15]}>
+      <RoundedBox position={[0, 3.2, 0]} args={[11.5, 6.4, 9.5]} radius={0.55} smoothness={3} castShadow receiveShadow>
+        <meshToonMaterial color="#fff1df" />
+      </RoundedBox>
+      <mesh position={[0, 7.05, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
+        <coneGeometry args={[8.3, 2.9, 4]} />
+        <meshToonMaterial color="#e98aa9" />
+      </mesh>
+      <RoundedBox position={[0, 1.7, 4.83]} args={[2.2, 3.4, 0.28]} radius={0.15} smoothness={2}>
+        <meshStandardMaterial color="#527b7b" roughness={0.58} />
+      </RoundedBox>
+      {[-3.6, 3.6].map((x) => (
+        <group key={x} position={[x, 4.1, 4.9]}>
+          <RoundedBox args={[2.15, 1.9, 0.2]} radius={0.16} smoothness={2}>
+            <meshPhysicalMaterial color="#9ce2ed" roughness={0.12} clearcoat={0.8} />
+          </RoundedBox>
+          <mesh position={[0, -1.08, 0.28]}><boxGeometry args={[2.5, 0.22, 0.52]} /><meshToonMaterial color="#f7d37b" /></mesh>
+        </group>
+      ))}
+      <mesh position={[0, 5.7, 5.1]}>
+        <boxGeometry args={[4.8, 0.85, 0.18]} />
+        <meshStandardMaterial color="#f7d37b" emissive="#d88f3d" emissiveIntensity={0.2} />
+      </mesh>
+      <pointLight position={[0, 4.8, 5.8]} color="#ffd89a" intensity={1.2} distance={11} />
+      {[-4.8, 4.8].map((x) => <Tree key={x} position={[x, 0, 5.4]} scale={0.55} />)}
+    </group>
+  );
+}
+
 function Arcade() {
   return (
     <group position={[45, 0.25, -45]}>
@@ -644,7 +675,7 @@ export function CityEnvironment({ energy, compact = false }: { energy: number; c
     for (const x of BLOCKS) for (const z of BLOCKS) {
       const isLandmark = (x === -45 && z === 15) || (x === -45 && z === -45) ||
         (x === 45 && z === 15) || (x === 45 && z === -45) || (x === 45 && z === -15) ||
-        (x === -15 && z === -15) || (x === -15 && z === 45) || (x === 15 && z === -15) ||
+        (x === -45 && z === -15) || (x === -15 && z === -15) || (x === -15 && z === 45) || (x === 15 && z === -15) ||
         (x === 15 && z === 45);
       if (!isLandmark) positions.push({ x, z });
     }
@@ -693,6 +724,7 @@ export function CityEnvironment({ energy, compact = false }: { energy: number; c
       ))}
 
       <Fountain energy={energy} />
+      <DawnHome />
       <Sanctuary />
       <Greenhouse />
       <Observatory />

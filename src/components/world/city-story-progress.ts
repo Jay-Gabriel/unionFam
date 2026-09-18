@@ -24,7 +24,7 @@ export function buildCityStoryProgress(journey: WorldJourney): CityStoryProgress
   const activeIndex = firstIncompleteIndex === -1 ? CORE_STORY_ORDER.length - 1 : firstIncompleteIndex;
   const activeZoneId = firstIncompleteIndex === -1 ? 'arcade' : CORE_STORY_ORDER[activeIndex];
 
-  const unlockedZoneIds: CityZoneId[] = ['square'];
+  const unlockedZoneIds: CityZoneId[] = ['home', 'square'];
   CORE_STORY_ORDER.forEach((zoneId, index) => {
     if (index <= activeIndex || questByZone.get(zoneId)?.progress) unlockedZoneIds.push(zoneId);
   });

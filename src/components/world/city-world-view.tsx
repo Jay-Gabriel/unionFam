@@ -10,7 +10,8 @@ import { CityOnboarding } from './city-onboarding';
 import { buildCityStoryProgress } from './city-story-progress';
 import { CITY_ZONES, MEMORY_SHARDS } from './world-data';
 import { useWorldJourney } from './use-world-journey';
-import type { CityZone, PlayerHandle, VirtualInput } from './world-types';
+import type { CityZone, CityZoneId, PlayerHandle, VirtualInput } from './world-types';
+import { useWorldSession } from './use-world-session';
 
 const CityScene = dynamic(() => import('./city-scene').then((module) => module.CityScene), {
   ssr: false,
@@ -23,13 +24,15 @@ const CityScene = dynamic(() => import('./city-scene').then((module) => module.C
 
 export function CityWorldView() {
   const scene = useRef<PlayerHandle>(null);
+  const restoredApplied = useRef(false);
   const zoneId = useRef<string | null>(null);
   const collectedRef = useRef<string[]>([]);
   const [currentZone, setCurrentZone] = useState<CityZone | null>(null);
   const [collectedShardIds, setCollectedShardIds] = useState<string[]>([]);
   const [activityZone, setActivityZone] = useState<CityZone | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [unlockedOverrides, setUnlockedOverrides] = useState<string[]>([]);
+  const [onboardingSeen, setOnboardingSeen] = useState(false);
+  const [unlockedOverrides, setUnlockedOverrides] = useState<CityZoneId[]>([]);
   const [playerPosition, setPlayerPosition] = useState({ x: 0, z: 55 });
   const [journeyRefreshToken, setJourneyRefreshToken] = useState(0);
   const journey = useWorldJourney(collectedShardIds.length, journeyRefreshToken);
@@ -39,29 +42,44 @@ export function CityWorldView() {
     [storyProgress.activeZoneId]
   );
   const guideDistance = Math.hypot(playerPosition.x - guideZone.position[0], playerPosition.z - guideZone.position[2]);
+  const getTransform = useCallback(() => scene.current?.getSessionTransform() || null, []);
+  const { restoredSnapshot, summary: worldSession, checkIn } = useWorldSession({
+    collectedShardIds,
+    unlockedZoneIds: unlockedOverrides,
+    onboardingSeen,
+    lastZoneId: currentZone?.id || null,
+  }, getTransform);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('lifelab_city_memory_shards');
-      if (!saved) return;
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        const safe = parsed.filter((id): id is string => typeof id === 'string' && MEMORY_SHARDS.some((shard) => shard.id === id));
-        collectedRef.current = safe;
-        setCollectedShardIds(safe);
+    if (worldSession.saveStatus === 'loading') return;
+    if (restoredApplied.current) return;
+    restoredApplied.current = true;
+    if (restoredSnapshot) {
+      const safeShards = restoredSnapshot.collectedShardIds.filter((id) => MEMORY_SHARDS.some((shard) => shard.id === id));
+      collectedRef.current = safeShards;
+      setCollectedShardIds(safeShards);
+      setUnlockedOverrides(restoredSnapshot.unlockedZoneIds);
+      setOnboardingSeen(restoredSnapshot.onboardingSeen);
+      setOnboardingOpen(!restoredSnapshot.onboardingSeen);
+      if (restoredSnapshot.onboardingSeen && !worldSession.checkedInToday) {
+        const home = CITY_ZONES.find((zone) => zone.id === 'home');
+        if (home) setActivityZone(home);
       }
-    } catch {
-      // Local progress is optional; the city remains playable without it.
+      scene.current?.restoreSessionTransform(restoredSnapshot.transform);
+      return;
     }
-  }, []);
-
-  useEffect(() => {
     try {
-      if (localStorage.getItem('lifelab_city_story_tour_v1') !== 'seen') setOnboardingOpen(true);
+      const legacyShards = JSON.parse(localStorage.getItem('lifelab_city_memory_shards') || '[]');
+      const safe = Array.isArray(legacyShards) ? legacyShards.filter((id): id is string => typeof id === 'string' && MEMORY_SHARDS.some((shard) => shard.id === id)) : [];
+      collectedRef.current = safe;
+      setCollectedShardIds(safe);
+      const seen = localStorage.getItem('lifelab_city_story_tour_v1') === 'seen';
+      setOnboardingSeen(seen);
+      setOnboardingOpen(!seen);
     } catch {
       setOnboardingOpen(true);
     }
-  }, []);
+  }, [restoredSnapshot, worldSession.checkedInToday, worldSession.saveStatus]);
 
   const handlePositionChange = useCallback((position: THREE.Vector3) => {
     setPlayerPosition((current) => Math.hypot(current.x - position.x, current.z - position.z) > 0.45
@@ -91,6 +109,7 @@ export function CityWorldView() {
   const handleVirtualInput = (input: VirtualInput) => scene.current?.setVirtualInput(input);
   const closeOnboarding = useCallback(() => {
     setOnboardingOpen(false);
+    setOnboardingSeen(true);
     try { localStorage.setItem('lifelab_city_story_tour_v1', 'seen'); } catch { /* optional */ }
   }, []);
   const lockedReasonFor = useCallback((zone: CityZone) => unlockedOverrides.includes(zone.id) ? null : storyProgress.lockedReason(zone.id), [storyProgress, unlockedOverrides]);
@@ -104,10 +123,12 @@ export function CityWorldView() {
         activeGuideZoneId={guideZone.id}
         collectedShardIds={collectedShardIds}
         onPositionChange={handlePositionChange}
+        restoredTransform={restoredSnapshot?.transform}
         paused={Boolean(activityZone) || onboardingOpen}
       />
       <CityHud
         journey={journey}
+        session={worldSession}
         currentZone={currentZone}
         collectedShards={collectedShardIds.length}
         onEmote={(emoji) => scene.current?.triggerEmote(emoji)}
@@ -121,11 +142,13 @@ export function CityWorldView() {
       <CityActivityPanel
         zone={activityZone}
         journey={journey}
+        session={worldSession}
         lockedReason={activityZone ? lockedReasonFor(activityZone) : null}
         onClose={() => setActivityZone(null)}
         onOpenZone={setActivityZone}
         onUnlockZone={(zone) => setUnlockedOverrides((current) => current.includes(zone.id) ? current : [...current, zone.id])}
         onProgressChanged={() => setJourneyRefreshToken((token) => token + 1)}
+        onCheckIn={() => { void checkIn(); }}
       />
       <CityOnboarding open={onboardingOpen} onClose={closeOnboarding} onBegin={closeOnboarding} />
     </div>

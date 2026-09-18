@@ -1,4 +1,5 @@
 export type CityZoneId =
+  | 'home'
   | 'square'
   | 'academy'
   | 'sanctuary'
@@ -56,4 +57,6 @@ export interface VirtualInput {
 export interface PlayerHandle {
   setVirtualInput: (input: VirtualInput) => void;
   triggerEmote: (emoji: string) => void;
+  getSessionTransform: () => import('./world-session').WorldTransform | null;
+  restoreSessionTransform: (transform: import('./world-session').WorldTransform) => void;
 }

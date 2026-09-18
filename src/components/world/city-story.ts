@@ -1,6 +1,6 @@
 import type { CityZoneId } from './world-types';
 
-export type CityActivityKind = 'overview' | 'questions' | 'chat' | 'life-map' | 'experiments' | 'reflections' | 'arcade' | 'resources';
+export type CityActivityKind = 'home' | 'overview' | 'questions' | 'chat' | 'life-map' | 'experiments' | 'reflections' | 'arcade' | 'resources';
 
 export interface CityChapter {
   chapter: number;
@@ -15,6 +15,17 @@ export interface CityChapter {
 }
 
 export const CITY_STORY: Record<CityZoneId, CityChapter> = {
+  home: {
+    chapter: 0,
+    title: 'Nơi ánh sáng luôn chờ bạn',
+    npc: 'Mây',
+    npcRole: 'Người bạn đồng hành',
+    opening: 'Đây là nơi hành trình của bạn được giữ lại. Mỗi lần trở về, ngôi nhà sẽ nhớ bạn đã đi tới đâu và điều gì đang chờ được chăm sóc.',
+    objective: 'Nhận quà trở lại, xem nhiệm vụ hôm nay và tiếp tục đúng nơi bạn đã dừng.',
+    reward: '25 Hạt Sáng mỗi ngày',
+    activity: 'home',
+    icon: '🏡',
+  },
   square: {
     chapter: 0,
     title: 'Thành phố đánh mất bình minh',

@@ -36,7 +36,7 @@ describe('city story progress', () => {
   it('starts at the academy and keeps later chapters locked', () => {
     const story = buildCityStoryProgress(journey([0, 0, 0, 0, 0]));
     expect(story.activeZoneId).toBe('academy');
-    expect(story.unlockedZoneIds).toEqual(['square', 'academy']);
+    expect(story.unlockedZoneIds).toEqual(['home', 'square', 'academy']);
     expect(story.lockedReason('sanctuary')).toContain('Những ô cửa chưa sáng');
   });
 

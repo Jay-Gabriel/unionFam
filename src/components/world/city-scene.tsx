@@ -8,6 +8,7 @@ import { CityEnvironment, QuestBeacons } from './city-environment';
 import { CityPlayer } from './city-player';
 import { MEMORY_SHARDS } from './world-data';
 import type { CityZoneId, PlayerHandle, VirtualInput } from './world-types';
+import type { WorldTransform } from './world-session';
 
 type RuntimeProfile = { mobile: boolean; lowPower: boolean };
 
@@ -48,10 +49,11 @@ interface CitySceneProps {
   collectedShardIds: string[];
   onPositionChange: (position: THREE.Vector3) => void;
   paused?: boolean;
+  restoredTransform?: WorldTransform | null;
 }
 
 export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityScene(
-  { energy, questZoneIds, activeGuideZoneId, collectedShardIds, onPositionChange, paused = false }, ref
+  { energy, questZoneIds, activeGuideZoneId, collectedShardIds, onPositionChange, paused = false, restoredTransform }, ref
 ) {
   const player = useRef<PlayerHandle>(null);
   const [profile, setProfile] = useState<RuntimeProfile>(readRuntimeProfile);
@@ -68,7 +70,12 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
   useImperativeHandle(ref, () => ({
     setVirtualInput(input: VirtualInput) { player.current?.setVirtualInput(input); },
     triggerEmote(emoji: string) { player.current?.triggerEmote(emoji); },
+    getSessionTransform() { return player.current?.getSessionTransform() || null; },
+    restoreSessionTransform(transform: WorldTransform) { player.current?.restoreSessionTransform(transform); },
   }));
+  useEffect(() => {
+    if (restoredTransform) player.current?.restoreSessionTransform(restoredTransform);
+  }, [restoredTransform]);
 
   return (
     <div className="absolute inset-0 bg-[#9fd7ef]">

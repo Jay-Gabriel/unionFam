@@ -4,11 +4,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight, CheckCircle2, ChevronDown, Compass, Footprints, HelpCircle,
-  Home, LockKeyhole, Map, MapPinned, RotateCcw, Sparkles, X, Zap,
+  Cloud, CloudOff, Home, LockKeyhole, Map, MapPinned, RotateCcw, Sparkles, X, Zap,
 } from 'lucide-react';
 import type { CityZone, VirtualInput, WorldJourney } from './world-types';
 import { CITY_ZONES } from './world-data';
 import { mergeVirtualInput } from './city-input';
+import type { WorldSessionSummary } from './world-session';
 
 const EMOTES = ['❤️', '👋', '✨', '🕊️'];
 
@@ -23,9 +24,10 @@ interface CityHudProps {
   guideDistance: number;
   getLockedReason: (zone: CityZone) => string | null;
   onRestartTour: () => void;
+  session: WorldSessionSummary;
 }
 
-export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirtualInput, onOpenZone, guideZone, guideDistance, getLockedReason, onRestartTour }: CityHudProps) {
+export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirtualInput, onOpenZone, guideZone, guideDistance, getLockedReason, onRestartTour, session }: CityHudProps) {
   const [questsOpen, setQuestsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
@@ -102,8 +104,9 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
     <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-between overflow-hidden p-3 text-white sm:p-5">
       <header className="pointer-events-auto flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => { const square = CITY_ZONES.find((zone) => zone.id === 'square'); if (square) onOpenZone(square); }} className="grid h-10 w-10 place-items-center rounded-full border border-white/35 bg-[#173246]/80 shadow-lg backdrop-blur-xl hover:bg-[#173246]" aria-label="Mở hành trình">
+          <button type="button" onClick={() => { const home = CITY_ZONES.find((zone) => zone.id === 'home'); if (home) onOpenZone(home); }} className="relative grid h-10 w-10 place-items-center rounded-full border border-white/35 bg-[#173246]/80 shadow-lg backdrop-blur-xl hover:bg-[#173246]" aria-label="Mở Ngôi Nhà Bình Minh">
             <Home size={16} />
+            {!session.checkedInToday && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-[#173246] bg-amber-300" />}
           </button>
           <div className="rounded-full border border-white/35 bg-[#173246]/82 px-4 py-2 shadow-lg backdrop-blur-xl">
             <div className="flex items-center gap-2">
@@ -115,6 +118,10 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
         </div>
 
         <div className="flex items-center gap-2">
+          <div title={session.saveStatus === 'saved' ? 'Đã lưu trên tài khoản' : session.saveStatus === 'saving' ? 'Đang lưu' : 'Đang lưu trên thiết bị'} className="hidden items-center gap-1.5 rounded-full border border-white/35 bg-[#173246]/82 px-3 py-2 text-[10px] font-bold text-white/70 shadow backdrop-blur-xl md:flex">
+            {session.cloudAvailable ? <Cloud size={13} className={session.saveStatus === 'saving' ? 'animate-pulse text-cyan-200' : 'text-emerald-200'} /> : <CloudOff size={13} className="text-amber-200" />}
+            {session.saveStatus === 'saving' ? 'Đang lưu' : session.cloudAvailable ? 'Đã lưu' : 'Trên máy'}
+          </div>
           <div className="hidden items-center gap-2 rounded-full border border-white/35 bg-[#173246]/82 px-3 py-2 text-[11px] font-bold shadow backdrop-blur-xl sm:flex">
             <Zap size={13} className="text-amber-300" />
             {journey.energy}% năng lượng

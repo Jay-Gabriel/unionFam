@@ -13,6 +13,7 @@ import type { QuestionItem } from '@/server/domain/questions';
 import { CITY_MAIN_STORY, CITY_STORY } from './city-story';
 import { CITY_ZONES } from './world-data';
 import type { CityZone, WorldJourney } from './world-types';
+import type { WorldSessionSummary } from './world-session';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 type JsonRecord = Record<string, unknown>;
@@ -81,6 +82,65 @@ function OverviewActivity({ journey }: { journey: WorldJourney }) {
       </div>
     </div>
   );
+}
+
+function formatPlayTime(seconds: number) {
+  if (seconds < 60) return 'vừa bắt đầu';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} phút`;
+  return `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút`;
+}
+
+function HomeActivity({ journey, session, onCheckIn, onContinue }: {
+  journey: WorldJourney;
+  session: WorldSessionSummary;
+  onCheckIn: () => void;
+  onContinue: () => void;
+}) {
+  const nextQuest = journey.quests.find((quest) => !quest.completed);
+  const paid = session.membership.status === 'active' || session.membership.status === 'trialing';
+  const saveText = session.saveStatus === 'saved' ? 'Đã lưu trên tài khoản'
+    : session.saveStatus === 'saving' ? 'Đang lưu hành trình…'
+      : session.saveStatus === 'local-only' ? 'Đang lưu trên thiết bị'
+        : session.saveStatus === 'error' ? 'Sẽ đồng bộ lại khi có mạng' : 'Đang khôi phục hành trình…';
+  return <div className="mx-auto max-w-4xl space-y-4">
+    <div className="grid gap-4 lg:grid-cols-[1.15fr_.85fr]">
+      <div className={`${panelClass} overflow-hidden p-5 sm:p-7`}>
+        <p className="text-[10px] font-black uppercase tracking-[.2em] text-pink-200">Mây đã giữ ngôi nhà sáng cho bạn</p>
+        <h3 className="mt-2 text-2xl font-black sm:text-3xl">Chào mừng bạn trở về</h3>
+        <p className="mt-3 max-w-xl text-sm leading-6 text-white/62">Hành trình được tiếp tục đúng nơi bạn đã dừng. Hôm nay chỉ cần một bước nhỏ để Thành Phố Mây sáng thêm.</p>
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          <div className="rounded-xl bg-white/[.06] p-3"><p className="text-xl font-black text-amber-200">{session.checkInStreak}</p><p className="text-[9px] text-white/45">ngày liên tiếp</p></div>
+          <div className="rounded-xl bg-white/[.06] p-3"><p className="text-xl font-black text-cyan-200">{journey.energy}%</p><p className="text-[9px] text-white/45">năng lượng</p></div>
+          <div className="rounded-xl bg-white/[.06] p-3"><p className="text-xl font-black text-violet-200">{session.sessionCount}</p><p className="text-[9px] text-white/45">lần trở về</p></div>
+        </div>
+        <button type="button" disabled={session.checkedInToday || session.saveStatus === 'saving'} onClick={onCheckIn} className={`${primaryButton} mt-5 w-full sm:w-auto`}>
+          <Sparkles size={14} />{session.checkedInToday ? 'Đã nhận 25 Hạt Sáng hôm nay' : 'Nhận 25 Hạt Sáng hôm nay'}
+        </button>
+      </div>
+      <div className={`${panelClass} p-5`}>
+        <p className="text-[10px] font-black uppercase tracking-[.18em] text-cyan-200">Nhiệm vụ hôm nay</p>
+        <div className="mt-4 space-y-2">
+          <div className="rounded-xl bg-white/[.06] p-3 text-xs"><b>1. Trở về nhà</b><p className="mt-1 text-white/45">{session.checkedInToday ? 'Đã hoàn thành' : 'Nhận Hạt Sáng để hoàn thành'}</p></div>
+          <div className="rounded-xl bg-white/[.06] p-3 text-xs"><b>2. Tiếp tục câu chuyện</b><p className="mt-1 text-white/45">{nextQuest?.title || 'Các chương chính đã hoàn thành'}</p></div>
+          <div className="rounded-xl bg-white/[.06] p-3 text-xs"><b>3. Ghi lại một điều thật</b><p className="mt-1 text-white/45">Một hành động hoặc cảm xúc đáng nhớ hôm nay</p></div>
+        </div>
+        {nextQuest && <button type="button" onClick={onContinue} className={`${primaryButton} mt-4 w-full`}>Tiếp tục hành trình <ArrowRight size={14} /></button>}
+      </div>
+    </div>
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className={`${panelClass} p-5`}>
+        <p className="text-[10px] font-black uppercase tracking-[.18em] text-emerald-200">Hồ sơ thế giới</p>
+        <h4 className="mt-2 text-base font-black">Phiên chơi của bạn được giữ lại</h4>
+        <p className="mt-2 text-xs leading-5 text-white/52">{saveText}. Tổng thời gian đã khám phá: {formatPlayTime(session.totalPlaySeconds)}.</p>
+      </div>
+      <div className={`${panelClass} p-5`}>
+        <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.18em] text-amber-200">Thành viên Bình Minh</p><h4 className="mt-2 text-base font-black">{paid ? 'Gói của bạn đang hoạt động' : 'Mở trọn hành trình mỗi tháng'}</h4></div><span className={`rounded-full px-2.5 py-1 text-[9px] font-black ${paid ? 'bg-emerald-300 text-[#102638]' : 'bg-white/8 text-white/55'}`}>{paid ? 'ĐANG HOẠT ĐỘNG' : 'MIỄN PHÍ'}</span></div>
+        <p className="mt-2 text-xs leading-5 text-white/52">Chương truyện theo tháng, báo cáo tuần, lịch sử đầy đủ và nhiều lượt đồng hành AI hơn.</p>
+        {!paid && <p className="mt-3 rounded-xl border border-amber-200/15 bg-amber-200/8 p-3 text-[10px] leading-4 text-amber-100/72">Hồ sơ gói tháng đã sẵn sàng. Cổng thanh toán sẽ được bật khi tài khoản nhà cung cấp thanh toán được kết nối.</p>}
+      </div>
+    </div>
+  </div>;
 }
 
 function QuestionInput({ question, value, onChange }: { question: QuestionItem; value: unknown; onChange: (value: unknown) => void }) {
@@ -328,9 +388,9 @@ function LockedChapter({ reason, onClose }: { reason: string; onClose: () => voi
   </div>;
 }
 
-interface CityActivityPanelProps { zone: CityZone | null; journey: WorldJourney; lockedReason?: string | null; onClose: () => void; onOpenZone: (zone: CityZone) => void; onUnlockZone: (zone: CityZone) => void; onProgressChanged: () => void; }
+interface CityActivityPanelProps { zone: CityZone | null; journey: WorldJourney; session: WorldSessionSummary; lockedReason?: string | null; onClose: () => void; onOpenZone: (zone: CityZone) => void; onUnlockZone: (zone: CityZone) => void; onProgressChanged: () => void; onCheckIn: () => void; }
 
-export function CityActivityPanel({ zone, journey, lockedReason, onClose, onOpenZone, onUnlockZone, onProgressChanged }: CityActivityPanelProps) {
+export function CityActivityPanel({ zone, journey, session, lockedReason, onClose, onOpenZone, onUnlockZone, onProgressChanged, onCheckIn }: CityActivityPanelProps) {
   const [view, setView] = useState<'story' | 'activity' | 'chat'>('story');
   const [chatPrompt, setChatPrompt] = useState('');
   useEffect(() => { setView('story'); setChatPrompt(''); }, [zone?.id]);
@@ -351,6 +411,11 @@ export function CityActivityPanel({ zone, journey, lockedReason, onClose, onOpen
     const greenhouse = CITY_ZONES.find((item) => item.id === 'greenhouse');
     if (greenhouse) onUnlockZone(greenhouse);
   };
+  const continueJourney = () => {
+    const nextQuest = journey.quests.find((quest) => !quest.completed);
+    const target = nextQuest && CITY_ZONES.find((item) => item.id === nextQuest.zoneId);
+    if (target) onOpenZone(target);
+  };
 
   return <AnimatePresence><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-auto fixed inset-0 z-[80] bg-[#071522] p-2 sm:p-5">
     <motion.section initial={{ y: 20, scale: 0.985 }} animate={{ y: 0, scale: 1 }} exit={{ y: 20, scale: 0.985 }} className="mx-auto flex h-full max-w-6xl flex-col overflow-hidden rounded-[26px] border border-white/15 bg-[#102638] text-white shadow-[0_30px_100px_rgba(0,0,0,.55)] sm:rounded-[32px]">
@@ -364,6 +429,7 @@ export function CityActivityPanel({ zone, journey, lockedReason, onClose, onOpen
         {lockedReason ? <LockedChapter reason={lockedReason} onClose={onClose} /> : <>
           {view === 'story' && <StoryBrief zone={zone} onStart={() => setView('activity')} />}
           {view === 'chat' && <ChatActivity starterPrompt={chatPrompt} onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'home' && <HomeActivity journey={journey} session={session} onCheckIn={onCheckIn} onContinue={continueJourney} />}
           {view === 'activity' && chapter.activity === 'overview' && <OverviewActivity journey={journey} />}
           {view === 'activity' && chapter.activity === 'questions' && <QuestionsActivity onChanged={onProgressChanged} />}
           {view === 'activity' && chapter.activity === 'chat' && <ChatActivity starterPrompt={zone.aiPromptStarter} onChanged={onProgressChanged} />}

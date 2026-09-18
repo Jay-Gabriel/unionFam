@@ -4,6 +4,11 @@ export const CITY_SIZE = 70;
 
 export const CITY_ZONES: CityZone[] = [
   {
+    id: 'home', name: 'Ngôi Nhà Bình Minh', subtitle: 'Không gian riêng của hành trình',
+    description: 'Trở về mỗi ngày để nhận lời nhắn từ Mây, xem tiến độ và chăm sóc thế giới của bạn.', color: '#f9a8d4',
+    position: [-45, 0, -15], radius: 9, actionLabel: 'Trở về nhà', targetHref: '/app/world',
+  },
+  {
     id: 'square', name: 'Quảng Trường Mây', subtitle: 'Trung tâm hành trình hôm nay',
     description: 'Lõi năng lượng phản chiếu toàn bộ tiến độ Life Lab của bạn.', color: '#a78bfa',
     position: [-15, 0, -15], radius: 8, actionLabel: 'Mở tổng quan', targetHref: '/app',

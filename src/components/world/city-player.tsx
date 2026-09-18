@@ -7,6 +7,7 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 import * as THREE from 'three';
 import { CITY_COLLIDERS, CITY_SIZE } from './world-data';
 import type { PlayerHandle, VirtualInput } from './world-types';
+import type { WorldTransform } from './world-session';
 
 const BASE_Y = 0.42;
 const HUMAN_COLORS: Record<string, string> = {
@@ -106,6 +107,26 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
       setEmote(emoji);
       if (emoteTimer.current) window.clearTimeout(emoteTimer.current);
       emoteTimer.current = window.setTimeout(() => setEmote(null), 2600);
+    },
+    getSessionTransform() {
+      return {
+        x: position.current.x,
+        z: position.current.z,
+        rotationY: rotationY.current,
+        cameraYaw: cameraYaw.current,
+        cameraPitch: cameraPitch.current,
+        cameraDistance: cameraDistance.current,
+      };
+    },
+    restoreSessionTransform(transform: WorldTransform) {
+      if (!canMoveTo(transform.x, transform.z)) return;
+      position.current.set(transform.x, BASE_Y, transform.z);
+      rotationY.current = transform.rotationY;
+      cameraYaw.current = transform.cameraYaw;
+      cameraPitch.current = THREE.MathUtils.clamp(transform.cameraPitch, 0.12, 0.95);
+      cameraDistance.current = THREE.MathUtils.clamp(transform.cameraDistance, 5.5, 14);
+      horizontalVelocity.current.set(0, 0, 0);
+      cameraTarget.current.set(transform.x, BASE_Y + 1.45, transform.z);
     },
   }));
 
