@@ -478,12 +478,12 @@ function Clouds() {
   useFrame((_, delta) => { if (group.current) group.current.rotation.y += delta * 0.012; });
   return (
     <group ref={group}>
-      {Array.from({ length: 10 }, (_, index) => {
-        const angle = index / 10 * Math.PI * 2;
+      {Array.from({ length: 6 }, (_, index) => {
+        const angle = index / 6 * Math.PI * 2;
         const radius = 44 + index % 3 * 8;
         return (
           <group key={index} position={[Math.sin(angle) * radius, 17 + index % 3 * 2.2, Math.cos(angle) * radius]}>
-            {[-2, -1, 0, 1, 2].map((offset) => (
+            {[-1, 0, 1].map((offset) => (
               <mesh key={offset} position={[offset * 1.7, Math.sin(offset) * 0.35, 0]} scale={[2.5 + Math.abs(offset) * 0.15, 1.15, 1.45]}>
                 <sphereGeometry args={[1, 14, 10]} />
                 <meshStandardMaterial color="#ffffff" roughness={1} transparent opacity={0.8} depthWrite={false} />
@@ -532,7 +532,7 @@ export function CityEnvironment({ energy }: { energy: number }) {
 
   return (
     <group>
-      <mesh position={[0, -1.25, 0]} receiveShadow>
+      <mesh position={[0, -2.5, 0]} receiveShadow>
         <cylinderGeometry args={[93, 84, 4.2, 96]} />
         <meshStandardMaterial color="#775a43" roughness={0.96} />
       </mesh>
@@ -540,8 +540,8 @@ export function CityEnvironment({ energy }: { energy: number }) {
         <circleGeometry args={[210, 96]} />
         <meshPhysicalMaterial color="#58b9d9" roughness={0.18} transparent opacity={0.82} clearcoat={1} />
       </mesh>
-      <mesh position={[0, 0, 0]} receiveShadow>
-        <cylinderGeometry args={[92.5, 93, 0.5, 96]} />
+      <mesh position={[0, -0.22, 0]} receiveShadow>
+        <cylinderGeometry args={[92.5, 93, 0.4, 96]} />
         <meshStandardMaterial color="#77ae69" roughness={0.96} />
       </mesh>
 

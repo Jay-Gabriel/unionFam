@@ -46,19 +46,19 @@ const FLOWER_PLACEMENTS: Placement[] = [
   { position: [-49, 0.34, -42], variant: 1, scale: 0.85 }, { position: [-41, 0.34, -48], variant: 7, scale: 0.85 },
 ];
 
-function AssetScatter({ path, placements }: { path: string; placements: Placement[] }) {
+function AssetScatter({ path, placements, castShadow = false }: { path: string; placements: Placement[]; castShadow?: boolean }) {
   const gltf = useGLTF(path);
   const variants = useMemo(() => {
     const meshes: THREE.Mesh[] = [];
     gltf.scene.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
       const mesh = object.clone();
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+      mesh.castShadow = castShadow;
+      mesh.receiveShadow = false;
       meshes.push(mesh);
     });
     return meshes;
-  }, [gltf.scene]);
+  }, [castShadow, gltf.scene]);
 
   if (!variants.length) return null;
   return (
@@ -83,10 +83,14 @@ function AssetScatter({ path, placements }: { path: string; placements: Placemen
 export function CityNature() {
   return (
     <group>
-      <AssetScatter path="/models/environment/trees.glb" placements={TREE_PLACEMENTS} />
-      <AssetScatter path="/models/environment/rocks.glb" placements={ROCK_PLACEMENTS} />
-      <AssetScatter path="/models/environment/bushes.glb" placements={BUSH_PLACEMENTS} />
-      <AssetScatter path="/models/environment/flowers.glb" placements={FLOWER_PLACEMENTS} />
+      <AssetScatter
+        path="/models/environment/trees.glb"
+        placements={TREE_PLACEMENTS.filter((_, index) => index % 2 === 0 || index >= 16)}
+        castShadow
+      />
+      <AssetScatter path="/models/environment/rocks.glb" placements={ROCK_PLACEMENTS.filter((_, index) => index % 2 === 0)} />
+      <AssetScatter path="/models/environment/bushes.glb" placements={BUSH_PLACEMENTS.filter((_, index) => index % 2 === 0)} />
+      <AssetScatter path="/models/environment/flowers.glb" placements={FLOWER_PLACEMENTS.slice(0, 4)} />
     </group>
   );
 }

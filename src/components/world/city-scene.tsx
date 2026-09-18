@@ -50,10 +50,10 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
   return (
     <div className="absolute inset-0 bg-[#9fd7ef]">
       <Canvas
-        shadows
-        dpr={[1, 1.5]}
+        shadows="basic"
+        dpr={[0.75, 1]}
         camera={{ position: [0, 7, 64], fov: 52, near: 0.1, far: 320 }}
-        gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.94 }}
+        gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.94 }}
       >
         <color attach="background" args={['#9fd7ef']} />
         <fog attach="fog" args={['#afddec', 105, 225]} />
@@ -64,8 +64,8 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
           intensity={2.35}
           color="#fff1d5"
           castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
           shadow-camera-left={-78}
           shadow-camera-right={78}
           shadow-camera-top={78}
@@ -75,7 +75,7 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
           shadow-bias={-0.0003}
         />
         <directionalLight position={[24, 12, -24]} intensity={0.42} color="#a9c7ff" />
-        <Sparkles count={55} scale={[120, 20, 120]} size={1.15} speed={0.15} color="#fff5c2" opacity={0.28} />
+        <Sparkles count={30} scale={[120, 20, 120]} size={1.1} speed={0.12} color="#fff5c2" opacity={0.24} />
 
         <CityEnvironment energy={energy} />
         <QuestBeacons zoneIds={questZoneIds} />

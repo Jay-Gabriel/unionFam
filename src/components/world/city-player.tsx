@@ -84,6 +84,16 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
   const pointer = useRef({ x: 0, y: 0 });
   const rotationY = useRef(Math.PI);
   const cameraTarget = useRef(new THREE.Vector3(0, BASE_Y + 1.45, 55));
+  const positionNotifyClock = useRef(0);
+  const frameVectors = useRef({
+    targetVelocity: new THREE.Vector3(),
+    forward: new THREE.Vector3(),
+    right: new THREE.Vector3(),
+    direction: new THREE.Vector3(),
+    cameraOffset: new THREE.Vector3(),
+    desiredCamera: new THREE.Vector3(),
+    desiredTarget: new THREE.Vector3(),
+  });
   const keys = useRef({ forward: 0, right: 0, jump: false, sprint: false });
   const virtual = useRef<VirtualInput>({ x: 0, y: 0, jump: false, sprint: false });
   const [motion, setMotion] = useState({ moving: false, sprinting: false, jumping: false });
@@ -164,12 +174,13 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
     const sprinting = keys.current.sprint || virtual.current.sprint;
     const inputLength = Math.hypot(forwardInput, rightInput);
     const hasInput = inputLength > 0.08;
-    const targetVelocity = new THREE.Vector3();
+    const vectors = frameVectors.current;
+    const targetVelocity = vectors.targetVelocity.set(0, 0, 0);
 
     if (hasInput) {
-      const forward = new THREE.Vector3(-Math.sin(cameraYaw.current), 0, -Math.cos(cameraYaw.current));
-      const right = new THREE.Vector3(Math.cos(cameraYaw.current), 0, -Math.sin(cameraYaw.current));
-      const direction = forward.multiplyScalar(forwardInput).add(right.multiplyScalar(rightInput)).normalize();
+      const forward = vectors.forward.set(-Math.sin(cameraYaw.current), 0, -Math.cos(cameraYaw.current));
+      const right = vectors.right.set(Math.cos(cameraYaw.current), 0, -Math.sin(cameraYaw.current));
+      const direction = vectors.direction.copy(forward).multiplyScalar(forwardInput).addScaledVector(right, rightInput).normalize();
       targetVelocity.copy(direction).multiplyScalar(sprinting ? 8.2 : 5.2);
     }
 
@@ -212,19 +223,23 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
 
     root.current.position.copy(position.current);
     root.current.rotation.y = rotationY.current;
-    onPositionChange?.(position.current);
+    positionNotifyClock.current += delta;
+    if (positionNotifyClock.current >= 0.1) {
+      positionNotifyClock.current = 0;
+      onPositionChange?.(position.current);
+    }
 
     const distance = cameraDistance.current;
     const pitch = cameraPitch.current;
-    const offset = new THREE.Vector3(
+    const offset = vectors.cameraOffset.set(
       Math.sin(cameraYaw.current) * Math.cos(pitch) * distance,
       Math.sin(pitch) * distance + 1.4,
       Math.cos(cameraYaw.current) * Math.cos(pitch) * distance
     );
-    const desired = position.current.clone().add(offset);
+    const desired = vectors.desiredCamera.copy(position.current).add(offset);
     camera.position.lerp(desired, 1 - Math.exp(-6.5 * delta));
     cameraTarget.current.lerp(
-      new THREE.Vector3(position.current.x, position.current.y + 1.45, position.current.z),
+      vectors.desiredTarget.set(position.current.x, position.current.y + 1.45, position.current.z),
       1 - Math.exp(-9 * delta)
     );
     camera.lookAt(cameraTarget.current);
