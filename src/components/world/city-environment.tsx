@@ -11,6 +11,33 @@ import type { CityZoneId } from './world-types';
 const BLOCKS = [-45, -15, 15, 45];
 const PALETTE = ['#f1c7a5', '#b8d9cf', '#f0b8c4', '#c9c0e8', '#f2d795', '#aed1e8', '#cbd7a3'];
 
+const CITIZENS = [
+  { x: -22, z: 38, r: 0.2, shirt: '#f9737f', skin: '#d89972', hair: '#4b3027' },
+  { x: -8, z: 35, r: 2.8, shirt: '#4fb3a5', skin: '#a96f50', hair: '#272027' },
+  { x: -38, z: 7, r: 1.5, shirt: '#7c70cf', skin: '#e5aa80', hair: '#795548' },
+  { x: -52, z: 23, r: -0.4, shirt: '#e6ad48', skin: '#c88662', hair: '#3d2b23' },
+  { x: 8, z: -22, r: 2.4, shirt: '#4e91ce', skin: '#e3aa82', hair: '#5d3c2e' },
+  { x: 22, z: -38, r: 0.8, shirt: '#e06f9d', skin: '#9e674b', hair: '#231f20' },
+  { x: 37, z: -23, r: 2.1, shirt: '#65a85e', skin: '#d99b72', hair: '#70452f' },
+  { x: 52, z: -7, r: -1.2, shirt: '#e17855', skin: '#b87859', hair: '#33251f' },
+  { x: 23, z: 8, r: 0.4, shirt: '#7068cb', skin: '#e3af8a', hair: '#8a573d' },
+  { x: 38, z: 22, r: 2.7, shirt: '#34a89a', skin: '#b47758', hair: '#2c2526' },
+  { x: 8, z: 52, r: 1.4, shirt: '#db8559', skin: '#d5946b', hair: '#3d2b23' },
+  { x: -22, z: -8, r: -2.1, shirt: '#e4b547', skin: '#e2a67d', hair: '#65402e' },
+  { x: -37, z: -23, r: 0.9, shirt: '#5a9fd2', skin: '#9d654b', hair: '#241f20' },
+  { x: -8, z: -52, r: -0.3, shirt: '#d66b85', skin: '#d7956d', hair: '#5a3528' },
+];
+
+const PLANTERS = [
+  [-22, -22], [-8, -22], [8, -22], [22, -22], [-22, 8], [-8, 8], [8, 8], [22, 8],
+  [-52, -8], [-38, -8], [38, -8], [52, -8], [-52, 38], [-38, 38], [38, 38], [52, 38],
+] as const;
+
+const STREET_SIGNS = [
+  [-23.5, -35, '#f9737f'], [-6.5, -35, '#5fc5a4'], [23.5, -35, '#7c70cf'],
+  [36.5, -5, '#e6ad48'], [-36.5, 25, '#4e91ce'], [6.5, 25, '#e06f9d'],
+] as const;
+
 function Road({ x = 0, z = 0, width, depth, vertical = false }: { x?: number; z?: number; width: number; depth: number; vertical?: boolean }) {
   const length = vertical ? depth : width;
   const stripes = useMemo(() => Array.from({ length: Math.floor(length / 6) }, (_, index) => -length / 2 + 3 + index * 6), [length]);
@@ -162,6 +189,84 @@ function TrafficLight({ position, rotation = 0 }: { position: [number, number, n
   );
 }
 
+function CityCitizens({ compact = false }: { compact?: boolean }) {
+  const citizens = compact ? CITIZENS.filter((_, index) => index % 2 === 0) : CITIZENS;
+  return (
+    <group>
+      <Instances limit={citizens.length} range={citizens.length}>
+        <capsuleGeometry args={[0.34, 0.76, 4, 8]} />
+        <meshToonMaterial />
+        {citizens.map((citizen, index) => <Instance key={`body-${index}`} position={[citizen.x, 1.45, citizen.z]} rotation={[0, citizen.r, 0]} color={citizen.shirt} />)}
+      </Instances>
+      <Instances limit={citizens.length} range={citizens.length}>
+        <sphereGeometry args={[0.39, 12, 9]} />
+        <meshToonMaterial />
+        {citizens.map((citizen, index) => <Instance key={`head-${index}`} position={[citizen.x, 2.38, citizen.z]} color={citizen.skin} />)}
+      </Instances>
+      <Instances limit={citizens.length} range={citizens.length}>
+        <sphereGeometry args={[0.4, 10, 7, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshToonMaterial />
+        {citizens.map((citizen, index) => <Instance key={`hair-${index}`} position={[citizen.x, 2.49, citizen.z]} rotation={[0, citizen.r, 0]} color={citizen.hair} />)}
+      </Instances>
+      <Instances limit={citizens.length * 2} range={citizens.length * 2}>
+        <capsuleGeometry args={[0.11, 0.52, 3, 7]} />
+        <meshToonMaterial color="#334155" />
+        {citizens.flatMap((citizen, index) => [-0.17, 0.17].map((offset) => <Instance key={`leg-${index}-${offset}`} position={[citizen.x + offset, 0.56, citizen.z]} rotation={[0, citizen.r, 0]} />))}
+      </Instances>
+      <Instances limit={citizens.length * 2} range={citizens.length * 2}>
+        <capsuleGeometry args={[0.085, 0.42, 3, 7]} />
+        <meshToonMaterial />
+        {citizens.flatMap((citizen, index) => [-0.45, 0.45].map((offset) => <Instance key={`arm-${index}-${offset}`} position={[citizen.x + offset, 1.48, citizen.z]} rotation={[0, citizen.r, offset * 0.45]} color={citizen.skin} />))}
+      </Instances>
+    </group>
+  );
+}
+
+function StreetFurniture({ compact = false }: { compact?: boolean }) {
+  const planters = compact ? PLANTERS.filter((_, index) => index % 2 === 0) : PLANTERS;
+  const bollards = [-55, -35, -25, -5, 5, 25, 35, 55];
+  return (
+    <group>
+      <Instances limit={planters.length} range={planters.length}>
+        <cylinderGeometry args={[0.5, 0.62, 0.58, 12]} />
+        <meshToonMaterial color="#d8b08c" />
+        {planters.map(([x, z], index) => <Instance key={`pot-${index}`} position={[x, 0.58, z]} />)}
+      </Instances>
+      <Instances limit={planters.length} range={planters.length}>
+        <dodecahedronGeometry args={[0.66, 0]} />
+        <meshToonMaterial color="#64ad67" />
+        {planters.map(([x, z], index) => <Instance key={`plant-${index}`} position={[x, 1.2, z]} rotation={[0, index * 1.7, 0]} scale={index % 3 === 0 ? 1.15 : 0.9} />)}
+      </Instances>
+      <Instances limit={bollards.length * 4} range={bollards.length * 4}>
+        <cylinderGeometry args={[0.1, 0.13, 0.72, 8]} />
+        <meshToonMaterial color="#40545d" />
+        {bollards.flatMap((value) => [
+          <Instance key={`bn-${value}`} position={[value, 0.7, -34.3]} />,
+          <Instance key={`bs-${value}`} position={[value, 0.7, 34.3]} />,
+          <Instance key={`bw-${value}`} position={[-34.3, 0.7, value]} />,
+          <Instance key={`be-${value}`} position={[34.3, 0.7, value]} />,
+        ])}
+      </Instances>
+      <Instances limit={STREET_SIGNS.length} range={STREET_SIGNS.length}>
+        <cylinderGeometry args={[0.055, 0.075, 2.5, 8]} />
+        <meshToonMaterial color="#3d5059" />
+        {STREET_SIGNS.map(([x, z], index) => <Instance key={`sign-pole-${index}`} position={[x, 1.65, z]} />)}
+      </Instances>
+      <Instances limit={STREET_SIGNS.length} range={STREET_SIGNS.length}>
+        <boxGeometry args={[1.45, 0.7, 0.12]} />
+        <meshToonMaterial />
+        {STREET_SIGNS.map(([x, z, color], index) => <Instance key={`sign-${index}`} position={[x, 2.73, z]} rotation={[0, index % 2 ? Math.PI / 2 : 0, 0]} color={color} />)}
+      </Instances>
+      {!compact && <>
+        <Bench position={[-22, 0.3, 22]} rotation={Math.PI} />
+        <Bench position={[22, 0.3, -8]} rotation={-Math.PI / 2} />
+        <Bench position={[8, 0.3, 38]} rotation={Math.PI / 2} />
+        <Bench position={[-38, 0.3, -8]} />
+      </>}
+    </group>
+  );
+}
+
 function CafeTerrace() {
   return (
     <group position={[15, 0.42, -15]}>
@@ -254,11 +359,37 @@ function Building({ position, size, floors, color, accent, rotation = 0 }: {
           return <Instance key={`sill-${row}-${column}`} position={[x, 0.99 + row * 2.2, depth / 2 + 0.12]} />;
         }))}
       </Instances>
+      <group position={[0, 0, depth / 2 + 0.16]}>
+        {[-1, 1].map((side) => (
+          <group key={`shop-${side}`} position={[side * width * 0.27, 0, 0]}>
+            <RoundedBox position={[0, 1.18, 0]} args={[Math.max(2.1, width * 0.32), 1.9, 0.16]} radius={0.12} smoothness={2}>
+              <meshPhysicalMaterial color="#75bfd3" roughness={0.12} metalness={0.05} clearcoat={0.75} />
+            </RoundedBox>
+            <mesh position={[0, 2.35, 0.42]} rotation={[-0.18, 0, 0]} castShadow>
+              <boxGeometry args={[Math.max(2.35, width * 0.35), 0.16, 0.92]} />
+              <meshToonMaterial color={side > 0 ? accent : '#fff1d6'} />
+            </mesh>
+            {[-0.75, -0.25, 0.25, 0.75].map((stripe, stripeIndex) => (
+              <mesh key={stripe} position={[stripe * Math.max(1.1, width * 0.17), 2.3, 0.9]} rotation={[-0.18, 0, 0]}>
+                <boxGeometry args={[Math.max(0.28, width * 0.055), 0.18, 0.84]} />
+                <meshToonMaterial color={stripeIndex % 2 ? '#fff7e8' : accent} />
+              </mesh>
+            ))}
+          </group>
+        ))}
+        <mesh position={[0, 0.62, 0.22]}>
+          <boxGeometry args={[1.55, 0.1, 0.54]} />
+          <meshToonMaterial color="#d9c4a7" />
+        </mesh>
+      </group>
       {floors > 3 && (
-        <group position={[width * 0.2, 3.1, depth / 2 + 0.48]}>
-          <mesh castShadow><boxGeometry args={[2.2, 0.12, 0.72]} /><meshStandardMaterial color="#f4eadb" roughness={0.8} /></mesh>
-          <mesh position={[0, 0.48, 0.3]}><boxGeometry args={[1.9, 0.06, 0.06]} /><meshStandardMaterial color="#596d73" metalness={0.25} roughness={0.55} /></mesh>
-        </group>
+        <>
+          {[-0.26, 0.26].map((offset) => <group key={offset} position={[width * offset, 5.35, depth / 2 + 0.48]}>
+            <mesh castShadow><boxGeometry args={[2.2, 0.12, 0.72]} /><meshStandardMaterial color="#f4eadb" roughness={0.8} /></mesh>
+            <mesh position={[0, 0.48, 0.3]}><boxGeometry args={[1.9, 0.06, 0.06]} /><meshStandardMaterial color="#596d73" metalness={0.25} roughness={0.55} /></mesh>
+            <mesh position={[0, 0.14, 0.2]}><boxGeometry args={[1.7, 0.25, 0.3]} /><meshToonMaterial color="#85b96d" /></mesh>
+          </group>)}
+        </>
       )}
       <mesh position={[0, 1.08, depth / 2 + 0.09]}>
         <boxGeometry args={[1.35, 2.15, 0.16]} />
@@ -278,6 +409,10 @@ function Building({ position, size, floors, color, accent, rotation = 0 }: {
           <meshStandardMaterial color="#a9b8bb" roughness={0.9} />
         </mesh>
       )}
+      {floors >= 4 && <group position={[-width * 0.27, height + 0.78, 0]}>
+        <mesh castShadow><cylinderGeometry args={[0.62, 0.72, 1.35, 14]} /><meshToonMaterial color="#7fb0b4" /></mesh>
+        <mesh position={[0, 0.78, 0]}><sphereGeometry args={[0.64, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshToonMaterial color="#9bc8ca" /></mesh>
+      </group>}
     </group>
   );
 }
@@ -545,7 +680,7 @@ export function CityEnvironment({ energy, compact = false }: { energy: number; c
         </mesh>
       )))}
 
-      {buildings.filter((_, index) => !compact || index % 2 === 0).map(({ x, z }, index) => (
+      {buildings.map(({ x, z }, index) => (
         <Building
           key={`${x}-${z}`}
           position={[x, 0.4, z]}
@@ -567,6 +702,8 @@ export function CityEnvironment({ energy, compact = false }: { energy: number; c
       <LakeBoardwalk />
       <CafeTerrace />
       <MarketStalls />
+      <StreetFurniture compact={compact} />
+      <CityCitizens compact={compact} />
 
       <CityCar position={[-3.1, 0.28, 42]} color="#e66a5b" />
       <CityCar position={[3.1, 0.28, 23]} rotation={Math.PI} color="#e5b84d" />

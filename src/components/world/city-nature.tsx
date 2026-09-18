@@ -81,7 +81,7 @@ function AssetScatter({ path, placements, castShadow = false }: { path: string; 
 }
 
 export function CityNature({ compact = false }: { compact?: boolean }) {
-  const trees = TREE_PLACEMENTS.filter((_, index) => index % (compact ? 4 : 2) === 0 || (!compact && index >= 16));
+  const trees = TREE_PLACEMENTS.filter((_, index) => index % (compact ? 3 : 2) === 0 || (!compact && index >= 16));
   return (
     <group>
       <AssetScatter
@@ -90,7 +90,7 @@ export function CityNature({ compact = false }: { compact?: boolean }) {
         castShadow={!compact}
       />
       {!compact && <AssetScatter path="/models/environment/rocks.glb" placements={ROCK_PLACEMENTS.filter((_, index) => index % 2 === 0)} />}
-      <AssetScatter path="/models/environment/bushes.glb" placements={BUSH_PLACEMENTS.filter((_, index) => index % (compact ? 4 : 2) === 0)} />
+      <AssetScatter path="/models/environment/bushes.glb" placements={BUSH_PLACEMENTS.filter((_, index) => index % (compact ? 3 : 2) === 0)} />
       {!compact && <AssetScatter path="/models/environment/flowers.glb" placements={FLOWER_PLACEMENTS.slice(0, 4)} />}
     </group>
   );
