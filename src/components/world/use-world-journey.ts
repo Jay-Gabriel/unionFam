@@ -18,6 +18,10 @@ type ProgressResponse = {
   };
 };
 
+type GapsResponse = {
+  data?: Array<{ status?: string }>;
+};
+
 export function useWorldJourney(collectedLetters: number, refreshToken = 0) {
   const [source, setSource] = useState<WorldJourneySource>({});
   const [loading, setLoading] = useState(true);
@@ -28,8 +32,9 @@ export function useWorldJourney(collectedLetters: number, refreshToken = 0) {
     Promise.all([
       fetch('/api/progress').then((response) => response.ok ? response.json() as Promise<ProgressResponse> : { data: {} }),
       fetch('/api/life-profile').then((response) => response.ok ? response.json() as Promise<ProfileResponse> : { data: {} }),
+      fetch('/api/gaps').then((response) => response.ok ? response.json() as Promise<GapsResponse> : { data: [] }),
     ])
-      .then(([progress, profile]) => {
+      .then(([progress, profile, gaps]) => {
         if (cancelled) return;
         const dimensions = profile.data?.snapshot?.dimensions || {};
         const profileDimensionCount = Object.values(dimensions).filter((dimension) =>
@@ -41,6 +46,7 @@ export function useWorldJourney(collectedLetters: number, refreshToken = 0) {
           activeExperimentProgress: progress.data?.activeExperimentProgress || 0,
           streak: progress.data?.streak || 0,
           profileDimensionCount,
+          lifeMapFocuses: Array.isArray(gaps.data) ? gaps.data.filter((gap) => gap.status !== 'resolved').length : 0,
         });
       })
       .catch(() => {

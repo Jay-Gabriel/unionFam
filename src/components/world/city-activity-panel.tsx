@@ -11,13 +11,14 @@ import { EmotiveStoryGame } from '@/components/calm/emotive-story-game';
 import { SoulKnotGame } from '@/components/calm/soul-knot-game';
 import type { QuestionItem } from '@/server/domain/questions';
 import { CITY_MAIN_STORY, CITY_STORY } from './city-story';
+import { CITY_ZONES } from './world-data';
 import type { CityZone, WorldJourney } from './world-types';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 type JsonRecord = Record<string, unknown>;
 
-const panelClass = 'rounded-2xl border border-white/10 bg-white/[0.055]';
-const inputClass = 'w-full rounded-xl border border-white/15 bg-black/25 px-3.5 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60';
+const panelClass = 'rounded-2xl border border-white/10 bg-[#17364c]';
+const inputClass = 'w-full rounded-xl border border-white/15 bg-[#0a1d2b] px-3.5 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60';
 const primaryButton = 'inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-300 to-cyan-300 px-4 py-3 text-xs font-black text-[#102638] shadow-lg disabled:cursor-not-allowed disabled:opacity-45 active:scale-[0.98]';
 
 async function readJson(response: Response) {
@@ -209,15 +210,77 @@ function ChatActivity({ starterPrompt = '', onChanged }: { starterPrompt?: strin
   </div>;
 }
 
-function LifeMapActivity() {
+function LifeMapActivity({ onChanged, onContinue, onUnlockNext }: { onChanged: () => void; onContinue: () => void; onUnlockNext: () => void }) {
   const [data, setData] = useState<JsonRecord | null>(null); const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState('');
+  const [currentState, setCurrentState] = useState('');
+  const [desiredState, setDesiredState] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
   useEffect(() => { fetch('/api/life-profile').then(readJson).then((json) => setData((json.data || {}) as JsonRecord)).finally(() => setLoading(false)); }, []);
   if (loading) return <Loading label="Astra đang mở mái vòm…" />;
   const snapshot = data?.snapshot && typeof data.snapshot === 'object' ? data.snapshot as JsonRecord : {};
   const dimensions = snapshot.dimensions && typeof snapshot.dimensions === 'object' ? snapshot.dimensions as Record<string, JsonRecord> : {};
   const labels: Record<string, string> = { my_life: 'Đời sống mong muốn', what_matters: 'Điều quan trọng', my_ideal_day: 'Ngày lý tưởng', what_it_takes: 'Điều cần có', my_trade_offs: 'Điều đánh đổi', the_question: 'Câu hỏi tiếp theo' };
   if (!Object.keys(dimensions).length) return <Empty text="Bầu trời còn trống. Hãy thắp vài ô cửa ở Học Viện Ban Mai trước." />;
-  return <div className="grid gap-3 sm:grid-cols-2">{Object.entries(dimensions).map(([key, dimension], index) => <div key={key} className={`${panelClass} p-5`}><div className="flex items-center gap-2 text-amber-200"><Star size={15} fill="currentColor" /><span className="text-[10px] font-black uppercase tracking-widest">Chòm sao {index + 1}</span></div><h3 className="mt-2 text-base font-black">{labels[key] || key}</h3><p className="mt-2 text-xs leading-6 text-white/60">{String(dimension.summary || dimension.current_state || dimension.desired_state || 'Chưa có tín hiệu rõ ràng.')}</p></div>)}</div>;
+  const choose = (key: string, dimension: JsonRecord) => {
+    setSelected(key);
+    setCurrentState(String(dimension.current_state || dimension.summary || ''));
+    setDesiredState(String(dimension.desired_state || ''));
+    setSaved(false);
+    setError('');
+  };
+  const saveFocus = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selected || saving) return;
+    setSaving(true); setError('');
+    try {
+      const response = await fetch('/api/gaps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dimension: selected,
+          title: `Chăm sóc: ${labels[selected] || selected}`,
+          currentState,
+          desiredState,
+          priority: 1,
+        }),
+      });
+      const json = await readJson(response);
+      if (!response.ok) throw new Error(json.error || 'Không thể lưu chòm sao đã chọn');
+      setSaved(true);
+      onUnlockNext();
+      onChanged();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Không thể lưu chòm sao đã chọn');
+    } finally { setSaving(false); }
+  };
+
+  if (saved) return <div className="mx-auto flex min-h-[54vh] max-w-xl flex-col items-center justify-center text-center">
+    <span className="text-6xl">🌟</span>
+    <p className="mt-5 text-[10px] font-black uppercase tracking-[.22em] text-amber-200">Chòm sao đã được đánh dấu</p>
+    <h3 className="mt-2 text-2xl font-black">{labels[selected]}</h3>
+    <p className="mt-3 max-w-md text-sm leading-6 text-white/60">Astra đã ghi lại vùng bạn muốn chăm sóc. Nhà Kính Dũng Khí sẽ giúp biến lựa chọn này thành một thử nghiệm nhỏ ngoài đời thật.</p>
+    <button type="button" onClick={onContinue} className={`${primaryButton} mt-6`}>Tới Nhà Kính Dũng Khí <ArrowRight size={14} /></button>
+  </div>;
+
+  return <div className="space-y-5">
+    <div className="rounded-2xl border border-amber-200/20 bg-[#263d4d] p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+      <div><p className="text-[10px] font-black uppercase tracking-[.18em] text-amber-200">Astra cần bạn quyết định</p><h3 className="mt-1 text-base font-black">Chọn một chòm sao bạn muốn chăm sóc trước</h3></div>
+      <p className="mt-2 text-xs leading-5 text-white/55 sm:mt-0 sm:max-w-xs">Bấm vào một thẻ bên dưới. Bạn không cần giải quyết mọi thứ cùng lúc.</p>
+    </div>
+    <div className="grid gap-3 sm:grid-cols-2">{Object.entries(dimensions).map(([key, dimension], index) => <button type="button" onClick={() => choose(key, dimension)} key={key} className={`rounded-2xl border p-5 text-left transition ${selected === key ? 'border-amber-200 bg-[#324d5f] ring-2 ring-amber-200/25' : 'border-white/10 bg-[#17364c] hover:border-white/25 hover:bg-[#1e4057]'}`}><div className="flex items-center justify-between gap-2 text-amber-200"><span className="flex items-center gap-2"><Star size={15} fill="currentColor" /><span className="text-[10px] font-black uppercase tracking-widest">Chòm sao {index + 1}</span></span>{selected === key && <Check size={16} />}</div><h3 className="mt-2 text-base font-black">{labels[key] || key}</h3><p className="mt-2 text-xs leading-6 text-white/60">{String(dimension.summary || dimension.current_state || dimension.desired_state || 'Chưa rõ — chọn để tự viết điều bạn đang cảm nhận.')}</p></button>)}</div>
+    {selected && <form onSubmit={saveFocus} className="rounded-2xl border border-cyan-200/20 bg-[#132f43] p-5 sm:p-6">
+      <p className="text-[10px] font-black uppercase tracking-[.18em] text-cyan-200">Chòm sao đã chọn · {labels[selected]}</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label className="text-xs font-bold text-white/70">Hiện tại đang thế nào?<textarea required value={currentState} onChange={(event) => setCurrentState(event.target.value)} className={`${inputClass} mt-2 min-h-28 resize-y font-normal`} placeholder="Ví dụ: Tôi đang thiếu thời gian cho bản thân…" /></label>
+        <label className="text-xs font-bold text-white/70">Bạn muốn nó thay đổi thế nào?<textarea required value={desiredState} onChange={(event) => setDesiredState(event.target.value)} className={`${inputClass} mt-2 min-h-28 resize-y font-normal`} placeholder="Ví dụ: Tôi muốn có 20 phút mỗi ngày để…" /></label>
+      </div>
+      {error && <div className="mt-3"><ErrorBox text={error} /></div>}
+      <button disabled={saving || !currentState.trim() || !desiredState.trim()} className={`${primaryButton} mt-4 w-full sm:w-auto`}>{saving ? <Loader2 size={14} className="animate-spin" /> : <Star size={14} />}Xác nhận chòm sao này</button>
+    </form>}
+  </div>;
 }
 
 type Experiment = { id: string; title: string; hypothesis?: string; smallest_step?: string; progress_percent?: number; status?: string };
@@ -265,9 +328,9 @@ function LockedChapter({ reason, onClose }: { reason: string; onClose: () => voi
   </div>;
 }
 
-interface CityActivityPanelProps { zone: CityZone | null; journey: WorldJourney; lockedReason?: string | null; onClose: () => void; onProgressChanged: () => void; }
+interface CityActivityPanelProps { zone: CityZone | null; journey: WorldJourney; lockedReason?: string | null; onClose: () => void; onOpenZone: (zone: CityZone) => void; onUnlockZone: (zone: CityZone) => void; onProgressChanged: () => void; }
 
-export function CityActivityPanel({ zone, journey, lockedReason, onClose, onProgressChanged }: CityActivityPanelProps) {
+export function CityActivityPanel({ zone, journey, lockedReason, onClose, onOpenZone, onUnlockZone, onProgressChanged }: CityActivityPanelProps) {
   const [view, setView] = useState<'story' | 'activity' | 'chat'>('story');
   const [chatPrompt, setChatPrompt] = useState('');
   useEffect(() => { setView('story'); setChatPrompt(''); }, [zone?.id]);
@@ -280,8 +343,17 @@ export function CityActivityPanel({ zone, journey, lockedReason, onClose, onProg
   const chapter = CITY_STORY[zone.id];
   const openChat = (prompt: string) => { setChatPrompt(prompt); setView('chat'); };
 
-  return <AnimatePresence><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-auto fixed inset-0 z-[80] bg-[#071522]/82 p-2 backdrop-blur-md sm:p-5">
-    <motion.section initial={{ y: 20, scale: 0.985 }} animate={{ y: 0, scale: 1 }} exit={{ y: 20, scale: 0.985 }} className="mx-auto flex h-full max-w-6xl flex-col overflow-hidden rounded-[26px] border border-white/15 bg-[#102638]/96 text-white shadow-[0_30px_100px_rgba(0,0,0,.55)] sm:rounded-[32px]">
+  const openGreenhouse = () => {
+    const greenhouse = CITY_ZONES.find((item) => item.id === 'greenhouse');
+    if (greenhouse) onOpenZone(greenhouse);
+  };
+  const unlockGreenhouse = () => {
+    const greenhouse = CITY_ZONES.find((item) => item.id === 'greenhouse');
+    if (greenhouse) onUnlockZone(greenhouse);
+  };
+
+  return <AnimatePresence><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-auto fixed inset-0 z-[80] bg-[#071522] p-2 sm:p-5">
+    <motion.section initial={{ y: 20, scale: 0.985 }} animate={{ y: 0, scale: 1 }} exit={{ y: 20, scale: 0.985 }} className="mx-auto flex h-full max-w-6xl flex-col overflow-hidden rounded-[26px] border border-white/15 bg-[#102638] text-white shadow-[0_30px_100px_rgba(0,0,0,.55)] sm:rounded-[32px]">
       <header className="flex shrink-0 items-center gap-3 border-b border-white/10 px-3 py-3 sm:px-5">
         {view !== 'story' && <button type="button" onClick={() => setView('story')} className="grid h-9 w-9 place-items-center rounded-full bg-white/8 text-white/65"><ArrowLeft size={16} /></button>}
         <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/10 text-xl">{chapter.icon}</span>
@@ -295,7 +367,7 @@ export function CityActivityPanel({ zone, journey, lockedReason, onClose, onProg
           {view === 'activity' && chapter.activity === 'overview' && <OverviewActivity journey={journey} />}
           {view === 'activity' && chapter.activity === 'questions' && <QuestionsActivity onChanged={onProgressChanged} />}
           {view === 'activity' && chapter.activity === 'chat' && <ChatActivity starterPrompt={zone.aiPromptStarter} onChanged={onProgressChanged} />}
-          {view === 'activity' && chapter.activity === 'life-map' && <LifeMapActivity />}
+          {view === 'activity' && chapter.activity === 'life-map' && <LifeMapActivity onChanged={onProgressChanged} onContinue={openGreenhouse} onUnlockNext={unlockGreenhouse} />}
           {view === 'activity' && chapter.activity === 'experiments' && <ExperimentsActivity onChanged={onProgressChanged} />}
           {view === 'activity' && chapter.activity === 'reflections' && <ReflectionsActivity onChanged={onProgressChanged} />}
           {view === 'activity' && chapter.activity === 'resources' && <ResourcesActivity onChanged={onProgressChanged} />}

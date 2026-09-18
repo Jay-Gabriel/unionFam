@@ -7,17 +7,18 @@ describe('world journey', () => {
       questionnaireProgress: 100,
       conversations: 2,
       profileDimensionCount: 3,
+      lifeMapFocuses: 1,
       activeExperimentProgress: 75,
       collectedLetters: 4,
       streak: 6,
     });
 
     expect(journey.quests).toHaveLength(5);
-    expect(journey.completedQuests).toBe(2);
+    expect(journey.completedQuests).toBe(3);
     expect(journey.streak).toBe(6);
     expect(journey.quests.find((quest) => quest.id === 'awakening-path')?.completed).toBe(true);
     expect(journey.quests.find((quest) => quest.id === 'greenhouse-growth')?.progressPercent).toBe(75);
-    expect(journey.energy).toBe(78);
+    expect(journey.energy).toBe(88);
     expect(journey.level).toBe(4);
   });
 

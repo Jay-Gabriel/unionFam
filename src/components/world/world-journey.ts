@@ -6,6 +6,7 @@ export interface WorldJourneySource {
   activeExperimentProgress?: number;
   streak?: number;
   profileDimensionCount?: number;
+  lifeMapFocuses?: number;
   collectedLetters?: number;
 }
 
@@ -72,13 +73,13 @@ export function buildWorldJourney(source: WorldJourneySource, loading = false): 
     quest(
       'life-map-stars',
       'observatory',
-      'Thắp chòm sao cuộc đời',
-      'Làm rõ sáu chiều Life Map để Đài Quan Sát mở toàn cảnh.',
+      'Chọn chòm sao dẫn đường',
+      'Chọn một vùng cuộc sống cần được chăm sóc trước tại Đài Quan Sát.',
       'Mở Life Map',
       '/app/life-map',
       'Mở khóa Vương Miện Sao',
-      source.profileDimensionCount || 0,
-      6,
+      (source.lifeMapFocuses || 0) > 0 || (source.profileDimensionCount || 0) > 0 ? 1 : 0,
+      1,
       '#fde047'
     ),
     quest(

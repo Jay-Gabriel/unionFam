@@ -29,6 +29,7 @@ export function CityWorldView() {
   const [collectedShardIds, setCollectedShardIds] = useState<string[]>([]);
   const [activityZone, setActivityZone] = useState<CityZone | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [unlockedOverrides, setUnlockedOverrides] = useState<string[]>([]);
   const [playerPosition, setPlayerPosition] = useState({ x: 0, z: 55 });
   const [journeyRefreshToken, setJourneyRefreshToken] = useState(0);
   const journey = useWorldJourney(collectedShardIds.length, journeyRefreshToken);
@@ -92,7 +93,7 @@ export function CityWorldView() {
     setOnboardingOpen(false);
     try { localStorage.setItem('lifelab_city_story_tour_v1', 'seen'); } catch { /* optional */ }
   }, []);
-  const lockedReasonFor = useCallback((zone: CityZone) => storyProgress.lockedReason(zone.id), [storyProgress]);
+  const lockedReasonFor = useCallback((zone: CityZone) => unlockedOverrides.includes(zone.id) ? null : storyProgress.lockedReason(zone.id), [storyProgress, unlockedOverrides]);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-sky-200">
@@ -122,6 +123,8 @@ export function CityWorldView() {
         journey={journey}
         lockedReason={activityZone ? lockedReasonFor(activityZone) : null}
         onClose={() => setActivityZone(null)}
+        onOpenZone={setActivityZone}
+        onUnlockZone={(zone) => setUnlockedOverrides((current) => current.includes(zone.id) ? current : [...current, zone.id])}
         onProgressChanged={() => setJourneyRefreshToken((token) => token + 1)}
       />
       <CityOnboarding open={onboardingOpen} onClose={closeOnboarding} onBegin={closeOnboarding} />
