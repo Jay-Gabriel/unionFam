@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode, demoStore } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
+
+const RESOURCE_TYPES = ['person', 'skill', 'time', 'money', 'community', 'tool', 'other'] as const;
 
 function fail(error: unknown, fallback: string) {
   if (error instanceof Error && error.message === 'AUTH_REQUIRED') return NextResponse.json({ error: 'AUTH_REQUIRED' }, { status: 401 });
@@ -12,7 +15,6 @@ function fail(error: unknown, fallback: string) {
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await requireUser();
     const body = await request.json();
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (typeof body.name === 'string') {
@@ -20,12 +22,27 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       if (!name || name.length > 240) return NextResponse.json({ error: 'INVALID_RESOURCE' }, { status: 422 });
       patch.name = name;
     }
-    if (typeof body.description === 'string') patch.description = body.description.trim().slice(0, 2000);
+    if (typeof body.resourceType === 'string') {
+      const rawType = body.resourceType.toLowerCase().trim();
+      if (!RESOURCE_TYPES.includes(rawType as (typeof RESOURCE_TYPES)[number])) {
+        return NextResponse.json({ error: 'INVALID_RESOURCE' }, { status: 422 });
+      }
+      patch.resource_type = rawType;
+    }
     if (typeof body.dimension === 'string') patch.dimension = body.dimension.slice(0, 64);
-    if (typeof body.resourceType === 'string') patch.resource_type = body.resourceType;
-    if (typeof body.confidence === 'number' && Number.isFinite(body.confidence) && body.confidence >= 0 && body.confidence <= 1) patch.confidence = body.confidence;
+    if (typeof body.description === 'string') patch.description = body.description.trim().slice(0, 2000);
+    if (typeof body.confidence === 'number' && Number.isFinite(body.confidence) && body.confidence >= 0 && body.confidence <= 1) {
+      patch.confidence = body.confidence;
+    }
     if (Object.keys(patch).length === 1) return NextResponse.json({ error: 'NO_CHANGES' }, { status: 400 });
 
+    if (isDemoMode()) {
+      const data = demoStore.updateResource(params.id, patch);
+      if (!data) return NextResponse.json({ error: 'RESOURCE_NOT_FOUND' }, { status: 404 });
+      return NextResponse.json({ data });
+    }
+
+    const user = await requireUser();
     const { data, error } = await createClient()
       .from('resources')
       .update(patch)
@@ -44,6 +61,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
   try {
+    if (isDemoMode()) {
+      const ok = demoStore.deleteResource(params.id);
+      if (!ok) return NextResponse.json({ error: 'RESOURCE_NOT_FOUND' }, { status: 404 });
+      return new Response(null, { status: 204 });
+    }
+
     const user = await requireUser();
     const { data, error } = await createClient()
       .from('resources')

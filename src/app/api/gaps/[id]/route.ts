@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode, demoStore } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,6 @@ function fail(error: unknown, fallback: string) {
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await requireUser();
     const body = await request.json();
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (typeof body.title === 'string') {
@@ -35,6 +35,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     if (['open', 'in_progress', 'closed', 'dismissed'].includes(body.status)) patch.status = body.status;
     if (Object.keys(patch).length === 1) return NextResponse.json({ error: 'NO_CHANGES' }, { status: 400 });
 
+    if (isDemoMode()) {
+      const data = demoStore.updateGap(params.id, patch);
+      if (!data) return NextResponse.json({ error: 'GAP_NOT_FOUND' }, { status: 404 });
+      return NextResponse.json({ data });
+    }
+
+    const user = await requireUser();
     const { data, error } = await createClient()
       .from('gaps')
       .update(patch)
@@ -53,6 +60,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
   try {
+    if (isDemoMode()) {
+      const ok = demoStore.deleteGap(params.id);
+      if (!ok) return NextResponse.json({ error: 'GAP_NOT_FOUND' }, { status: 404 });
+      return new Response(null, { status: 204 });
+    }
+
     const user = await requireUser();
     const { data, error } = await createClient()
       .from('gaps')

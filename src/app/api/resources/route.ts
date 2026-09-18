@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode, demoStore } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,10 @@ function fail(error: unknown, fallback: string) {
 }
 
 export async function GET() {
+  if (isDemoMode()) {
+    return NextResponse.json({ data: demoStore.resources });
+  }
+
   try {
     const user = await requireUser();
     const { data, error } = await createClient()
@@ -30,7 +35,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
     const body = await request.json();
     const name = typeof body.name === 'string' ? body.name.trim() : '';
     const rawType = typeof body.resourceType === 'string' ? body.resourceType.toLowerCase().trim() : 'other';
@@ -43,6 +47,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'INVALID_RESOURCE' }, { status: 422 });
     }
 
+    if (isDemoMode()) {
+      const data = demoStore.createResource({
+        dimension: dimension.slice(0, 64),
+        resource_type: resourceType,
+        name,
+        description: typeof body.description === 'string' ? body.description.trim().slice(0, 2000) : null,
+        confidence,
+      });
+      return NextResponse.json({ data }, { status: 201 });
+    }
+
+    const user = await requireUser();
     const { data, error } = await createClient()
       .from('resources')
       .insert({

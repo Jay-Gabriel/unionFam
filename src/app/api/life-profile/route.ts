@@ -6,7 +6,7 @@ import {
   LifeProfileSnapshotSchema,
   mergeInsightsIntoProfile,
 } from '@/server/domain/profile';
-import { isDemoMode } from '@/lib/demo-mode';
+import { isDemoMode, demoStore } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,10 +24,10 @@ export async function GET() {
   if (isDemoMode()) {
     return NextResponse.json({
       data: {
-        current: null,
-        draft: null,
-        snapshot: emptyLifeProfileSnapshot(),
-        insights: [],
+        current: demoStore.lifeProfile.current,
+        draft: demoStore.lifeProfile.draft,
+        snapshot: demoStore.lifeProfile.snapshot,
+        insights: demoStore.lifeProfile.insights,
       },
     });
   }
@@ -73,13 +73,19 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
     const body = await request.json();
     const action = body.action === 'draft' ? 'draft' : body.action === 'confirm' ? 'confirm' : '';
     if (!action) return NextResponse.json({ error: 'INVALID_PROFILE_ACTION' }, { status: 400 });
 
     const parsed = LifeProfileSnapshotSchema.safeParse(body.snapshot);
     if (!parsed.success) return NextResponse.json({ error: 'INVALID_PROFILE_SNAPSHOT' }, { status: 422 });
+
+    if (isDemoMode()) {
+      demoStore.lifeProfile.snapshot = parsed.data as any;
+      return NextResponse.json({ data: { status: action, snapshot: parsed.data } }, { status: action === 'confirm' ? 201 : 200 });
+    }
+
+    const user = await requireUser();
     const supabase = createClient();
     const isUuid = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
     const rawSourceAnswerIds = body.sourceAnswerIds === undefined ? [] : body.sourceAnswerIds;

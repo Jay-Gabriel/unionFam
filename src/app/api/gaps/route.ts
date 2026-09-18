@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
-import { isDemoMode } from '@/lib/demo-mode';
+import { isDemoMode, demoStore } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +13,7 @@ function fail(error: unknown, fallback: string) {
 
 export async function GET() {
   if (isDemoMode()) {
-    return NextResponse.json({ data: [] });
+    return NextResponse.json({ data: demoStore.gaps });
   }
 
   try {
@@ -34,7 +34,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
     const body = await request.json();
     const title = typeof body.title === 'string' ? body.title.trim() : '';
     const currentState = typeof body.currentState === 'string' ? body.currentState.trim() : '';
@@ -44,6 +43,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'INVALID_GAP' }, { status: 422 });
     }
 
+    if (isDemoMode()) {
+      const data = demoStore.createGap({
+        dimension: typeof body.dimension === 'string' ? body.dimension.slice(0, 64) : 'other',
+        title,
+        current_state: currentState,
+        desired_state: desiredState,
+        priority,
+      });
+      return NextResponse.json({ data }, { status: 201 });
+    }
+
+    const user = await requireUser();
     const { data, error } = await createClient()
       .from('gaps')
       .insert({

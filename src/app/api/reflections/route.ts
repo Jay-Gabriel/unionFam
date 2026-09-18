@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/server/auth/current-user';
+import { isDemoMode, demoStore } from '@/lib/demo-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,10 @@ function fail(error: unknown, fallback: string) {
 }
 
 export async function GET() {
+  if (isDemoMode()) {
+    return NextResponse.json({ data: demoStore.reflections });
+  }
+
   try {
     const user = await requireUser();
     const supabase = createClient();
@@ -39,7 +44,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
     const body = await request.json();
     let experimentId = typeof body.experimentId === 'string' ? body.experimentId.trim() : '';
     const result = typeof body.result === 'string' ? body.result.trim() : '';
@@ -51,6 +55,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'INVALID_REFLECTION' }, { status: 422 });
     }
 
+    if (isDemoMode()) {
+      const data = demoStore.createReflection({
+        experiment_id: experimentId || undefined,
+        result: result.slice(0, 4000),
+        learning_candidate: learningCandidate.slice(0, 2000),
+        feeling: feeling.slice(0, 2000),
+        next_action: nextAction.slice(0, 2000),
+        rating: rating ?? 5,
+      });
+      return NextResponse.json({ data }, { status: 201 });
+    }
+
+    const user = await requireUser();
     const supabase = createClient();
     if (experimentId) {
       const { data: experiment } = await supabase
