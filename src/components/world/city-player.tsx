@@ -193,18 +193,19 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
     };
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
-      if (target?.closest('button, a, [data-interactive="true"]')) return;
+      if (target?.closest('button, a, [data-interactive="true"], footer, header, input, textarea, [data-prevent-camera="true"]')) return;
+      // Reserve bottom-left quadrant exclusively for movement joystick
+      if (event.clientX < window.innerWidth * 0.45 && event.clientY > window.innerHeight * 0.45) return;
       if (cameraPointerId.current !== null) return;
       cameraPointerId.current = event.pointerId;
       pointer.current = { x: event.clientX, y: event.clientY };
     };
     const onPointerMove = (event: PointerEvent) => {
       if (cameraPointerId.current !== event.pointerId) return;
-      if (event.pointerType === 'touch') event.preventDefault();
       const dx = event.clientX - pointer.current.x;
       const dy = event.clientY - pointer.current.y;
       pointer.current = { x: event.clientX, y: event.clientY };
-      const sensitivity = event.pointerType === 'touch' ? 0.008 : 0.006;
+      const sensitivity = event.pointerType === 'touch' ? 0.007 : 0.0055;
       cameraYaw.current -= dx * sensitivity;
       cameraPitch.current = THREE.MathUtils.clamp(cameraPitch.current + dy * sensitivity * 0.66, 0.12, 0.95);
     };

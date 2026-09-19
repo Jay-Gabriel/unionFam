@@ -32,9 +32,10 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
   const [helpOpen, setHelpOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [sprinting, setSprinting] = useState(false);
-  const [touchControls, setTouchControls] = useState(false);
+  const [touchControls, setTouchControls] = useState(true);
   const [joystick, setJoystick] = useState({ x: 0, y: 0 });
   const joystickRef = useRef<HTMLDivElement>(null);
+  const joystickTouchId = useRef<number | null>(null);
   const joystickPointerId = useRef<number | null>(null);
   const virtualInput = useRef<VirtualInput>({ x: 0, y: 0, jump: false, sprint: false });
   const jumpTimer = useRef<number | null>(null);
@@ -66,49 +67,101 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
     onOpenZone(zone);
   };
 
-  const moveJoystick = (event: React.PointerEvent<HTMLDivElement>) => {
+  const updateFromCoordinates = (clientX: number, clientY: number) => {
     if (!joystickRef.current) return;
-    if (joystickPointerId.current !== event.pointerId) return;
-    event.preventDefault();
     const rect = joystickRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    const dx = event.clientX - centerX;
-    const dy = event.clientY - centerY;
-    const maxRadius = rect.width / 2 - 12;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+    const maxRadius = rect.width / 2 - 10;
     const rawDist = Math.hypot(dx, dy);
+    
+    if (rawDist < 4) {
+      setJoystick({ x: 0, y: 0 });
+      updateVirtualInput({ x: 0, y: 0 });
+      return;
+    }
+
     const distance = Math.min(maxRadius, rawDist);
     const angle = Math.atan2(dy, dx);
-    const x = Math.cos(angle) * (distance / maxRadius);
-    const y = Math.sin(angle) * (distance / maxRadius);
+    const normalizedRatio = distance / maxRadius;
+    const x = Math.cos(angle) * normalizedRatio;
+    const y = Math.sin(angle) * normalizedRatio;
 
-    setJoystick({ x: x * maxRadius * 0.75, y: y * maxRadius * 0.75 });
+    setJoystick({ x: x * maxRadius * 0.72, y: y * maxRadius * 0.72 });
     updateVirtualInput({ x, y });
   };
 
-  const startJoystick = (event: React.PointerEvent<HTMLDivElement>) => {
+  // Native Multi-Touch Handlers (Does NOT block other touches)
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    if (joystickTouchId.current !== null) return;
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    joystickTouchId.current = touch.identifier;
+    updateFromCoordinates(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    if (joystickTouchId.current === null) return;
+    const touch = Array.from(event.touches).find((t) => t.identifier === joystickTouchId.current);
+    if (!touch) return;
+    updateFromCoordinates(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    const touch = Array.from(event.changedTouches).find((t) => t.identifier === joystickTouchId.current);
+    if (touch || event.touches.length === 0) {
+      joystickTouchId.current = null;
+      setJoystick({ x: 0, y: 0 });
+      updateVirtualInput({ x: 0, y: 0 });
+    }
+  };
+
+  // Pointer Fallback (for mouse simulator testing on desktop)
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch') return;
     if (joystickPointerId.current !== null) return;
     joystickPointerId.current = event.pointerId;
     event.currentTarget.setPointerCapture(event.pointerId);
-    moveJoystick(event);
+    updateFromCoordinates(event.clientX, event.clientY);
   };
 
-  const stopJoystick = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch') return;
     if (joystickPointerId.current !== event.pointerId) return;
-    joystickPointerId.current = null;
-    setJoystick({ x: 0, y: 0 });
-    updateVirtualInput({ x: 0, y: 0 });
+    updateFromCoordinates(event.clientX, event.clientY);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch') return;
+    if (joystickPointerId.current === event.pointerId) {
+      joystickPointerId.current = null;
+      setJoystick({ x: 0, y: 0 });
+      updateVirtualInput({ x: 0, y: 0 });
+    }
   };
 
   const jump = () => {
     if (jumpTimer.current) window.clearTimeout(jumpTimer.current);
     updateVirtualInput({ jump: true });
-    jumpTimer.current = window.setTimeout(() => updateVirtualInput({ jump: false }), 200);
+    jumpTimer.current = window.setTimeout(() => updateVirtualInput({ jump: false }), 220);
   };
 
   const setSprint = (active: boolean) => {
     setSprinting(active);
     updateVirtualInput({ sprint: active });
+  };
+
+  const toggleSprint = () => {
+    setSprinting((current) => {
+      const next = !current;
+      updateVirtualInput({ sprint: next });
+      return next;
+    });
   };
 
   return (
@@ -233,31 +286,34 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
         )}
       </AnimatePresence>
 
-      <footer className="pointer-events-none flex w-full items-end justify-between pb-2">
+      <footer className="pointer-events-none flex w-full items-end justify-between pb-2 select-none">
         {touchControls && (
           <div
             ref={joystickRef}
             data-interactive="true"
-            onPointerDown={startJoystick}
-            onPointerMove={moveJoystick}
-            onPointerUp={stopJoystick}
-            onPointerCancel={stopJoystick}
-            onLostPointerCapture={(event) => { if (joystickPointerId.current === event.pointerId) stopJoystick(event); }}
-            className="pointer-events-auto relative grid h-28 w-28 touch-none place-items-center rounded-full border-2 border-white/40 bg-[#173246]/80 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            className="pointer-events-auto relative grid h-28 w-28 touch-none place-items-center rounded-full border-2 border-white/40 bg-[#173246]/85 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl"
           >
             {/* Directional markers */}
-            <span className="absolute top-2 text-[9px] font-black text-white/40">▲</span>
-            <span className="absolute bottom-2 text-[9px] font-black text-white/40">▼</span>
-            <span className="absolute left-2 text-[9px] font-black text-white/40">◀</span>
-            <span className="absolute right-2 text-[9px] font-black text-white/40">▶</span>
-            <span className="absolute inset-4 rounded-full border border-dashed border-white/20" />
+            <span className="pointer-events-none absolute top-2 text-[10px] font-black text-white/50">▲</span>
+            <span className="pointer-events-none absolute bottom-2 text-[10px] font-black text-white/50">▼</span>
+            <span className="pointer-events-none absolute left-2 text-[10px] font-black text-white/50">◀</span>
+            <span className="pointer-events-none absolute right-2 text-[10px] font-black text-white/50">▶</span>
+            <span className="pointer-events-none absolute inset-3 rounded-full border border-dashed border-white/20" />
             
             {/* Joystick Nub */}
             <span
-              className="grid h-13 w-13 place-items-center rounded-full border-2 border-white/70 bg-gradient-to-tr from-emerald-400 via-teal-300 to-cyan-300 shadow-xl transition-transform duration-75"
+              className="pointer-events-none grid h-13 w-13 place-items-center rounded-full border-2 border-white/80 bg-gradient-to-tr from-emerald-400 via-teal-300 to-cyan-300 shadow-xl transition-transform duration-75"
               style={{ transform: `translate(${joystick.x}px, ${joystick.y}px)` }}
             >
-              <span className="h-3.5 w-3.5 rounded-full bg-white/80 shadow" />
+              <span className="h-3.5 w-3.5 rounded-full bg-white/90 shadow" />
             </span>
           </div>
         )}
@@ -269,7 +325,8 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
               key={emoji}
               type="button"
               data-interactive="true"
-              onClick={() => onEmote(emoji)}
+              onTouchStart={(e) => { e.stopPropagation(); onEmote(emoji); }}
+              onClick={(e) => { e.stopPropagation(); onEmote(emoji); }}
               className="grid h-8 w-8 place-items-center rounded-full text-sm transition-transform hover:bg-white/15 active:scale-125"
             >
               {emoji}
@@ -278,14 +335,12 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
         </div>
 
         {touchControls && (
-          <div className="pointer-events-auto flex items-end gap-2.5">
+          <div className="pointer-events-auto flex items-end gap-2.5 select-none">
             <button
               type="button"
               data-interactive="true"
-              onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setSprint(true); }}
-              onPointerUp={() => setSprint(false)}
-              onPointerCancel={() => setSprint(false)}
-              onLostPointerCapture={() => setSprint(false)}
+              onTouchStart={(e) => { e.stopPropagation(); toggleSprint(); }}
+              onClick={(e) => { e.stopPropagation(); toggleSprint(); }}
               className={`grid h-12 w-12 touch-none place-items-center rounded-full border-2 text-[10px] font-black shadow-xl backdrop-blur-xl transition active:scale-95 ${sprinting ? 'border-amber-300 bg-amber-400 text-[#173246] shadow-amber-400/50' : 'border-white/40 bg-[#173246]/85 text-white'}`}
             >
               <Footprints size={18} />
@@ -293,7 +348,8 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
             <button
               type="button"
               data-interactive="true"
-              onPointerDown={(event) => { event.preventDefault(); jump(); }}
+              onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); jump(); }}
+              onClick={(e) => { e.stopPropagation(); jump(); }}
               className="grid h-15 w-15 touch-none place-items-center rounded-full border-2 border-white/60 bg-gradient-to-tr from-emerald-400 via-teal-400 to-cyan-400 text-xs font-black text-[#173246] shadow-2xl transition active:scale-90"
             >
               JUMP

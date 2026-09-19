@@ -69,10 +69,8 @@ export function CityWorldView() {
       setCompletedStoryIds(restoredSnapshot.completedStoryIds);
       setUnlockedOverrides(restoredSnapshot.unlockedZoneIds);
       setOnboardingSeen(restoredSnapshot.onboardingSeen);
-      setOnboardingOpen(!restoredSnapshot.onboardingSeen);
-      if (restoredSnapshot.onboardingSeen && !worldSession.checkedInToday) {
-        const home = CITY_ZONES.find((zone) => zone.id === 'home');
-        if (home) setActivityZone(home);
+      if (restoredSnapshot.onboardingSeen) {
+        setOnboardingOpen(false);
       }
       scene.current?.restoreSessionTransform(restoredSnapshot.transform);
       return;
