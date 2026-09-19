@@ -5,23 +5,25 @@ import { Html, useAnimations, useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import * as THREE from 'three';
-import { CITY_COLLIDERS, CITY_SIZE } from './world-data';
+import { CITY_COLLIDERS, CITY_SIZE, isWorldPointWalkable } from './world-data';
 import type { PlayerHandle, VirtualInput } from './world-types';
 import type { WorldTransform } from './world-session';
 
-const BASE_Y = 0.42;
+const BASE_Y = 0.62;
 const CASUAL_BOY_COLORS: Record<string, string> = {
-  skin: '#fed7aa',
-  face: '#ffedd5',
-  shirt: '#f59e0b', // Warm sunflower yellow hoodie
-  pants: '#2563eb', // Indigo denim jeans
-  belt: '#ffffff',  // White accents / sneakers
-  hair: '#543310',  // Warm chestnut brown hair
+  skin: '#fed7aa',  // Warm natural peach skin tone for face, arms, neck, hands
+  face: '#1e293b',  // Dark cute anime eyes & eyebrows
+  shirt: '#f59e0b', // Sunflower yellow hoodie
+  pants: '#2563eb', // Classic denim blue jeans
+  belt: '#f8fafc',  // Crisp white sneaker accents
+  hair: '#451a03',  // Warm chestnut brown hair
 };
 
 function ChibiCasualPlayerModel({ moving, sprinting, jumping, victory }: { moving: boolean; sprinting: boolean; jumping: boolean; victory?: boolean }) {
   const group = useRef<THREE.Group>(null);
   const gltf = useGLTF('/models/city-hero.gltf');
+  const activeAction = useRef<string>('Idle');
+  
   const model = useMemo(() => {
     const next = cloneSkeleton(gltf.scene);
     next.traverse((object) => {
@@ -31,10 +33,21 @@ function ChibiCasualPlayerModel({ moving, sprinting, jumping, victory }: { movin
       const source = Array.isArray(object.material) ? object.material : [object.material];
       const styled = source.map((material) => {
         const name = (material?.name || '').toLowerCase();
-        const key = Object.keys(CASUAL_BOY_COLORS).find((candidate) => name.includes(candidate));
+        let color = '#ffffff';
+        if (name === 'skin') color = CASUAL_BOY_COLORS.skin; // Body & Face skin
+        else if (name === 'face') color = CASUAL_BOY_COLORS.face; // Eyes & Eyebrows
+        else if (name === 'shirt') color = CASUAL_BOY_COLORS.shirt;
+        else if (name === 'pants') color = CASUAL_BOY_COLORS.pants;
+        else if (name === 'belt') color = CASUAL_BOY_COLORS.belt;
+        else if (name === 'hair') color = CASUAL_BOY_COLORS.hair;
+        else {
+          const key = Object.keys(CASUAL_BOY_COLORS).find((candidate) => name.includes(candidate));
+          if (key) color = CASUAL_BOY_COLORS[key];
+        }
+
         return new THREE.MeshToonMaterial({
           name: material?.name,
-          color: key ? CASUAL_BOY_COLORS[key] : '#ffffff',
+          color,
           side: THREE.FrontSide,
         });
       });
@@ -42,24 +55,44 @@ function ChibiCasualPlayerModel({ moving, sprinting, jumping, victory }: { movin
     });
     return next;
   }, [gltf.scene]);
+
   const { actions } = useAnimations(gltf.animations, group);
 
   useEffect(() => {
-    const name = victory
+    const nextName = victory
       ? 'Victory'
       : jumping
         ? 'Jump'
         : moving
           ? (sprinting ? 'Run' : 'Walk')
           : 'Idle';
-    const action = actions[name] || actions.Idle;
-    action?.reset().fadeIn(0.14).play();
-    return () => { action?.fadeOut(0.14); };
+
+    const prevAction = activeAction.current ? actions[activeAction.current] : null;
+    const nextAction = actions[nextName] || actions.Idle;
+
+    if (nextAction && activeAction.current !== nextName) {
+      nextAction.reset();
+      
+      // Speed matching for energetic natural cadence
+      if (nextName === 'Walk') nextAction.timeScale = 1.3;
+      else if (nextName === 'Run') nextAction.timeScale = 1.4;
+      else if (nextName === 'Jump') nextAction.timeScale = 1.1;
+      else nextAction.timeScale = 0.95; // Relaxed natural breathing idle
+
+      if (prevAction) {
+        nextAction.fadeIn(0.18).play();
+        prevAction.fadeOut(0.18);
+      } else {
+        nextAction.play();
+      }
+
+      activeAction.current = nextName;
+    }
   }, [actions, jumping, moving, sprinting, victory]);
 
   return (
     <group ref={group}>
-      <primitive object={model} scale={0.82} position={[0, 0, 0]} />
+      <primitive object={model} scale={0.88} position={[0, 0, 0]} />
     </group>
   );
 }
@@ -67,8 +100,7 @@ function ChibiCasualPlayerModel({ moving, sprinting, jumping, victory }: { movin
 useGLTF.preload('/models/city-hero.gltf');
 
 function canMoveTo(x: number, z: number) {
-  if (Math.hypot(x, z) > CITY_SIZE - 3) return false;
-  return !CITY_COLLIDERS.some((collider) => Math.hypot(x - collider.x, z - collider.z) < collider.radius);
+  return isWorldPointWalkable(x, z);
 }
 
 function lerpAngle(current: number, target: number, amount: number) {

@@ -667,6 +667,23 @@ function ModularCityTown({ compact = false }: { compact?: boolean }) {
   const gTreesTall = useGLTF('/models/city/grass-trees-tall.glb');
   const gGrass = useGLTF('/models/city/grass.glb');
 
+  // Ensure all scene materials are properly initialized
+  React.useEffect(() => {
+    [gStraight, gLightposts, gInter, gFountain, gPave, gBldA, gBldB, gBldC, gBldD, gGarage, gTrees, gTreesTall, gGrass].forEach((g) => {
+      if (!g?.scene) return;
+      g.scene.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const m = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+          if (m) {
+            m.roughness = 0.82;
+            m.metalness = 0.05;
+            m.needsUpdate = true;
+          }
+        }
+      });
+    });
+  }, [gStraight, gLightposts, gInter, gFountain, gPave, gBldA, gBldB, gBldC, gBldD, gGarage, gTrees, gTreesTall, gGrass]);
+
   const tiles = useMemo(() => {
     const list: CityTileDef[] = [];
     const T = 8;
@@ -737,6 +754,12 @@ function ModularCityTown({ compact = false }: { compact?: boolean }) {
 
   return (
     <group position={[0, 0.42, 0]}>
+      {/* City base grass platter */}
+      <mesh position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[74, 64]} />
+        <meshStandardMaterial color="#6fa85b" roughness={0.96} />
+      </mesh>
+
       {tiles.map((tile, index) => {
         const source = modelMap[tile.model];
         if (!source) return null;
@@ -758,9 +781,9 @@ function ModularCityTown({ compact = false }: { compact?: boolean }) {
 export function CityEnvironment({ energy, completedZoneIds, activeZoneId, compact = false }: { energy: number; completedZoneIds: CityZoneId[]; activeZoneId: CityZoneId; compact?: boolean }) {
   return (
     <group>
-      <mesh position={[0, -2.5, 0]} receiveShadow>
+      <mesh position={[0, -2.5, 0]}>
         <cylinderGeometry args={[93, 84, 4.2, 96]} />
-        <meshStandardMaterial color="#605244" roughness={0.96} />
+        <meshStandardMaterial color="#554637" roughness={0.96} />
       </mesh>
       <mesh position={[0, -3.3, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[210, 96]} />
@@ -775,8 +798,6 @@ export function CityEnvironment({ energy, completedZoneIds, activeZoneId, compac
       <Greenhouse />
       <Observatory />
       <LakeBoardwalk />
-      <CafeTerrace />
-      <MarketStalls />
 
       {/* Street Life & Civilians */}
       <CityStoryNpcs activeZoneId={activeZoneId} restoredZoneIds={completedZoneIds} compact={compact} />

@@ -59,14 +59,71 @@ export const MEMORY_SHARDS: Array<{ id: string; position: [number, number, numbe
 ];
 
 export const CITY_COLLIDERS = [
-  { x: -45, z: -15, radius: 8 }, { x: -15, z: 15, radius: 8 },
-  { x: 15, z: 15, radius: 8 }, { x: 15, z: -15, radius: 8 },
-  { x: 15, z: 45, radius: 8 }, { x: 45, z: 45, radius: 8 },
-  { x: -15, z: 45, radius: 7 }, { x: -45, z: 45, radius: 8 },
-  { x: 15, z: -45, radius: 8 },
-  { x: -15, z: -45, radius: 8 },
-  { x: -15, z: -15, radius: 3.5 },
-  { x: -45, z: 15, radius: 1.6 }, { x: -45, z: -45, radius: 5.5 },
-  { x: 45, z: 15, radius: 5 }, { x: 45, z: -45, radius: 7 },
-  { x: 45, z: -15, radius: 7 },
+  // Major Quest Buildings (tight footprints to keep roads completely clear)
+  { x: -45, z: -15, radius: 4.2 }, // Dawn Home
+  { x: -45, z: 15, radius: 3.8 },  // Sanctuary
+  { x: -45, z: -45, radius: 4.5 }, // Greenhouse
+  { x: -15, z: 45, radius: 4.2 },  // Academy
+  { x: 45, z: 15, radius: 4.2 },   // Observatory
+  { x: 45, z: -15, radius: 4.2 },  // Resource Bank
+  { x: 45, z: -45, radius: 4.5 },  // Arcade
+  { x: -15, z: -15, radius: 3.2 }, // Central Fountain Core
+  
+  // Shophouses and City Block interiors
+  { x: 15, z: -15, radius: 3.2 },  // Cafe Terrace
+  { x: 15, z: 45, radius: 3.5 },   // Market Stalls
+  { x: -40, z: 40, radius: 4.0 },  // Northwest Block Building
+  { x: 40, z: 40, radius: 4.0 },   // Northeast Block Building
+  { x: -40, z: -16, radius: 3.8 }, // West Shophouse
+  { x: 40, z: -16, radius: 3.8 },  // East Shophouse
 ];
+
+export function isWorldPointWalkable(x: number, z: number): boolean {
+  // Island boundary
+  const dist = Math.hypot(x, z);
+  if (dist > CITY_SIZE - 2) return false;
+
+  // Deep lake boundary (past the wooden boardwalk at z = -61)
+  if (z < -61.5) return false;
+
+  // 1. Check all landmark and shophouse colliders
+  for (const c of CITY_COLLIDERS) {
+    const dx = x - c.x;
+    const dz = z - c.z;
+    if (dx * dx + dz * dz < c.radius * c.radius) {
+      return false;
+    }
+  }
+
+  // 2. Check modular city grid buildings (solid building footprints)
+  const T = 8;
+  const tileX = Math.round(x / T) * T;
+  const tileZ = Math.round(z / T) * T;
+  const dx = x - tileX;
+  const dz = z - tileZ;
+  const inTileBounds = (dx * dx + dz * dz < 3.8 * 3.8);
+
+  if (inTileBounds) {
+    const roadCoords = [-48, -24, 0, 24, 48];
+    const isRoadX = roadCoords.includes(tileX);
+    const isRoadZ = roadCoords.includes(tileZ);
+
+    // If it's not a road tile, it's a block interior
+    if (!isRoadX && !isRoadZ) {
+      if ((tileX === -16 && tileZ === 16) || (tileX === 16 && tileZ === -16)) {
+        return false; // Central fountain basin
+      }
+      if (tileX === -16 && tileZ === 40) return false; // Building C
+      if (tileX === -40 && tileZ === -16) return false; // Building B
+      if (tileX === 40 && tileZ === -40) return false; // Building D
+      if (tileX === 40 && tileZ === -16) return false; // Building A
+      if (Math.abs(tileX) === 40 || Math.abs(tileZ) === 40) return false; // Shophouses
+      if (dist > 45) return false; // Outer dense tall trees
+      const variant = (Math.abs(tileX * 7 + tileZ * 13) % 4);
+      if (variant === 0) return false; // Interior block building
+    }
+  }
+
+  return true;
+}
+
