@@ -644,6 +644,28 @@ export function QuestBeacons({ zoneIds, activeZoneId }: { zoneIds: CityZoneId[];
   );
 }
 
+function FullCityLandscape() {
+  const gltf = useGLTF('/models/city/poly-city.glb');
+  const scene = useMemo(() => {
+    const cloned = gltf.scene.clone();
+    cloned.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        obj.receiveShadow = true;
+        if (obj.material) {
+          obj.material.roughness = 0.82;
+        }
+      }
+    });
+    return cloned;
+  }, [gltf.scene]);
+
+  return (
+    <group position={[-4.5, 0.22, 2.2]} scale={0.058} rotation={[0, Math.PI / 2, 0]}>
+      <primitive object={scene} />
+    </group>
+  );
+}
+
 export function CityEnvironment({ energy, completedZoneIds, activeZoneId, compact = false }: { energy: number; completedZoneIds: CityZoneId[]; activeZoneId: CityZoneId; compact?: boolean }) {
   const buildings = useMemo(() => {
     const positions: Array<{ x: number; z: number }> = [];
@@ -742,3 +764,4 @@ useGLTF.preload('/models/city/building-small-b.glb');
 useGLTF.preload('/models/city/building-small-c.glb');
 useGLTF.preload('/models/city/building-small-d.glb');
 useGLTF.preload('/models/city/pavement-fountain.glb');
+useGLTF.preload('/models/city/poly-city.glb');
