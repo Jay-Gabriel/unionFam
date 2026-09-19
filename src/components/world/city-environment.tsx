@@ -660,67 +660,28 @@ function FullCityLandscape() {
   }, [gltf.scene]);
 
   return (
-    <group position={[-4.5, 0.22, 2.2]} scale={0.058} rotation={[0, Math.PI / 2, 0]}>
+    <group position={[-3.93, 0.33, 1.92]} scale={0.055}>
       <primitive object={scene} />
     </group>
   );
 }
 
 export function CityEnvironment({ energy, completedZoneIds, activeZoneId, compact = false }: { energy: number; completedZoneIds: CityZoneId[]; activeZoneId: CityZoneId; compact?: boolean }) {
-  const buildings = useMemo(() => {
-    const positions: Array<{ x: number; z: number }> = [];
-    for (const x of BLOCKS) for (const z of BLOCKS) {
-      const isLandmark = (x === -45 && z === 15) || (x === -45 && z === -45) ||
-        (x === 45 && z === 15) || (x === 45 && z === -45) || (x === 45 && z === -15) ||
-        (x === -45 && z === -15) || (x === -15 && z === -15) || (x === -15 && z === 45) || (x === 15 && z === -15) ||
-        (x === 15 && z === 45);
-      if (!isLandmark) positions.push({ x, z });
-    }
-    return positions;
-  }, []);
-
   return (
     <group>
       <mesh position={[0, -2.5, 0]} receiveShadow>
         <cylinderGeometry args={[93, 84, 4.2, 96]} />
-        <meshStandardMaterial color="#775a43" roughness={0.96} />
+        <meshStandardMaterial color="#605244" roughness={0.96} />
       </mesh>
       <mesh position={[0, -3.3, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[210, 96]} />
         <meshPhysicalMaterial color="#58b9d9" roughness={0.18} transparent opacity={0.82} clearcoat={1} />
       </mesh>
-      <mesh position={[0, -0.22, 0]} receiveShadow>
-        <cylinderGeometry args={[92.5, 93, 0.4, 96]} />
-        <meshStandardMaterial color="#77ae69" roughness={0.96} />
-      </mesh>
 
-      {[-30, 0, 30].map((x) => <Road key={`v-${x}`} x={x} width={x === 0 ? 8 : 6} depth={124} vertical />)}
-      {[-30, 0, 30].map((z) => <Road key={`h-${z}`} z={z} width={124} depth={z === 0 ? 8 : 6} />)}
-      {[-30, 0, 30].flatMap((x) => [-30, 0, 30].map((z) => <Crosswalk key={`${x}-${z}`} x={x} z={z} vertical={(x + z) % 60 === 0} />))}
+      {/* Realistic 3D City Landscape */}
+      <FullCityLandscape />
 
-      {BLOCKS.flatMap((x) => BLOCKS.map((z) => (
-        <mesh key={`slab-${x}-${z}`} position={[x, 0.24, z]} receiveShadow>
-          <boxGeometry args={[20.8, 0.28, 20.8]} />
-          <meshStandardMaterial color={
-            (x === -45 && z === 15) || (x === -45 && z === -45) || (x === 15 && z === -15)
-              ? '#8fbe78' : '#ded8cc'
-          } roughness={0.96} />
-        </mesh>
-      )))}
-
-      {buildings.map(({ x, z }, index) => (
-        <Building
-          key={`${x}-${z}`}
-          position={[x, 0.4, z]}
-          size={[11 + index % 3, 9.5 + index % 2]}
-          floors={3 + index % 3}
-          color={PALETTE[index % PALETTE.length]}
-          accent={['#e56f67', '#7769ee', '#0ea5e9', '#14b8a6'][index % 4]}
-          glow={energy / 100}
-          rotation={z > 0 ? Math.PI : 0}
-        />
-      ))}
-
+      {/* Life Lab Zone Landmarks */}
       <Fountain energy={energy} />
       <DawnHome />
       <Sanctuary />
@@ -732,27 +693,17 @@ export function CityEnvironment({ energy, completedZoneIds, activeZoneId, compac
       <LakeBoardwalk />
       <CafeTerrace />
       <MarketStalls />
-      <StreetFurniture compact={compact} />
+
+      {/* Street Life & Civilians */}
       <CityStoryNpcs activeZoneId={activeZoneId} restoredZoneIds={completedZoneIds} compact={compact} />
       <StoryRestoration completedZoneIds={completedZoneIds} compact={compact} />
 
-      <CityCar position={[-3.1, 0.28, 42]} color="#e66a5b" />
-      <CityCar position={[3.1, 0.28, 23]} rotation={Math.PI} color="#e5b84d" />
-      <CityCar position={[27, 0.28, -11]} rotation={Math.PI / 2} color="#4d9fc4" />
-      <CityCar position={[-27, 0.28, -44]} rotation={-Math.PI / 2} color="#7b6dcc" />
-      <CityCar position={[3.1, 0.28, -50]} color="#58a876" />
+      <CityCar position={[-3.1, 0.42, 42]} color="#e66a5b" />
+      <CityCar position={[3.1, 0.42, 23]} rotation={Math.PI} color="#e5b84d" />
+      <CityCar position={[27, 0.42, -11]} rotation={Math.PI / 2} color="#4d9fc4" />
+      <CityCar position={[-27, 0.42, -44]} rotation={-Math.PI / 2} color="#7b6dcc" />
+      <CityCar position={[3.1, 0.42, -50]} color="#58a876" />
 
-      {[[-5.2, 0.3, 5.2, 0], [5.2, 0.3, -5.2, Math.PI], [-35.2, 0.3, 5.2, 0], [35.2, 0.3, -5.2, Math.PI]].map((p, index) => (
-        <TrafficLight key={index} position={[p[0], p[1], p[2]]} rotation={p[3]} />
-      ))}
-
-      {[[ -22, 0.3, -9], [-9, 0.3, -22], [-52, 0.3, 8], [-38, 0.3, 22], [22, 0.3, 39], [38, 0.3, 52], [-52, 0.3, -38], [-38, 0.3, -52], [22, 0.3, -39]].map((p, index) => <Tree key={index} position={p as [number, number, number]} scale={0.85 + index % 2 * 0.12} />)}
-      {[-45, -15, 15, 45].flatMap((value) => [
-        <Lamp key={`a-${value}`} position={[value - 9, 0.3, -25]} flip={1} />,
-        <Lamp key={`b-${value}`} position={[value + 9, 0.3, 25]} flip={-1} />,
-        <Lamp key={`c-${value}`} position={[-25, 0.3, value - 9]} flip={1} />,
-        <Lamp key={`d-${value}`} position={[25, 0.3, value + 9]} flip={-1} />,
-      ])}
       <CityNature compact={compact} bloomLevel={completedZoneIds.length} />
       <Clouds compact={compact} />
     </group>
