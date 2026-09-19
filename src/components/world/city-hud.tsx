@@ -40,12 +40,18 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
   const jumpTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    const query = window.matchMedia('(pointer: coarse), (max-width: 900px)');
-    const update = () => setTouchControls(query.matches);
-    update();
-    query.addEventListener('change', update);
+    const checkTouch = () => {
+      const hasTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints || 0) > 0);
+      const isMobileSize = typeof window !== 'undefined' && window.innerWidth <= 1024;
+      const query = typeof window !== 'undefined' ? window.matchMedia('(pointer: coarse), (max-width: 1024px)') : null;
+      setTouchControls(Boolean(hasTouch || isMobileSize || query?.matches));
+    };
+    checkTouch();
+    window.addEventListener('resize', checkTouch);
+    window.addEventListener('touchstart', checkTouch, { once: true });
     return () => {
-      query.removeEventListener('change', update);
+      window.removeEventListener('resize', checkTouch);
+      window.removeEventListener('touchstart', checkTouch);
       if (jumpTimer.current) window.clearTimeout(jumpTimer.current);
     };
   }, []);
@@ -65,13 +71,18 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
     if (joystickPointerId.current !== event.pointerId) return;
     event.preventDefault();
     const rect = joystickRef.current.getBoundingClientRect();
-    const dx = event.clientX - (rect.left + rect.width / 2);
-    const dy = event.clientY - (rect.top + rect.height / 2);
-    const distance = Math.min(42, Math.hypot(dx, dy));
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = event.clientX - centerX;
+    const dy = event.clientY - centerY;
+    const maxRadius = rect.width / 2 - 12;
+    const rawDist = Math.hypot(dx, dy);
+    const distance = Math.min(maxRadius, rawDist);
     const angle = Math.atan2(dy, dx);
-    const x = Math.cos(angle) * distance / 42;
-    const y = Math.sin(angle) * distance / 42;
-    setJoystick({ x: x * 30, y: y * 30 });
+    const x = Math.cos(angle) * (distance / maxRadius);
+    const y = Math.sin(angle) * (distance / maxRadius);
+
+    setJoystick({ x: x * maxRadius * 0.75, y: y * maxRadius * 0.75 });
     updateVirtualInput({ x, y });
   };
 
@@ -92,7 +103,7 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
   const jump = () => {
     if (jumpTimer.current) window.clearTimeout(jumpTimer.current);
     updateVirtualInput({ jump: true });
-    jumpTimer.current = window.setTimeout(() => updateVirtualInput({ jump: false }), 180);
+    jumpTimer.current = window.setTimeout(() => updateVirtualInput({ jump: false }), 200);
   };
 
   const setSprint = (active: boolean) => {
@@ -222,29 +233,73 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
         )}
       </AnimatePresence>
 
-      <footer className="pointer-events-none flex w-full items-end justify-between pb-1">
-        {touchControls && <div
-          ref={joystickRef}
-          data-interactive="true"
-          onPointerDown={startJoystick}
-          onPointerMove={moveJoystick}
-          onPointerUp={stopJoystick}
-          onPointerCancel={stopJoystick}
-          onLostPointerCapture={(event) => { if (joystickPointerId.current === event.pointerId) stopJoystick(event); }}
-          className="pointer-events-auto relative grid h-20 w-20 touch-none place-items-center rounded-full border border-white/35 bg-[#173246]/72 shadow-xl backdrop-blur-xl"
-        >
-          <span className="absolute inset-3 rounded-full border border-white/15" />
-          <span className="h-10 w-10 rounded-full border border-white/55 bg-gradient-to-tr from-emerald-400 to-cyan-300 shadow-lg" style={{ transform: `translate(${joystick.x}px, ${joystick.y}px)` }} />
-        </div>}
+      <footer className="pointer-events-none flex w-full items-end justify-between pb-2">
+        {touchControls && (
+          <div
+            ref={joystickRef}
+            data-interactive="true"
+            onPointerDown={startJoystick}
+            onPointerMove={moveJoystick}
+            onPointerUp={stopJoystick}
+            onPointerCancel={stopJoystick}
+            onLostPointerCapture={(event) => { if (joystickPointerId.current === event.pointerId) stopJoystick(event); }}
+            className="pointer-events-auto relative grid h-28 w-28 touch-none place-items-center rounded-full border-2 border-white/40 bg-[#173246]/80 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
+          >
+            {/* Directional markers */}
+            <span className="absolute top-2 text-[9px] font-black text-white/40">▲</span>
+            <span className="absolute bottom-2 text-[9px] font-black text-white/40">▼</span>
+            <span className="absolute left-2 text-[9px] font-black text-white/40">◀</span>
+            <span className="absolute right-2 text-[9px] font-black text-white/40">▶</span>
+            <span className="absolute inset-4 rounded-full border border-dashed border-white/20" />
+            
+            {/* Joystick Nub */}
+            <span
+              className="grid h-13 w-13 place-items-center rounded-full border-2 border-white/70 bg-gradient-to-tr from-emerald-400 via-teal-300 to-cyan-300 shadow-xl transition-transform duration-75"
+              style={{ transform: `translate(${joystick.x}px, ${joystick.y}px)` }}
+            >
+              <span className="h-3.5 w-3.5 rounded-full bg-white/80 shadow" />
+            </span>
+          </div>
+        )}
 
-        {!touchControls && <div className="pointer-events-auto mb-1 flex items-center gap-1 rounded-full border border-white/30 bg-[#173246]/82 p-1 shadow-xl backdrop-blur-xl">
-          {EMOTES.map((emoji) => <button key={emoji} type="button" onClick={() => onEmote(emoji)} className="grid h-8 w-8 place-items-center rounded-full text-sm hover:bg-white/15">{emoji}</button>)}
-        </div>}
+        {/* Emotes Bar - Accessible on both mobile & desktop */}
+        <div className="pointer-events-auto mb-1 flex items-center gap-1 rounded-full border border-white/30 bg-[#173246]/85 p-1 shadow-xl backdrop-blur-xl">
+          {EMOTES.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              data-interactive="true"
+              onClick={() => onEmote(emoji)}
+              className="grid h-8 w-8 place-items-center rounded-full text-sm transition-transform hover:bg-white/15 active:scale-125"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
 
-        {touchControls && <div className="pointer-events-auto flex items-end gap-2">
-          <button type="button" data-interactive="true" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setSprint(true); }} onPointerUp={() => setSprint(false)} onPointerCancel={() => setSprint(false)} onLostPointerCapture={() => setSprint(false)} className={`grid h-11 w-11 touch-none place-items-center rounded-full border text-[9px] font-black shadow-xl backdrop-blur-xl ${sprinting ? 'border-amber-200 bg-amber-300 text-[#173246]' : 'border-white/35 bg-[#173246]/78'}`}><Footprints size={16} /></button>
-          <button type="button" data-interactive="true" onPointerDown={(event) => { event.preventDefault(); jump(); }} className="grid h-14 w-14 touch-none place-items-center rounded-full border border-white/45 bg-gradient-to-tr from-emerald-500 to-cyan-400 text-[10px] font-black shadow-xl active:scale-90">JUMP</button>
-        </div>}
+        {touchControls && (
+          <div className="pointer-events-auto flex items-end gap-2.5">
+            <button
+              type="button"
+              data-interactive="true"
+              onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setSprint(true); }}
+              onPointerUp={() => setSprint(false)}
+              onPointerCancel={() => setSprint(false)}
+              onLostPointerCapture={() => setSprint(false)}
+              className={`grid h-12 w-12 touch-none place-items-center rounded-full border-2 text-[10px] font-black shadow-xl backdrop-blur-xl transition active:scale-95 ${sprinting ? 'border-amber-300 bg-amber-400 text-[#173246] shadow-amber-400/50' : 'border-white/40 bg-[#173246]/85 text-white'}`}
+            >
+              <Footprints size={18} />
+            </button>
+            <button
+              type="button"
+              data-interactive="true"
+              onPointerDown={(event) => { event.preventDefault(); jump(); }}
+              className="grid h-15 w-15 touch-none place-items-center rounded-full border-2 border-white/60 bg-gradient-to-tr from-emerald-400 via-teal-400 to-cyan-400 text-xs font-black text-[#173246] shadow-2xl transition active:scale-90"
+            >
+              JUMP
+            </button>
+          </div>
+        )}
       </footer>
 
       <AnimatePresence>

@@ -236,12 +236,12 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
   useFrame((_, rawDelta) => {
     if (!root.current) return;
     const delta = Math.min(rawDelta, 0.035);
-    const forwardInput = keys.current.forward || -virtual.current.y;
-    const rightInput = keys.current.right || virtual.current.x;
+    const forwardInput = keys.current.forward !== 0 ? keys.current.forward : -virtual.current.y;
+    const rightInput = keys.current.right !== 0 ? keys.current.right : virtual.current.x;
     const wantsJump = !paused && (keys.current.jump || virtual.current.jump);
     const sprinting = !paused && (keys.current.sprint || virtual.current.sprint);
     const inputLength = paused ? 0 : Math.hypot(forwardInput, rightInput);
-    const hasInput = inputLength > 0.08;
+    const hasInput = inputLength > 0.05;
     const vectors = frameVectors.current;
     const targetVelocity = vectors.targetVelocity.set(0, 0, 0);
 
