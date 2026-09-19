@@ -86,16 +86,16 @@ function Crosswalk({ x, z, vertical = false }: { x: number; z: number; vertical?
 function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   return (
     <group position={position} scale={scale}>
-      <mesh position={[0, 0.32, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.32, 0]} receiveShadow>
         <cylinderGeometry args={[0.72, 0.82, 0.6, 16]} />
         <meshStandardMaterial color="#d6b58b" roughness={0.92} />
       </mesh>
-      <mesh position={[0, 1.65, 0]} castShadow>
+      <mesh position={[0, 1.65, 0]}>
         <cylinderGeometry args={[0.16, 0.23, 2.15, 10]} />
         <meshToonMaterial color="#765039" />
       </mesh>
       {[[0, 3, 0], [0.58, 2.72, 0], [-0.52, 2.78, 0.12], [0, 2.65, 0.55]].map((p, index) => (
-        <mesh key={index} position={p as [number, number, number]} castShadow>
+        <mesh key={index} position={p as [number, number, number]}>
           <sphereGeometry args={[0.8, 14, 10]} />
           <meshToonMaterial color={index % 2 ? '#74b96c' : '#62a95f'} />
         </mesh>
@@ -107,7 +107,7 @@ function Tree({ position, scale = 1 }: { position: [number, number, number]; sca
 function Lamp({ position, flip = 1 }: { position: [number, number, number]; flip?: number }) {
   return (
     <group position={position}>
-      <mesh position={[0, 1.85, 0]} castShadow>
+      <mesh position={[0, 1.85, 0]}>
         <cylinderGeometry args={[0.09, 0.13, 3.7, 10]} />
         <meshStandardMaterial color="#314650" roughness={0.55} metalness={0.35} />
       </mesh>
@@ -127,13 +127,13 @@ function Bench({ position, rotation = 0 }: { position: [number, number, number];
   return (
     <group position={position} rotation={[0, rotation, 0]}>
       {[0.48, 1.02].map((y) => (
-        <mesh key={y} position={[0, y, y > 0.8 ? 0.2 : 0]} castShadow>
+        <mesh key={y} position={[0, y, y > 0.8 ? 0.2 : 0]}>
           <boxGeometry args={[2.25, 0.18, 0.3]} />
           <meshStandardMaterial color="#a9693f" roughness={0.76} />
         </mesh>
       ))}
       {[-0.85, 0.85].map((x) => (
-        <mesh key={x} position={[x, 0.27, 0]} castShadow>
+        <mesh key={x} position={[x, 0.27, 0]}>
           <boxGeometry args={[0.12, 0.55, 0.5]} />
           <meshStandardMaterial color="#40525a" roughness={0.6} metalness={0.25} />
         </mesh>
@@ -145,14 +145,14 @@ function Bench({ position, rotation = 0 }: { position: [number, number, number];
 function CityCar({ position, rotation = 0, color = '#e76f51' }: { position: [number, number, number]; rotation?: number; color?: string }) {
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <RoundedBox position={[0, 0.62, 0]} args={[1.75, 0.58, 3.35]} radius={0.18} smoothness={2} castShadow>
+      <RoundedBox position={[0, 0.62, 0]} args={[1.75, 0.58, 3.35]} radius={0.18} smoothness={2}>
         <meshToonMaterial color={color} />
       </RoundedBox>
-      <RoundedBox position={[0, 1.12, -0.18]} args={[1.5, 0.68, 1.72]} radius={0.16} smoothness={2} castShadow>
+      <RoundedBox position={[0, 1.12, -0.18]} args={[1.5, 0.68, 1.72]} radius={0.16} smoothness={2}>
         <meshToonMaterial color={color} />
       </RoundedBox>
       {[[-0.78, 0.45, -1.08], [0.78, 0.45, -1.08], [-0.78, 0.45, 1.08], [0.78, 0.45, 1.08]].map((p, index) => (
-        <mesh key={index} position={p as [number, number, number]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <mesh key={index} position={p as [number, number, number]} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.34, 0.34, 0.22, 16]} />
           <meshStandardMaterial color="#18242c" roughness={0.78} />
         </mesh>
@@ -172,11 +172,11 @@ function CityCar({ position, rotation = 0, color = '#e76f51' }: { position: [num
 function TrafficLight({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 1.8, 0]} castShadow>
+      <mesh position={[0, 1.8, 0]}>
         <cylinderGeometry args={[0.075, 0.1, 3.6, 10]} />
         <meshStandardMaterial color="#263842" metalness={0.35} roughness={0.55} />
       </mesh>
-      <mesh position={[0, 3.65, 0]} castShadow>
+      <mesh position={[0, 3.65, 0]}>
         <boxGeometry args={[0.52, 1.25, 0.48]} />
         <meshStandardMaterial color="#1d2c34" roughness={0.55} />
       </mesh>
@@ -273,19 +273,19 @@ function CafeTerrace() {
     <group position={[15, 0.42, -15]}>
       {[[-3.2, -2.8], [1.6, -2.4], [-1.2, 2.4], [3.3, 2.8]].map(([x, z], index) => (
         <group key={index} position={[x, 0, z]}>
-          <mesh position={[0, 0.72, 0]} castShadow>
+          <mesh position={[0, 0.72, 0]}>
             <cylinderGeometry args={[0.72, 0.72, 0.1, 22]} />
             <meshStandardMaterial color="#f8efe1" roughness={0.72} />
           </mesh>
-          <mesh position={[0, 0.36, 0]} castShadow>
+          <mesh position={[0, 0.36, 0]}>
             <cylinderGeometry args={[0.09, 0.16, 0.72, 12]} />
             <meshStandardMaterial color="#41545c" metalness={0.3} roughness={0.58} />
           </mesh>
-          <mesh position={[0, 2.3, 0]} castShadow>
+          <mesh position={[0, 2.3, 0]}>
             <coneGeometry args={[1.55, 0.55, 24]} />
             <meshStandardMaterial color={index % 2 ? '#f28b82' : '#5fc5a4'} roughness={0.74} />
           </mesh>
-          <mesh position={[0, 1.42, 0]} castShadow>
+          <mesh position={[0, 1.42, 0]}>
             <cylinderGeometry args={[0.055, 0.07, 1.85, 10]} />
             <meshStandardMaterial color="#40525a" />
           </mesh>
@@ -300,11 +300,11 @@ function MarketStalls() {
     <group position={[15, 0.42, 45]}>
       {[-5.5, 0, 5.5].map((x, index) => (
         <group key={x} position={[x, 0, 0]}>
-          <mesh position={[0, 1.2, 0]} castShadow receiveShadow>
+          <mesh position={[0, 1.2, 0]} receiveShadow>
             <boxGeometry args={[4.2, 2.4, 3.4]} />
             <meshStandardMaterial color={['#f3d7b5', '#cde0d2', '#d8d0ed'][index]} roughness={0.86} />
           </mesh>
-          <mesh position={[0, 2.72, 0.35]} rotation={[0, 0, index % 2 ? 0.035 : -0.035]} castShadow>
+          <mesh position={[0, 2.72, 0.35]} rotation={[0, 0, index % 2 ? 0.035 : -0.035]}>
             <boxGeometry args={[4.65, 0.22, 4.1]} />
             <meshStandardMaterial color={['#d7655a', '#2f9d82', '#7065bf'][index]} roughness={0.68} />
           </mesh>
@@ -327,18 +327,18 @@ function Building({ position, size, floors, color, accent, rotation = 0, glow = 
   const windowColumns = Array.from({ length: Math.max(2, Math.floor(width / 2.6)) }, (_, index) => index);
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <RoundedBox position={[0, height / 2, 0]} args={[width, height, depth]} radius={0.22} smoothness={2} castShadow receiveShadow>
+      <RoundedBox position={[0, height / 2, 0]} args={[width, height, depth]} radius={0.22} smoothness={2} receiveShadow>
         <meshToonMaterial color={color} />
       </RoundedBox>
       <mesh position={[0, 0.24, 0]} receiveShadow>
         <boxGeometry args={[width + 0.42, 0.48, depth + 0.42]} />
         <meshStandardMaterial color="#c8b9a7" roughness={0.92} />
       </mesh>
-      <mesh position={[0, height + 0.2, 0]} castShadow>
+      <mesh position={[0, height + 0.2, 0]}>
         <boxGeometry args={[width + 0.5, 0.4, depth + 0.5]} />
         <meshToonMaterial color="#fff5e7" />
       </mesh>
-      <mesh position={[0, height + 0.48, 0]} castShadow>
+      <mesh position={[0, height + 0.48, 0]}>
         <boxGeometry args={[width - 0.7, 0.18, depth - 0.7]} />
         <meshToonMaterial color={accent} />
       </mesh>
@@ -366,7 +366,7 @@ function Building({ position, size, floors, color, accent, rotation = 0, glow = 
             <RoundedBox position={[0, 1.18, 0]} args={[Math.max(2.1, width * 0.32), 1.9, 0.16]} radius={0.12} smoothness={2}>
               <meshPhysicalMaterial color="#75bfd3" roughness={0.12} metalness={0.05} clearcoat={0.75} />
             </RoundedBox>
-            <mesh position={[0, 2.35, 0.42]} rotation={[-0.18, 0, 0]} castShadow>
+            <mesh position={[0, 2.35, 0.42]} rotation={[-0.18, 0, 0]}>
               <boxGeometry args={[Math.max(2.35, width * 0.35), 0.16, 0.92]} />
               <meshToonMaterial color={side > 0 ? accent : '#fff1d6'} />
             </mesh>
@@ -386,7 +386,7 @@ function Building({ position, size, floors, color, accent, rotation = 0, glow = 
       {floors > 3 && (
         <>
           {[-0.26, 0.26].map((offset) => <group key={offset} position={[width * offset, 5.35, depth / 2 + 0.48]}>
-            <mesh castShadow><boxGeometry args={[2.2, 0.12, 0.72]} /><meshStandardMaterial color="#f4eadb" roughness={0.8} /></mesh>
+            <mesh><boxGeometry args={[2.2, 0.12, 0.72]} /><meshStandardMaterial color="#f4eadb" roughness={0.8} /></mesh>
             <mesh position={[0, 0.48, 0.3]}><boxGeometry args={[1.9, 0.06, 0.06]} /><meshStandardMaterial color="#596d73" metalness={0.25} roughness={0.55} /></mesh>
             <mesh position={[0, 0.14, 0.2]}><boxGeometry args={[1.7, 0.25, 0.3]} /><meshToonMaterial color="#85b96d" /></mesh>
           </group>)}
@@ -396,7 +396,7 @@ function Building({ position, size, floors, color, accent, rotation = 0, glow = 
         <boxGeometry args={[1.35, 2.15, 0.16]} />
         <meshStandardMaterial color="#4b6470" roughness={0.58} />
       </mesh>
-      <mesh position={[0, 2.58, depth / 2 + 0.5]} rotation={[-0.12, 0, 0]} castShadow>
+      <mesh position={[0, 2.58, depth / 2 + 0.5]} rotation={[-0.12, 0, 0]}>
         <boxGeometry args={[Math.min(width - 1, 4.8), 0.22, 1.1]} />
         <meshToonMaterial color={accent} />
       </mesh>
@@ -405,13 +405,13 @@ function Building({ position, size, floors, color, accent, rotation = 0, glow = 
         <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.18} roughness={0.5} />
       </mesh>
       {floors >= 5 && (
-        <mesh position={[0, height + 0.82, 0]} castShadow>
+        <mesh position={[0, height + 0.82, 0]}>
           <boxGeometry args={[Math.min(3.5, width * 0.45), 1.2, Math.min(2.5, depth * 0.45)]} />
           <meshStandardMaterial color="#a9b8bb" roughness={0.9} />
         </mesh>
       )}
       {floors >= 4 && <group position={[-width * 0.27, height + 0.78, 0]}>
-        <mesh castShadow><cylinderGeometry args={[0.62, 0.72, 1.35, 14]} /><meshToonMaterial color="#7fb0b4" /></mesh>
+        <mesh><cylinderGeometry args={[0.62, 0.72, 1.35, 14]} /><meshToonMaterial color="#7fb0b4" /></mesh>
         <mesh position={[0, 0.78, 0]}><sphereGeometry args={[0.64, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshToonMaterial color="#9bc8ca" /></mesh>
       </group>}
     </group>
@@ -428,7 +428,7 @@ function Fountain({ energy }: { energy: number }) {
   });
   return (
     <group position={[-15, 0.28, -15]}>
-      <mesh position={[0, 0.36, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.36, 0]} receiveShadow>
         <cylinderGeometry args={[3.1, 3.35, 0.68, 32]} />
         <meshStandardMaterial color="#dde3e0" roughness={0.72} />
       </mesh>
@@ -436,11 +436,11 @@ function Fountain({ energy }: { energy: number }) {
         <cylinderGeometry args={[2.72, 2.72, 0.16, 32]} />
         <meshPhysicalMaterial color="#62c8e8" roughness={0.12} transparent opacity={0.82} clearcoat={1} />
       </mesh>
-      <mesh position={[0, 1.7, 0]} castShadow>
+      <mesh position={[0, 1.7, 0]}>
         <cylinderGeometry args={[0.35, 0.55, 2.4, 18]} />
         <meshStandardMaterial color="#e8e4df" roughness={0.72} />
       </mesh>
-      <mesh ref={core} position={[0, 3.25, 0]} castShadow>
+      <mesh ref={core} position={[0, 3.25, 0]}>
         <octahedronGeometry args={[0.55, 1]} />
         <meshStandardMaterial color="#c4b5fd" emissive="#6366f1" emissiveIntensity={0.8 + energy / 45} metalness={0.35} roughness={0.2} />
       </mesh>
@@ -452,11 +452,11 @@ function Fountain({ energy }: { energy: number }) {
 function Observatory() {
   return (
     <group position={[45, 0.3, 15]}>
-      <mesh position={[0, 3.8, 0]} castShadow>
+      <mesh position={[0, 3.8, 0]}>
         <cylinderGeometry args={[3.5, 4.2, 7.6, 24]} />
         <meshStandardMaterial color="#f2e8d5" roughness={0.82} />
       </mesh>
-      <mesh position={[0, 7.8, 0]} castShadow>
+      <mesh position={[0, 7.8, 0]}>
         <sphereGeometry args={[3.65, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color="#6d79a8" metalness={0.25} roughness={0.38} />
       </mesh>
@@ -477,12 +477,12 @@ function Observatory() {
 function Greenhouse() {
   return (
     <group position={[-45, 0.25, -45]}>
-      <mesh position={[0, 2.4, 0]} castShadow>
+      <mesh position={[0, 2.4, 0]}>
         <boxGeometry args={[8.5, 4.8, 7.5]} />
         <meshPhysicalMaterial color="#b9f5dc" transparent opacity={0.42} roughness={0.16} transmission={0.18} />
       </mesh>
       {[-4.2, 0, 4.2].map((x) => (
-        <mesh key={x} position={[x, 2.5, 0]} castShadow>
+        <mesh key={x} position={[x, 2.5, 0]}>
           <boxGeometry args={[0.18, 5.2, 7.8]} />
           <meshStandardMaterial color="#3f7968" metalness={0.3} roughness={0.5} />
         </mesh>
@@ -511,12 +511,12 @@ function Academy() {
     <group position={[-15, 0.25, 45]}>
       <Building position={[0, 0, 0]} size={[13, 10]} floors={4} color="#f3d7a0" accent="#34d399" />
       {[-7.2, 7.2].map((x) => (
-        <mesh key={x} position={[x, 3.2, 5.6]} castShadow>
+        <mesh key={x} position={[x, 3.2, 5.6]}>
           <boxGeometry args={[1, 6.4, 1]} />
           <meshStandardMaterial color="#fff5e7" roughness={0.76} />
         </mesh>
       ))}
-      <mesh position={[0, 6, 5.6]} castShadow>
+      <mesh position={[0, 6, 5.6]}>
         <boxGeometry args={[15.4, 0.7, 1.1]} />
         <meshStandardMaterial color="#fff5e7" roughness={0.76} />
       </mesh>
@@ -527,10 +527,10 @@ function Academy() {
 function DawnHome() {
   return (
     <group position={[-45, 0.25, -15]}>
-      <RoundedBox position={[0, 3.2, 0]} args={[11.5, 6.4, 9.5]} radius={0.55} smoothness={3} castShadow receiveShadow>
+      <RoundedBox position={[0, 3.2, 0]} args={[11.5, 6.4, 9.5]} radius={0.55} smoothness={3} receiveShadow>
         <meshToonMaterial color="#fff1df" />
       </RoundedBox>
-      <mesh position={[0, 7.05, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
+      <mesh position={[0, 7.05, 0]} rotation={[0, Math.PI / 4, 0]}>
         <coneGeometry args={[8.3, 2.9, 4]} />
         <meshToonMaterial color="#e98aa9" />
       </mesh>
@@ -572,17 +572,17 @@ function Arcade() {
 function ResourceBank() {
   return (
     <group position={[45, 0.25, -15]}>
-      <mesh position={[0, 4.1, 0]} castShadow>
+      <mesh position={[0, 4.1, 0]}>
         <boxGeometry args={[12.5, 8.2, 10]} />
         <meshStandardMaterial color="#e7dcc4" roughness={0.82} />
       </mesh>
       {[-4.5, -1.5, 1.5, 4.5].map((x) => (
-        <mesh key={x} position={[x, 3.1, 5.25]} castShadow>
+        <mesh key={x} position={[x, 3.1, 5.25]}>
           <cylinderGeometry args={[0.42, 0.52, 6.2, 12]} />
           <meshStandardMaterial color="#fff8e8" roughness={0.74} />
         </mesh>
       ))}
-      <mesh position={[0, 8.55, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
+      <mesh position={[0, 8.55, 0]} rotation={[0, Math.PI / 4, 0]}>
         <coneGeometry args={[8.5, 2.1, 4]} />
         <meshStandardMaterial color="#e6b85c" metalness={0.18} roughness={0.5} />
       </mesh>
@@ -598,7 +598,7 @@ function LakeBoardwalk() {
         <meshStandardMaterial color="#c58f5b" roughness={0.88} />
       </mesh>
       {[-17, -12, -7, -2, 3, 8, 13, 18].map((x) => (
-        <mesh key={x} position={[x, 0.95, -3.1]} castShadow>
+        <mesh key={x} position={[x, 0.95, -3.1]}>
           <boxGeometry args={[0.13, 1.15, 0.13]} />
           <meshStandardMaterial color="#f2e4cd" roughness={0.8} />
         </mesh>

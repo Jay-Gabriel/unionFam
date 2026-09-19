@@ -81,32 +81,18 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
   return (
     <div className="absolute inset-0 bg-[#9fd7ef]">
       <Canvas
-        shadows={compact ? false : 'basic'}
-        dpr={renderDpr}
-        camera={{ position: [0, 7, 64], fov: 52, near: 0.1, far: 320 }}
-        gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.94 }}
+        shadows={false}
+        dpr={profile.mobile ? [1, 1.2] : [1, 1.25]}
+        camera={{ position: [0, 7, 64], fov: 52, near: 0.1, far: 280 }}
+        gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.02 }}
       >
         <color attach="background" args={['#9fd7ef']} />
         <fog attach="fog" args={['#afddec', 78 + energy * 0.42, 188 + energy * 0.5]} />
         <Sky distance={280} sunPosition={[-30, 36, 20]} inclination={0.54} azimuth={0.22} turbidity={4} rayleigh={1.1} mieCoefficient={0.005} mieDirectionalG={0.8} />
-        <hemisphereLight args={['#e7f6ff', '#51664a', 1.25]} />
-        <directionalLight
-          position={[-25, 34, 18]}
-          intensity={2.35}
-          color="#fff1d5"
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-camera-left={-78}
-          shadow-camera-right={78}
-          shadow-camera-top={78}
-          shadow-camera-bottom={-78}
-          shadow-camera-near={3}
-          shadow-camera-far={160}
-          shadow-bias={-0.0003}
-        />
-        <directionalLight position={[24, 12, -24]} intensity={0.42} color="#a9c7ff" />
-        <Sparkles count={30} scale={[120, 20, 120]} size={1.1} speed={0.12} color="#fff5c2" opacity={0.24} />
+        <ambientLight intensity={1.4} color="#f0f8ff" />
+        <directionalLight position={[-25, 34, 18]} intensity={1.8} color="#fff4dc" />
+        <directionalLight position={[24, 12, -24]} intensity={0.6} color="#c2dcff" />
+        <Sparkles count={20} scale={[120, 20, 120]} size={1.2} speed={0.12} color="#fff5c2" opacity={0.28} />
 
         <CityEnvironment energy={energy} completedZoneIds={completedZoneIds} activeZoneId={activeGuideZoneId} compact={compact} />
         <QuestBeacons zoneIds={questZoneIds} activeZoneId={activeGuideZoneId} />
