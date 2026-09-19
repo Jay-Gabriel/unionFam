@@ -644,24 +644,113 @@ export function QuestBeacons({ zoneIds, activeZoneId }: { zoneIds: CityZoneId[];
   );
 }
 
-function FullCityLandscape() {
-  const gltf = useGLTF('/models/city/poly-city.glb');
-  const scene = useMemo(() => {
-    const cloned = gltf.scene.clone();
-    cloned.traverse((obj) => {
-      if (obj instanceof THREE.Mesh) {
-        obj.receiveShadow = true;
-        if (obj.material) {
-          obj.material.roughness = 0.82;
+type CityTileDef = {
+  model: string;
+  x: number;
+  z: number;
+  rotation?: number;
+  scale?: number;
+};
+
+function ModularCityTown({ compact = false }: { compact?: boolean }) {
+  const gStraight = useGLTF('/models/city/road-straight.glb');
+  const gLightposts = useGLTF('/models/city/road-straight-lightposts.glb');
+  const gInter = useGLTF('/models/city/road-intersection.glb');
+  const gFountain = useGLTF('/models/city/pavement-fountain.glb');
+  const gPave = useGLTF('/models/city/pavement.glb');
+  const gBldA = useGLTF('/models/city/building-small-a.glb');
+  const gBldB = useGLTF('/models/city/building-small-b.glb');
+  const gBldC = useGLTF('/models/city/building-small-c.glb');
+  const gBldD = useGLTF('/models/city/building-small-d.glb');
+  const gGarage = useGLTF('/models/city/building-garage.glb');
+  const gTrees = useGLTF('/models/city/grass-trees.glb');
+  const gTreesTall = useGLTF('/models/city/grass-trees-tall.glb');
+  const gGrass = useGLTF('/models/city/grass.glb');
+
+  const tiles = useMemo(() => {
+    const list: CityTileDef[] = [];
+    const T = 8;
+    const roadCoords = [-48, -24, 0, 24, 48];
+
+    for (let z = -56; z <= 56; z += T) {
+      for (let x = -56; x <= 56; x += T) {
+        const dist = Math.hypot(x, z);
+        if (dist > 68) continue;
+
+        const isRoadX = roadCoords.includes(x);
+        const isRoadZ = roadCoords.includes(z);
+
+        if (isRoadX && isRoadZ) {
+          list.push({ model: 'inter', x, z, scale: 8 });
+        } else if (isRoadX) {
+          const useLight = (Math.abs(z) === 16 || Math.abs(z) === 40);
+          list.push({ model: useLight ? 'light' : 'straight', x, z, scale: 8 });
+        } else if (isRoadZ) {
+          const useLight = (Math.abs(x) === 16 || Math.abs(x) === 40);
+          list.push({ model: useLight ? 'light' : 'straight', x, z, rotation: Math.PI / 2, scale: 8 });
+        } else {
+          // Block interiors
+          if ((x === -16 && z === 16) || (x === 16 && z === -16)) {
+            list.push({ model: 'fountain', x, z, scale: 8 });
+          } else if (x === -16 && z === 40) {
+            list.push({ model: 'bld-c', x, z, rotation: Math.PI, scale: 9.5 });
+          } else if (x === -40 && z === -16) {
+            list.push({ model: 'bld-b', x, z, scale: 8.5 });
+          } else if (x === 40 && z === -40) {
+            list.push({ model: 'bld-d', x, z, rotation: Math.PI, scale: 8.5 });
+          } else if (x === 40 && z === -16) {
+            list.push({ model: 'bld-a', x, z, scale: 8.5 });
+          } else if (Math.abs(x) === 40 || Math.abs(z) === 40) {
+            const rot = (x < 0 ? Math.PI / 2 : -Math.PI / 2);
+            const shopType = (Math.abs(x + z) % 3 === 0) ? 'bld-a' : (Math.abs(x + z) % 3 === 1) ? 'bld-b' : 'garage';
+            list.push({ model: shopType, x, z, rotation: rot, scale: 8 });
+          } else if (Math.abs(x) === 16 && Math.abs(z) === 16) {
+            list.push({ model: 'trees', x, z, scale: 8 });
+          } else if (dist > 45) {
+            list.push({ model: 'trees-tall', x, z, scale: 8 });
+          } else {
+            const variant = (Math.abs(x * 7 + z * 13) % 4);
+            const chosen = variant === 0 ? 'bld-a' : variant === 1 ? 'trees' : variant === 2 ? 'pave' : 'grass';
+            list.push({ model: chosen, x, z, scale: 8 });
+          }
         }
       }
-    });
-    return cloned;
-  }, [gltf.scene]);
+    }
+    return list;
+  }, []);
+
+  const modelMap: Record<string, THREE.Group> = {
+    straight: gStraight.scene,
+    light: gLightposts.scene,
+    inter: gInter.scene,
+    fountain: gFountain.scene,
+    pave: gPave.scene,
+    'bld-a': gBldA.scene,
+    'bld-b': gBldB.scene,
+    'bld-c': gBldC.scene,
+    'bld-d': gBldD.scene,
+    garage: gGarage.scene,
+    trees: gTrees.scene,
+    'trees-tall': gTreesTall.scene,
+    grass: gGrass.scene,
+  };
 
   return (
-    <group position={[-3.93, 0.33, 1.92]} scale={0.055}>
-      <primitive object={scene} />
+    <group position={[0, 0.42, 0]}>
+      {tiles.map((tile, index) => {
+        const source = modelMap[tile.model];
+        if (!source) return null;
+        const cloned = source.clone();
+        return (
+          <primitive
+            key={`tile-${tile.x}-${tile.z}-${index}`}
+            object={cloned}
+            position={[tile.x, 0, tile.z]}
+            rotation={[0, tile.rotation || 0, 0]}
+            scale={tile.scale || 8}
+          />
+        );
+      })}
     </group>
   );
 }
@@ -678,18 +767,13 @@ export function CityEnvironment({ energy, completedZoneIds, activeZoneId, compac
         <meshPhysicalMaterial color="#58b9d9" roughness={0.18} transparent opacity={0.82} clearcoat={1} />
       </mesh>
 
-      {/* Realistic 3D City Landscape */}
-      <FullCityLandscape />
+      {/* Vibrant 3D Modern Town Grid */}
+      <ModularCityTown compact={compact} />
 
       {/* Life Lab Zone Landmarks */}
       <Fountain energy={energy} />
-      <DawnHome />
-      <Sanctuary />
       <Greenhouse />
       <Observatory />
-      <Academy />
-      <Arcade />
-      <ResourceBank />
       <LakeBoardwalk />
       <CafeTerrace />
       <MarketStalls />
@@ -710,9 +794,17 @@ export function CityEnvironment({ energy, completedZoneIds, activeZoneId, compac
   );
 }
 
+useGLTF.preload('/models/city/road-straight.glb');
+useGLTF.preload('/models/city/road-straight-lightposts.glb');
+useGLTF.preload('/models/city/road-intersection.glb');
+useGLTF.preload('/models/city/pavement-fountain.glb');
+useGLTF.preload('/models/city/pavement.glb');
 useGLTF.preload('/models/city/building-small-a.glb');
 useGLTF.preload('/models/city/building-small-b.glb');
 useGLTF.preload('/models/city/building-small-c.glb');
 useGLTF.preload('/models/city/building-small-d.glb');
-useGLTF.preload('/models/city/pavement-fountain.glb');
-useGLTF.preload('/models/city/poly-city.glb');
+useGLTF.preload('/models/city/building-garage.glb');
+useGLTF.preload('/models/city/grass-trees.glb');
+useGLTF.preload('/models/city/grass-trees-tall.glb');
+useGLTF.preload('/models/city/grass.glb');
+
