@@ -14,6 +14,14 @@ import { CITY_MAIN_STORY, CITY_STORY } from './city-story';
 import { CITY_ZONES } from './world-data';
 import type { CityZone, WorldJourney } from './world-types';
 import type { WorldSessionSummary } from './world-session';
+import {
+  WorldChatActivity,
+  WorldExperimentsActivity,
+  WorldLifeMapActivity,
+  WorldReflectionsActivity,
+  WorldResourcesActivity,
+  WorldProgressSnapshot,
+} from './life-lab-world-activities';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 type JsonRecord = Record<string, unknown>;
@@ -140,6 +148,7 @@ function HomeActivity({ journey, session, onCheckIn, onContinue }: {
         {!paid && <p className="mt-3 rounded-xl border border-amber-200/15 bg-amber-200/8 p-3 text-[10px] leading-4 text-amber-100/72">Hồ sơ gói tháng đã sẵn sàng. Cổng thanh toán sẽ được bật khi tài khoản nhà cung cấp thanh toán được kết nối.</p>}
       </div>
     </div>
+    <WorldProgressSnapshot />
   </div>;
 }
 
@@ -428,15 +437,15 @@ export function CityActivityPanel({ zone, journey, session, lockedReason, onClos
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6">
         {lockedReason ? <LockedChapter reason={lockedReason} onClose={onClose} /> : <>
           {view === 'story' && <StoryBrief zone={zone} onStart={() => setView('activity')} />}
-          {view === 'chat' && <ChatActivity starterPrompt={chatPrompt} onChanged={onProgressChanged} />}
+          {view === 'chat' && <WorldChatActivity starterPrompt={chatPrompt} onChanged={onProgressChanged} />}
           {view === 'activity' && chapter.activity === 'home' && <HomeActivity journey={journey} session={session} onCheckIn={onCheckIn} onContinue={continueJourney} />}
           {view === 'activity' && chapter.activity === 'overview' && <OverviewActivity journey={journey} />}
           {view === 'activity' && chapter.activity === 'questions' && <QuestionsActivity onChanged={onProgressChanged} />}
-          {view === 'activity' && chapter.activity === 'chat' && <ChatActivity starterPrompt={zone.aiPromptStarter} onChanged={onProgressChanged} />}
-          {view === 'activity' && chapter.activity === 'life-map' && <LifeMapActivity onChanged={onProgressChanged} onContinue={openGreenhouse} onUnlockNext={unlockGreenhouse} />}
-          {view === 'activity' && chapter.activity === 'experiments' && <ExperimentsActivity onChanged={onProgressChanged} />}
-          {view === 'activity' && chapter.activity === 'reflections' && <ReflectionsActivity onChanged={onProgressChanged} />}
-          {view === 'activity' && chapter.activity === 'resources' && <ResourcesActivity onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'chat' && <WorldChatActivity starterPrompt={zone.aiPromptStarter} onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'life-map' && <WorldLifeMapActivity onChanged={onProgressChanged} onContinue={openGreenhouse} onUnlockNext={unlockGreenhouse} />}
+          {view === 'activity' && chapter.activity === 'experiments' && <WorldExperimentsActivity onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'reflections' && <WorldReflectionsActivity onChanged={onProgressChanged} />}
+          {view === 'activity' && chapter.activity === 'resources' && <WorldResourcesActivity onChanged={onProgressChanged} />}
           {view === 'activity' && chapter.activity === 'arcade' && <ArcadeActivity onChat={openChat} />}
         </>}
       </div>
