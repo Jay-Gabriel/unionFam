@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef } from 'react';
-import { Float, Html, Instance, Instances, RoundedBox, Sparkles } from '@react-three/drei';
+import { Float, Html, Instance, Instances, RoundedBox, Sparkles, useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CityNature } from './city-nature';
@@ -492,14 +492,20 @@ function Greenhouse() {
   );
 }
 
+function ModularBuilding({ modelPath, position, rotation = 0, scale = 10 }: { modelPath: string; position: [number, number, number]; rotation?: number; scale?: number }) {
+  const gltf = useGLTF(modelPath);
+  const cloned = useMemo(() => gltf.scene.clone(), [gltf.scene]);
+  return <primitive object={cloned} position={position} rotation={[0, rotation, 0]} scale={scale} />;
+}
+
 function Sanctuary() {
   return (
     <group position={[-45, 0.25, 15]}>
-      <mesh position={[0, 0.08, 0]} receiveShadow>
+      <mesh position={[0, 0.08, 0]}>
         <cylinderGeometry args={[10.2, 10.2, 0.2, 32]} />
         <meshStandardMaterial color="#8cc77a" roughness={0.98} />
       </mesh>
-      <Tree position={[0, 0, 0]} scale={1.65} />
+      <ModularBuilding modelPath="/models/city/pavement-fountain.glb" position={[0, 0.15, 0]} scale={8.5} />
       {[-6, 6].map((x) => <Bench key={x} position={[x, 0, 0]} rotation={x < 0 ? Math.PI / 2 : -Math.PI / 2} />)}
       {[[5, 0, 5], [-5, 0, 5], [5, 0, -5], [-5, 0, -5]].map((p, index) => <Tree key={index} position={p as [number, number, number]} scale={0.75} />)}
     </group>
@@ -509,17 +515,7 @@ function Sanctuary() {
 function Academy() {
   return (
     <group position={[-15, 0.25, 45]}>
-      <Building position={[0, 0, 0]} size={[13, 10]} floors={4} color="#f3d7a0" accent="#34d399" />
-      {[-7.2, 7.2].map((x) => (
-        <mesh key={x} position={[x, 3.2, 5.6]}>
-          <boxGeometry args={[1, 6.4, 1]} />
-          <meshStandardMaterial color="#fff5e7" roughness={0.76} />
-        </mesh>
-      ))}
-      <mesh position={[0, 6, 5.6]}>
-        <boxGeometry args={[15.4, 0.7, 1.1]} />
-        <meshStandardMaterial color="#fff5e7" roughness={0.76} />
-      </mesh>
+      <ModularBuilding modelPath="/models/city/building-small-c.glb" position={[0, 0, 0]} scale={13} rotation={Math.PI} />
     </group>
   );
 }
@@ -527,28 +523,7 @@ function Academy() {
 function DawnHome() {
   return (
     <group position={[-45, 0.25, -15]}>
-      <RoundedBox position={[0, 3.2, 0]} args={[11.5, 6.4, 9.5]} radius={0.55} smoothness={3} receiveShadow>
-        <meshToonMaterial color="#fff1df" />
-      </RoundedBox>
-      <mesh position={[0, 7.05, 0]} rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[8.3, 2.9, 4]} />
-        <meshToonMaterial color="#e98aa9" />
-      </mesh>
-      <RoundedBox position={[0, 1.7, 4.83]} args={[2.2, 3.4, 0.28]} radius={0.15} smoothness={2}>
-        <meshStandardMaterial color="#527b7b" roughness={0.58} />
-      </RoundedBox>
-      {[-3.6, 3.6].map((x) => (
-        <group key={x} position={[x, 4.1, 4.9]}>
-          <RoundedBox args={[2.15, 1.9, 0.2]} radius={0.16} smoothness={2}>
-            <meshPhysicalMaterial color="#9ce2ed" roughness={0.12} clearcoat={0.8} />
-          </RoundedBox>
-          <mesh position={[0, -1.08, 0.28]}><boxGeometry args={[2.5, 0.22, 0.52]} /><meshToonMaterial color="#f7d37b" /></mesh>
-        </group>
-      ))}
-      <mesh position={[0, 5.7, 5.1]}>
-        <boxGeometry args={[4.8, 0.85, 0.18]} />
-        <meshStandardMaterial color="#f7d37b" emissive="#d88f3d" emissiveIntensity={0.2} />
-      </mesh>
+      <ModularBuilding modelPath="/models/city/building-small-b.glb" position={[0, 0, 0]} scale={11} />
       <pointLight position={[0, 4.8, 5.8]} color="#ffd89a" intensity={1.2} distance={11} />
       {[-4.8, 4.8].map((x) => <Tree key={x} position={[x, 0, 5.4]} scale={0.55} />)}
     </group>
@@ -558,13 +533,7 @@ function DawnHome() {
 function Arcade() {
   return (
     <group position={[45, 0.25, -45]}>
-      <Building position={[0, 0, 0]} size={[13, 11]} floors={3} color="#332d55" accent="#fb7185" rotation={Math.PI} />
-      {[-3.8, 0, 3.8].map((x, index) => (
-        <mesh key={x} position={[x, 7.6, -5.7]}>
-          <boxGeometry args={[2.8, 0.16, 0.16]} />
-          <meshBasicMaterial color={['#fb7185', '#67e8f9', '#c084fc'][index]} toneMapped={false} />
-        </mesh>
-      ))}
+      <ModularBuilding modelPath="/models/city/building-small-d.glb" position={[0, 0, 0]} scale={12} rotation={Math.PI} />
     </group>
   );
 }
@@ -572,20 +541,7 @@ function Arcade() {
 function ResourceBank() {
   return (
     <group position={[45, 0.25, -15]}>
-      <mesh position={[0, 4.1, 0]}>
-        <boxGeometry args={[12.5, 8.2, 10]} />
-        <meshStandardMaterial color="#e7dcc4" roughness={0.82} />
-      </mesh>
-      {[-4.5, -1.5, 1.5, 4.5].map((x) => (
-        <mesh key={x} position={[x, 3.1, 5.25]}>
-          <cylinderGeometry args={[0.42, 0.52, 6.2, 12]} />
-          <meshStandardMaterial color="#fff8e8" roughness={0.74} />
-        </mesh>
-      ))}
-      <mesh position={[0, 8.55, 0]} rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[8.5, 2.1, 4]} />
-        <meshStandardMaterial color="#e6b85c" metalness={0.18} roughness={0.5} />
-      </mesh>
+      <ModularBuilding modelPath="/models/city/building-small-a.glb" position={[0, 0, 0]} scale={12} />
     </group>
   );
 }
@@ -780,3 +736,9 @@ export function CityEnvironment({ energy, completedZoneIds, activeZoneId, compac
     </group>
   );
 }
+
+useGLTF.preload('/models/city/building-small-a.glb');
+useGLTF.preload('/models/city/building-small-b.glb');
+useGLTF.preload('/models/city/building-small-c.glb');
+useGLTF.preload('/models/city/building-small-d.glb');
+useGLTF.preload('/models/city/pavement-fountain.glb');

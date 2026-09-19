@@ -10,43 +10,61 @@ import type { PlayerHandle, VirtualInput } from './world-types';
 import type { WorldTransform } from './world-session';
 
 const BASE_Y = 0.42;
-const HUMAN_COLORS: Record<string, string> = {
-  skin: '#d99a72', face: '#f1b98f', shirt: '#4f8fc9', pants: '#243a55', belt: '#79513a', hair: '#593728',
+const CASUAL_BOY_COLORS: Record<string, string> = {
+  skin: '#fed7aa',
+  face: '#ffedd5',
+  shirt: '#f59e0b', // Warm sunflower yellow hoodie
+  pants: '#2563eb', // Indigo denim jeans
+  belt: '#ffffff',  // White accents / sneakers
+  hair: '#543310',  // Warm chestnut brown hair
 };
 
-function AdventurerPlayerModel({ moving, sprinting, jumping }: { moving: boolean; sprinting: boolean; jumping: boolean }) {
+function ChibiCasualPlayerModel({ moving, sprinting, jumping, victory }: { moving: boolean; sprinting: boolean; jumping: boolean; victory?: boolean }) {
   const group = useRef<THREE.Group>(null);
-  const gltf = useGLTF('/models/characters/Knight.glb');
+  const gltf = useGLTF('/models/city-hero.gltf');
   const model = useMemo(() => {
     const next = cloneSkeleton(gltf.scene);
     next.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
       object.castShadow = true;
       object.receiveShadow = false;
+      const source = Array.isArray(object.material) ? object.material : [object.material];
+      const styled = source.map((material) => {
+        const name = (material?.name || '').toLowerCase();
+        const key = Object.keys(CASUAL_BOY_COLORS).find((candidate) => name.includes(candidate));
+        return new THREE.MeshToonMaterial({
+          name: material?.name,
+          color: key ? CASUAL_BOY_COLORS[key] : '#ffffff',
+          side: THREE.FrontSide,
+        });
+      });
+      object.material = Array.isArray(object.material) ? styled : styled[0];
     });
     return next;
   }, [gltf.scene]);
   const { actions } = useAnimations(gltf.animations, group);
 
   useEffect(() => {
-    const name = jumping
-      ? 'Jump_Full_Short'
-      : moving
-        ? (sprinting ? 'Running_A' : 'Walking_A')
-        : 'Idle';
+    const name = victory
+      ? 'Victory'
+      : jumping
+        ? 'Jump'
+        : moving
+          ? (sprinting ? 'Run' : 'Walk')
+          : 'Idle';
     const action = actions[name] || actions.Idle;
     action?.reset().fadeIn(0.14).play();
     return () => { action?.fadeOut(0.14); };
-  }, [actions, jumping, moving, sprinting]);
+  }, [actions, jumping, moving, sprinting, victory]);
 
   return (
     <group ref={group}>
-      <primitive object={model} scale={0.78} />
+      <primitive object={model} scale={0.82} position={[0, 0, 0]} />
     </group>
   );
 }
 
-useGLTF.preload('/models/characters/Knight.glb');
+useGLTF.preload('/models/city-hero.gltf');
 
 function canMoveTo(x: number, z: number) {
   if (Math.hypot(x, z) > CITY_SIZE - 3) return false;
@@ -269,7 +287,7 @@ export const CityPlayer = forwardRef<PlayerHandle, CityPlayerProps>(function Cit
         <circleGeometry args={[0.52, 20]} />
         <meshBasicMaterial color="#14202a" transparent opacity={0.28} depthWrite={false} />
       </mesh>
-      <AdventurerPlayerModel moving={motion.moving} sprinting={motion.sprinting} jumping={motion.jumping} />
+      <ChibiCasualPlayerModel moving={motion.moving} sprinting={motion.sprinting} jumping={motion.jumping} victory={Boolean(emote)} />
       {emote && (
         <Html position={[0, 2.25, 0]} center distanceFactor={13}>
           <div className="grid h-11 w-11 place-items-center rounded-full border border-white/60 bg-white/95 text-2xl shadow-xl animate-bounce">{emote}</div>
