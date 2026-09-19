@@ -251,6 +251,8 @@ export function WorldLifeMapActivity({ onChanged, onContinue, onUnlockNext }: { 
   const [snapshot, setSnapshot] = useState<LifeSnapshot>(() => normalizeSnapshot(null));
   const [history, setHistory] = useState<ProfileVersion[]>([]);
   const [sourceInsightIds, setSourceInsightIds] = useState<string[]>([]);
+  const [selectedFocus, setSelectedFocus] = useState('');
+  const [existingFocusDimensions, setExistingFocusDimensions] = useState<string[]>([]);
   const [tab, setTab] = useState<'map' | 'history'>('map');
   const [loading, setLoading] = useState(true); const [saving, setSaving] = useState<'draft' | 'confirm' | ''>('');
   const [notice, setNotice] = useState(''); const [error, setError] = useState('');
@@ -258,14 +260,16 @@ export function WorldLifeMapActivity({ onChanged, onContinue, onUnlockNext }: { 
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [profileResponse, historyResponse] = await Promise.all([fetch('/api/life-profile'), fetch('/api/life-profile/history')]);
-      const [profileJson, historyJson] = await Promise.all([readJson(profileResponse), readJson(historyResponse)]);
+      const [profileResponse, historyResponse, gapsResponse] = await Promise.all([fetch('/api/life-profile'), fetch('/api/life-profile/history'), fetch('/api/gaps')]);
+      const [profileJson, historyJson, gapsJson] = await Promise.all([readJson(profileResponse), readJson(historyResponse), readJson(gapsResponse)]);
       if (!profileResponse.ok) throw new Error(profileJson.error || 'Không thể mở Bản đồ cuộc sống');
       const data = (profileJson.data || {}) as JsonRecord;
       setSnapshot(normalizeSnapshot(data.snapshot));
       const insights = Array.isArray(data.insights) ? data.insights as JsonRecord[] : [];
       setSourceInsightIds(insights.map((item) => String(item.id || '')).filter(Boolean));
       setHistory(historyResponse.ok && Array.isArray(historyJson.data) ? historyJson.data as ProfileVersion[] : []);
+      const gaps = gapsResponse.ok && Array.isArray(gapsJson.data) ? gapsJson.data as JsonRecord[] : [];
+      setExistingFocusDimensions(gaps.map((item) => String(item.dimension || '')).filter(Boolean));
     } catch (reason) { setError(errorText(reason, 'Không thể mở Bản đồ cuộc sống')); }
     finally { setLoading(false); }
   }, []);
@@ -273,11 +277,30 @@ export function WorldLifeMapActivity({ onChanged, onContinue, onUnlockNext }: { 
 
   const updateDimension = (key: string, field: keyof DimensionSnapshot, value: string) => setSnapshot((old) => ({ ...old, dimensions: { ...old.dimensions, [key]: { ...old.dimensions[key], [field]: value } } }));
   const save = async (action: 'draft' | 'confirm') => {
+    const focus = selectedFocus ? snapshot.dimensions[selectedFocus] : null;
+    if (action === 'confirm' && (!selectedFocus || !focus?.current_state?.trim() || !focus?.desired_state?.trim())) {
+      setError('Hãy chọn một chòm sao và viết rõ hiện tại cùng điều bạn mong muốn trước khi xác nhận.');
+      return;
+    }
     setSaving(action); setError(''); setNotice('');
     try {
       const response = await fetch('/api/life-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, snapshot, sourceInsightIds, sourceAnswerIds: [], idempotencyKey: action === 'confirm' ? `world-profile-${Date.now()}` : undefined }) });
       const json = await readJson(response);
       if (!response.ok) throw new Error(json.error || 'Không thể lưu bản đồ');
+      if (action === 'confirm' && selectedFocus && focus && !existingFocusDimensions.includes(selectedFocus)) {
+        const gapResponse = await fetch('/api/gaps', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dimension: selectedFocus,
+            title: `Chăm sóc: ${DIMENSION_LABELS[selectedFocus] || selectedFocus}`,
+            currentState: focus.current_state,
+            desiredState: focus.desired_state,
+            priority: 1,
+          }),
+        });
+        const gapJson = await readJson(gapResponse);
+        if (!gapResponse.ok) throw new Error(gapJson.error || 'Bản đồ đã lưu nhưng chưa thể đánh dấu vùng cần chăm sóc');
+      }
       setNotice(action === 'confirm' ? 'Bạn đã xác nhận phiên bản Bản đồ cuộc sống này.' : 'Bản nháp đã được lưu. Bạn có thể quay lại sửa tiếp.');
       if (action === 'confirm') { onUnlockNext(); onChanged(); }
       await load();
@@ -294,7 +317,8 @@ export function WorldLifeMapActivity({ onChanged, onContinue, onUnlockNext }: { 
         {([['desire', 'Điều tôi thật sự muốn', 'Nếu không cần làm hài lòng ai, bạn muốn điều gì?'], ['escape', 'Điều tôi muốn thoát khỏi', 'Điều gì đang rút cạn năng lượng của bạn?'], ['life_vision', 'Cuộc sống tôi chọn', 'Một bức tranh đủ thật để bạn muốn bước tới.']] as const).map(([key, label, placeholder]) => <label key={key} className={`${panelClass} p-4 text-xs font-bold text-white/75`}>{label}<textarea value={snapshot[key]} onChange={(event) => setSnapshot((old) => ({ ...old, [key]: event.target.value }))} className={`${inputClass} mt-2 min-h-28 font-normal`} placeholder={placeholder} /></label>)}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">{Object.entries(snapshot.dimensions).map(([key, dimension], index) => <div key={key} className={`${panelClass} p-4`}><p className="text-[9px] font-black uppercase tracking-widest text-amber-200">Chòm sao {index + 1}</p><h4 className="mt-1 text-sm font-black">{DIMENSION_LABELS[key]}</h4><textarea value={dimension.summary} onChange={(event) => updateDimension(key, 'summary', event.target.value)} className={`${inputClass} mt-3 min-h-24`} placeholder="Tóm tắt điều đúng với bạn…" /><div className="mt-2 grid gap-2 sm:grid-cols-2"><textarea value={dimension.current_state || ''} onChange={(event) => updateDimension(key, 'current_state', event.target.value)} className={`${inputClass} min-h-20`} placeholder="Hiện tại…" /><textarea value={dimension.desired_state || ''} onChange={(event) => updateDimension(key, 'desired_state', event.target.value)} className={`${inputClass} min-h-20`} placeholder="Mong muốn…" /></div></div>)}</div>
-      <div className="sticky bottom-0 flex flex-col gap-2 rounded-2xl border border-white/12 bg-[#102638]/95 p-3 backdrop-blur sm:flex-row sm:justify-end"><button type="button" disabled={Boolean(saving)} onClick={() => void save('draft')} className={secondaryButton}>{saving === 'draft' ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}Lưu bản nháp</button><button type="button" disabled={Boolean(saving)} onClick={() => void save('confirm')} className={primaryButton}>{saving === 'confirm' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}Tôi xác nhận bản đồ này</button><button type="button" onClick={onContinue} className={secondaryButton}>Đi tới thử nghiệm <ArrowRight size={14} /></button></div>
+      <div className={`${panelClass} p-4 sm:p-5`}><p className="text-[10px] font-black uppercase tracking-[.18em] text-cyan-200">Chọn một vùng chăm sóc trước</p><p className="mt-1 text-xs text-white/48">Bạn không cần giải quyết cả cuộc đời cùng lúc. Chọn một chòm sao có “Hiện tại” và “Mong muốn” rõ nhất.</p><div className="mt-3 grid gap-2 sm:grid-cols-3">{Object.keys(snapshot.dimensions).map((key) => <button key={key} type="button" onClick={() => setSelectedFocus(key)} className={`min-h-11 rounded-xl border px-3 py-2 text-left text-xs font-bold ${selectedFocus === key ? 'border-cyan-200 bg-cyan-300/18 text-cyan-100' : 'border-white/10 bg-white/[.04] text-white/55'}`}>{selectedFocus === key && <Check size={13} className="mr-1 inline" />}{DIMENSION_LABELS[key]}</button>)}</div></div>
+      <div className="sticky bottom-0 flex flex-col gap-2 rounded-2xl border border-white/12 bg-[#102638]/95 p-3 backdrop-blur sm:flex-row sm:justify-end"><button type="button" disabled={Boolean(saving)} onClick={() => void save('draft')} className={secondaryButton}>{saving === 'draft' ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}Lưu bản nháp</button><button type="button" disabled={Boolean(saving) || !selectedFocus} onClick={() => void save('confirm')} className={primaryButton}>{saving === 'confirm' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}Xác nhận bản đồ & chòm sao</button><button type="button" onClick={onContinue} className={secondaryButton}>Đi tới thử nghiệm <ArrowRight size={14} /></button></div>
     </>}
   </div>;
 }

@@ -15,6 +15,12 @@ type ProgressResponse = {
     conversations?: number;
     activeExperimentProgress?: number;
     streak?: number;
+    completedExperiments?: number;
+    confirmedInsights?: number;
+    confirmedProfiles?: number;
+    reflections?: number;
+    confirmedLearnings?: number;
+    resources?: number;
   };
 };
 
@@ -22,7 +28,7 @@ type GapsResponse = {
   data?: Array<{ status?: string }>;
 };
 
-export function useWorldJourney(collectedLetters: number, refreshToken = 0) {
+export function useWorldJourney(collectedLetters: number, refreshToken = 0, completedStoryIds: string[] = []) {
   const [source, setSource] = useState<WorldJourneySource>({});
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +53,13 @@ export function useWorldJourney(collectedLetters: number, refreshToken = 0) {
           streak: progress.data?.streak || 0,
           profileDimensionCount,
           lifeMapFocuses: Array.isArray(gaps.data) ? gaps.data.filter((gap) => gap.status !== 'resolved').length : 0,
+          completedExperiments: progress.data?.completedExperiments || 0,
+          confirmedInsights: progress.data?.confirmedInsights || 0,
+          confirmedProfiles: progress.data?.confirmedProfiles || 0,
+          reflections: progress.data?.reflections || 0,
+          confirmedLearnings: progress.data?.confirmedLearnings || 0,
+          resources: progress.data?.resources || 0,
+          arcadeDiscoveries: completedStoryIds.includes('arcade-discovery') ? 1 : 0,
         });
       })
       .catch(() => {
@@ -57,10 +70,10 @@ export function useWorldJourney(collectedLetters: number, refreshToken = 0) {
       });
 
     return () => { cancelled = true; };
-  }, [refreshToken]);
+  }, [completedStoryIds, refreshToken]);
 
   return useMemo(
-    () => buildWorldJourney({ ...source, collectedLetters }, loading),
-    [source, collectedLetters, loading]
+    () => buildWorldJourney({ ...source, collectedLetters, arcadeDiscoveries: completedStoryIds.includes('arcade-discovery') ? 1 : source.arcadeDiscoveries }, loading),
+    [source, collectedLetters, completedStoryIds, loading]
   );
 }

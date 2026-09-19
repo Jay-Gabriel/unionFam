@@ -27,7 +27,7 @@ const saveSchema = z.object({
 type StateRow = {
   position_x: number; position_z: number; rotation_y: number;
   camera_yaw: number; camera_pitch: number; camera_distance: number;
-  collected_shard_ids: string[] | null; unlocked_zone_ids: string[] | null;
+  collected_shard_ids: string[] | null; completed_story_ids: string[] | null; unlocked_zone_ids: string[] | null;
   onboarding_seen: boolean; last_zone_id: string | null; last_saved_at: string;
 };
 
@@ -39,6 +39,7 @@ function toSnapshot(row: StateRow | null): WorldSessionSnapshot | null {
       cameraYaw: row.camera_yaw, cameraPitch: row.camera_pitch, cameraDistance: row.camera_distance,
     },
     collectedShardIds: row.collected_shard_ids || [],
+    completedStoryIds: row.completed_story_ids || [],
     unlockedZoneIds: row.unlocked_zone_ids || [],
     onboardingSeen: row.onboarding_seen,
     lastZoneId: row.last_zone_id,
@@ -159,6 +160,7 @@ export async function PATCH(request: Request) {
       camera_pitch: snapshot.transform.cameraPitch,
       camera_distance: snapshot.transform.cameraDistance,
       collected_shard_ids: snapshot.collectedShardIds,
+      completed_story_ids: snapshot.completedStoryIds,
       unlocked_zone_ids: snapshot.unlockedZoneIds,
       onboarding_seen: snapshot.onboardingSeen,
       last_zone_id: snapshot.lastZoneId,

@@ -26,6 +26,7 @@ const DEFAULT_SUMMARY: WorldSessionSummary = {
 
 type MutableWorldState = {
   collectedShardIds: string[];
+  completedStoryIds: string[];
   unlockedZoneIds: CityZoneId[];
   onboardingSeen: boolean;
   lastZoneId: CityZoneId | null;
@@ -61,6 +62,7 @@ export function useWorldSession(
   const makeSnapshot = useCallback((): WorldSessionSnapshot => ({
     transform: getTransform() || restoredSnapshot?.transform || DEFAULT_WORLD_TRANSFORM,
     collectedShardIds: [...new Set(stateRef.current.collectedShardIds)],
+    completedStoryIds: [...new Set(stateRef.current.completedStoryIds)] as WorldSessionSnapshot['completedStoryIds'],
     unlockedZoneIds: [...new Set(stateRef.current.unlockedZoneIds)],
     onboardingSeen: stateRef.current.onboardingSeen,
     lastZoneId: stateRef.current.lastZoneId,

@@ -20,12 +20,12 @@ function makeQuest(zoneId: WorldQuest['zoneId'], progressPercent: number): World
 }
 
 function journey(progress: number[]): WorldJourney {
-  const zones: WorldQuest['zoneId'][] = ['academy', 'sanctuary', 'observatory', 'greenhouse', 'lake'];
+  const zones: WorldQuest['zoneId'][] = ['academy', 'sanctuary', 'observatory', 'greenhouse', 'lake', 'arcade', 'vault'];
   return {
     level: 1,
     energy: 0,
     completedQuests: 0,
-    totalQuests: 5,
+    totalQuests: 7,
     streak: 0,
     loading: false,
     quests: zones.map((zone, index) => makeQuest(zone, progress[index] || 0)),
@@ -40,15 +40,21 @@ describe('city story progress', () => {
     expect(story.lockedReason('sanctuary')).toContain('Những ô cửa chưa sáng');
   });
 
-  it('unlocks the next chapter and arcade after listening is complete', () => {
-    const story = buildCityStoryProgress(journey([100, 100, 0, 0, 0]));
+  it('unlocks only the next chapter after listening is complete', () => {
+    const story = buildCityStoryProgress(journey([100, 100, 0, 0, 0, 0, 0]));
     expect(story.activeZoneId).toBe('observatory');
-    expect(story.unlockedZoneIds).toContain('arcade');
+    expect(story.unlockedZoneIds).not.toContain('arcade');
     expect(story.unlockedZoneIds).not.toContain('vault');
   });
 
   it('preserves a later chapter that already has progress', () => {
-    const story = buildCityStoryProgress(journey([20, 0, 40, 0, 0]));
+    const story = buildCityStoryProgress(journey([20, 0, 40, 0, 0, 0, 0]));
     expect(story.unlockedZoneIds).toContain('observatory');
+  });
+
+  it('returns home after all seven story chapters are complete', () => {
+    const story = buildCityStoryProgress(journey([100, 100, 100, 100, 100, 100, 100]));
+    expect(story.activeZoneId).toBe('home');
+    expect(story.completedZoneIds).toHaveLength(7);
   });
 });

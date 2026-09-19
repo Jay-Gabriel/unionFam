@@ -8,6 +8,13 @@ export interface WorldJourneySource {
   profileDimensionCount?: number;
   lifeMapFocuses?: number;
   collectedLetters?: number;
+  confirmedInsights?: number;
+  confirmedProfiles?: number;
+  completedExperiments?: number;
+  reflections?: number;
+  confirmedLearnings?: number;
+  resources?: number;
+  arcadeDiscoveries?: number;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -62,48 +69,72 @@ export function buildWorldJourney(source: WorldJourneySource, loading = false): 
       'listening-fire',
       'sanctuary',
       'Giữ lửa lắng nghe',
-      'Trò chuyện cùng Life Lab ba lần để Vườn Lắng Nghe bừng sáng.',
+      'Trò chuyện với Mộc và xác nhận ít nhất một điều thật sự đúng với bạn.',
       'Trò chuyện cùng AI',
       '/app/conversations',
       'Mở khóa Hạt Sáng',
-      source.conversations || 0,
-      3,
+      source.confirmedInsights || 0,
+      1,
       '#5eead4'
     ),
     quest(
       'life-map-stars',
       'observatory',
       'Chọn chòm sao dẫn đường',
-      'Chọn một vùng cuộc sống cần được chăm sóc trước tại Đài Quan Sát.',
+      'Xác nhận Bản đồ cuộc sống và chọn một vùng cần được chăm sóc trước.',
       'Mở Life Map',
       '/app/life-map',
       'Mở khóa Vương Miện Sao',
-      (source.lifeMapFocuses || 0) > 0 || (source.profileDimensionCount || 0) > 0 ? 1 : 0,
-      1,
+      ((source.confirmedProfiles || 0) > 0 ? 1 : 0) + ((source.lifeMapFocuses || 0) > 0 ? 1 : 0),
+      2,
       '#fde047'
     ),
     quest(
       'greenhouse-growth',
       'greenhouse',
       'Ươm một thay đổi thật',
-      'Tiến độ thử nghiệm đời thực sẽ làm nhà kính nở hoa.',
+      'Hoàn thành một thử nghiệm đời thực để nhà kính nở hoa.',
       'Chăm thử nghiệm',
       '/app/experiments',
       'Mở khóa Hoa Dũng Khí',
-      source.activeExperimentProgress || 0,
+      (source.completedExperiments || 0) > 0 ? 100 : source.activeExperimentProgress || 0,
       100,
       '#86efac'
     ),
     quest(
       'lost-letters',
       'lake',
-      'Những lá thư chưa gửi',
-      'Tìm bốn mảnh ký ức quanh thành phố và mang câu hỏi của chúng vào cuộc sống.',
-      'Tiếp tục khám phá',
-      '/app/world',
-      'Mở khóa Dấu Ấn Thành Phố',
-      source.collectedLetters || 0,
-      4,
+      'Mặt hồ biết nhớ',
+      'Viết một phản chiếu và tự xác nhận bài học bạn muốn mang theo.',
+      'Viết bên hồ',
+      '/app/reflections',
+      'Mở khóa Giọt Nước Phản Chiếu',
+      ((source.reflections || 0) > 0 ? 1 : 0) + ((source.confirmedLearnings || 0) > 0 ? 1 : 0),
+      2,
+      '#fbbf24'
+    ),
+    quest(
+      'midnight-discovery',
+      'arcade',
+      'Chuyến tàu lúc nửa đêm',
+      'Hoàn thành một trò chơi khám phá và mang kết quả vào cuộc đối thoại.',
+      'Lên chuyến tàu',
+      '/app/game',
+      'Mở khóa Vé Tàu Nội Tâm',
+      source.arcadeDiscoveries || 0,
+      1,
+      '#fb7185'
+    ),
+    quest(
+      'resource-key',
+      'vault',
+      'Kho báu đã có sẵn',
+      'Ghi nhận ít nhất một nguồn lực thật bạn đang có.',
+      'Mở kho nguồn lực',
+      '/app/resources',
+      'Mở khóa Chìa Khóa Nguồn Lực',
+      source.resources || 0,
+      1,
       '#fbbf24'
     ),
   ];

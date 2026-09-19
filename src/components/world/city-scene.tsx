@@ -44,6 +44,7 @@ function MemoryShard({ position, color }: { position: [number, number, number]; 
 
 interface CitySceneProps {
   energy: number;
+  completedZoneIds: CityZoneId[];
   questZoneIds: CityZoneId[];
   activeGuideZoneId: CityZoneId;
   collectedShardIds: string[];
@@ -53,7 +54,7 @@ interface CitySceneProps {
 }
 
 export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityScene(
-  { energy, questZoneIds, activeGuideZoneId, collectedShardIds, onPositionChange, paused = false, restoredTransform }, ref
+  { energy, completedZoneIds, questZoneIds, activeGuideZoneId, collectedShardIds, onPositionChange, paused = false, restoredTransform }, ref
 ) {
   const player = useRef<PlayerHandle>(null);
   const [profile, setProfile] = useState<RuntimeProfile>(readRuntimeProfile);
@@ -86,7 +87,7 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
         gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.94 }}
       >
         <color attach="background" args={['#9fd7ef']} />
-        <fog attach="fog" args={['#afddec', 105, 225]} />
+        <fog attach="fog" args={['#afddec', 78 + energy * 0.42, 188 + energy * 0.5]} />
         <Sky distance={280} sunPosition={[-30, 36, 20]} inclination={0.54} azimuth={0.22} turbidity={4} rayleigh={1.1} mieCoefficient={0.005} mieDirectionalG={0.8} />
         <hemisphereLight args={['#e7f6ff', '#51664a', 1.25]} />
         <directionalLight
@@ -107,7 +108,7 @@ export const CityScene = forwardRef<PlayerHandle, CitySceneProps>(function CityS
         <directionalLight position={[24, 12, -24]} intensity={0.42} color="#a9c7ff" />
         <Sparkles count={30} scale={[120, 20, 120]} size={1.1} speed={0.12} color="#fff5c2" opacity={0.24} />
 
-        <CityEnvironment energy={energy} compact={compact} />
+        <CityEnvironment energy={energy} completedZoneIds={completedZoneIds} activeZoneId={activeGuideZoneId} compact={compact} />
         <QuestBeacons zoneIds={questZoneIds} activeZoneId={activeGuideZoneId} />
         {MEMORY_SHARDS.filter((shard) => !collectedShardIds.includes(shard.id)).map((shard) => (
           <MemoryShard key={shard.id} position={shard.position} color={shard.color} />

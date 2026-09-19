@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import * as THREE from 'three';
 import { LeafLoader } from '@/components/calm/leaf-loader';
 import { CityHud } from './city-hud';
+import { CityFinale } from './city-finale';
 import { CityActivityPanel } from './city-activity-panel';
 import { CityOnboarding } from './city-onboarding';
 import { buildCityStoryProgress } from './city-story-progress';
@@ -29,14 +30,20 @@ export function CityWorldView() {
   const collectedRef = useRef<string[]>([]);
   const [currentZone, setCurrentZone] = useState<CityZone | null>(null);
   const [collectedShardIds, setCollectedShardIds] = useState<string[]>([]);
+  const [completedStoryIds, setCompletedStoryIds] = useState<string[]>([]);
   const [activityZone, setActivityZone] = useState<CityZone | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingSeen, setOnboardingSeen] = useState(false);
   const [unlockedOverrides, setUnlockedOverrides] = useState<CityZoneId[]>([]);
   const [playerPosition, setPlayerPosition] = useState({ x: 0, z: 55 });
   const [journeyRefreshToken, setJourneyRefreshToken] = useState(0);
-  const journey = useWorldJourney(collectedShardIds.length, journeyRefreshToken);
+  const [finaleSeen, setFinaleSeen] = useState(true);
+  const journey = useWorldJourney(collectedShardIds.length, journeyRefreshToken, completedStoryIds);
   const storyProgress = useMemo(() => buildCityStoryProgress(journey), [journey]);
+  useEffect(() => {
+    try { setFinaleSeen(localStorage.getItem('lifelab_city_finale_v1') === 'seen'); }
+    catch { setFinaleSeen(false); }
+  }, []);
   const guideZone = useMemo(
     () => CITY_ZONES.find((zone) => zone.id === storyProgress.activeZoneId) || CITY_ZONES[0],
     [storyProgress.activeZoneId]
@@ -45,6 +52,7 @@ export function CityWorldView() {
   const getTransform = useCallback(() => scene.current?.getSessionTransform() || null, []);
   const { restoredSnapshot, summary: worldSession, checkIn } = useWorldSession({
     collectedShardIds,
+    completedStoryIds,
     unlockedZoneIds: unlockedOverrides,
     onboardingSeen,
     lastZoneId: currentZone?.id || null,
@@ -58,6 +66,7 @@ export function CityWorldView() {
       const safeShards = restoredSnapshot.collectedShardIds.filter((id) => MEMORY_SHARDS.some((shard) => shard.id === id));
       collectedRef.current = safeShards;
       setCollectedShardIds(safeShards);
+      setCompletedStoryIds(restoredSnapshot.completedStoryIds);
       setUnlockedOverrides(restoredSnapshot.unlockedZoneIds);
       setOnboardingSeen(restoredSnapshot.onboardingSeen);
       setOnboardingOpen(!restoredSnapshot.onboardingSeen);
@@ -119,6 +128,7 @@ export function CityWorldView() {
       <CityScene
         ref={scene}
         energy={journey.energy}
+        completedZoneIds={storyProgress.completedZoneIds}
         questZoneIds={journey.quests.filter((quest) => !quest.completed).map((quest) => quest.zoneId)}
         activeGuideZoneId={guideZone.id}
         collectedShardIds={collectedShardIds}
@@ -149,8 +159,16 @@ export function CityWorldView() {
         onUnlockZone={(zone) => setUnlockedOverrides((current) => current.includes(zone.id) ? current : [...current, zone.id])}
         onProgressChanged={() => setJourneyRefreshToken((token) => token + 1)}
         onCheckIn={() => { void checkIn(); }}
+        onStoryEvent={(eventId) => {
+          setCompletedStoryIds((current) => current.includes(eventId) ? current : [...current, eventId]);
+          setJourneyRefreshToken((token) => token + 1);
+        }}
       />
       <CityOnboarding open={onboardingOpen} onClose={closeOnboarding} onBegin={closeOnboarding} />
+      <CityFinale open={!journey.loading && storyProgress.completedZoneIds.length === 7 && !finaleSeen} onClose={() => {
+        setFinaleSeen(true);
+        try { localStorage.setItem('lifelab_city_finale_v1', 'seen'); } catch { /* optional */ }
+      }} />
     </div>
   );
 }

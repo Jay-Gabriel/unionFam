@@ -397,9 +397,9 @@ function LockedChapter({ reason, onClose }: { reason: string; onClose: () => voi
   </div>;
 }
 
-interface CityActivityPanelProps { zone: CityZone | null; journey: WorldJourney; session: WorldSessionSummary; lockedReason?: string | null; onClose: () => void; onOpenZone: (zone: CityZone) => void; onUnlockZone: (zone: CityZone) => void; onProgressChanged: () => void; onCheckIn: () => void; }
+interface CityActivityPanelProps { zone: CityZone | null; journey: WorldJourney; session: WorldSessionSummary; lockedReason?: string | null; onClose: () => void; onOpenZone: (zone: CityZone) => void; onUnlockZone: (zone: CityZone) => void; onProgressChanged: () => void; onCheckIn: () => void; onStoryEvent: (eventId: 'arcade-discovery') => void; }
 
-export function CityActivityPanel({ zone, journey, session, lockedReason, onClose, onOpenZone, onUnlockZone, onProgressChanged, onCheckIn }: CityActivityPanelProps) {
+export function CityActivityPanel({ zone, journey, session, lockedReason, onClose, onOpenZone, onUnlockZone, onProgressChanged, onCheckIn, onStoryEvent }: CityActivityPanelProps) {
   const [view, setView] = useState<'story' | 'activity' | 'chat'>('story');
   const [chatPrompt, setChatPrompt] = useState('');
   useEffect(() => { setView('story'); setChatPrompt(''); }, [zone?.id]);
@@ -446,7 +446,7 @@ export function CityActivityPanel({ zone, journey, session, lockedReason, onClos
           {view === 'activity' && chapter.activity === 'experiments' && <WorldExperimentsActivity onChanged={onProgressChanged} />}
           {view === 'activity' && chapter.activity === 'reflections' && <WorldReflectionsActivity onChanged={onProgressChanged} />}
           {view === 'activity' && chapter.activity === 'resources' && <WorldResourcesActivity onChanged={onProgressChanged} />}
-          {view === 'activity' && chapter.activity === 'arcade' && <ArcadeActivity onChat={openChat} />}
+          {view === 'activity' && chapter.activity === 'arcade' && <ArcadeActivity onChat={(prompt) => { onStoryEvent('arcade-discovery'); onProgressChanged(); openChat(prompt); }} />}
         </>}
       </div>
     </motion.section>

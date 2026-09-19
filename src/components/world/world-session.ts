@@ -16,6 +16,7 @@ export type WorldTransform = z.infer<typeof worldTransformSchema>;
 export const worldSnapshotSchema = z.object({
   transform: worldTransformSchema,
   collectedShardIds: z.array(z.string().regex(/^memory-[1-4]$/)).max(4),
+  completedStoryIds: z.array(z.enum(['arcade-discovery'])).max(1).default([]),
   unlockedZoneIds: z.array(z.enum(['home', 'square', 'academy', 'sanctuary', 'observatory', 'greenhouse', 'lake', 'arcade', 'vault'])).max(9),
   onboardingSeen: z.boolean(),
   lastZoneId: z.enum(['home', 'square', 'academy', 'sanctuary', 'observatory', 'greenhouse', 'lake', 'arcade', 'vault']).nullable(),

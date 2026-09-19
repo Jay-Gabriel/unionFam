@@ -6,6 +6,7 @@ function snapshot(savedAt: string): WorldSessionSnapshot {
   return {
     transform: DEFAULT_WORLD_TRANSFORM,
     collectedShardIds: ['memory-1'],
+    completedStoryIds: [],
     unlockedZoneIds: ['academy'],
     onboardingSeen: true,
     lastZoneId: 'academy',

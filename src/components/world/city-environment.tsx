@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useMemo, useRef } from 'react';
-import { Float, Html, Instance, Instances, RoundedBox } from '@react-three/drei';
+import { Float, Html, Instance, Instances, RoundedBox, Sparkles } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CityNature } from './city-nature';
+import { CityStoryNpcs } from './city-npcs';
 import { CITY_ZONES } from './world-data';
 import type { CityZoneId } from './world-types';
 
@@ -317,8 +318,8 @@ function MarketStalls() {
   );
 }
 
-function Building({ position, size, floors, color, accent, rotation = 0 }: {
-  position: [number, number, number]; size: [number, number]; floors: number; color: string; accent: string; rotation?: number;
+function Building({ position, size, floors, color, accent, rotation = 0, glow = 0 }: {
+  position: [number, number, number]; size: [number, number]; floors: number; color: string; accent: string; rotation?: number; glow?: number;
 }) {
   const [width, depth] = size;
   const height = floors * 2.25;
@@ -343,7 +344,7 @@ function Building({ position, size, floors, color, accent, rotation = 0 }: {
       </mesh>
       <Instances limit={windowRows.length * windowColumns.length + windowRows.length * 2} range={windowRows.length * windowColumns.length + windowRows.length * 2}>
         <boxGeometry args={[1.12, 1.18, 0.12]} />
-        <meshStandardMaterial color="#9ddff0" emissive="#315d70" emissiveIntensity={0.12} roughness={0.18} />
+        <meshStandardMaterial color="#9ddff0" emissive={glow > 0 ? '#f9d88b' : '#315d70'} emissiveIntensity={0.12 + glow * 0.65} roughness={0.18} />
         {windowRows.flatMap((row) => windowColumns.map((column) => {
           const x = (column - (windowColumns.length - 1) / 2) * (width / (windowColumns.length + 0.3));
           return <Instance key={`front-${row}-${column}`} position={[x, 1.65 + row * 2.2, depth / 2 + 0.065]} />;
@@ -636,6 +637,24 @@ function Clouds({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function StoryRestoration({ completedZoneIds, compact }: { completedZoneIds: CityZoneId[]; compact: boolean }) {
+  const restored = CITY_ZONES.filter((zone) => completedZoneIds.includes(zone.id));
+  if (!restored.length) return null;
+  return <group>
+    {restored.map((zone) => <group key={zone.id} position={[zone.position[0], 0.4, zone.position[2]]}>
+      <Sparkles count={compact ? 5 : 11} scale={[10, 6, 10]} size={compact ? 1.2 : 1.8} speed={0.16} color={zone.color} opacity={0.48} />
+      <pointLight position={[0, 3.8, 0]} color={zone.color} intensity={compact ? 0.3 : 0.65} distance={12} />
+      {[0, 1, 2, 3, 4, 5].map((index) => {
+        const angle = index / 6 * Math.PI * 2;
+        return <group key={index} position={[Math.sin(angle) * 6.2, 0, Math.cos(angle) * 6.2]}>
+          <mesh position={[0, 0.14, 0]}><cylinderGeometry args={[0.2, 0.26, 0.28, 8]} /><meshToonMaterial color="#6f9f64" /></mesh>
+          <mesh position={[0, 0.42, 0]} rotation={[0, angle, 0]}><sphereGeometry args={[0.22, 8, 6]} /><meshToonMaterial color={index % 2 ? zone.color : '#fff1a8'} /></mesh>
+        </group>;
+      })}
+    </group>)}
+  </group>;
+}
+
 export function QuestBeacons({ zoneIds, activeZoneId }: { zoneIds: CityZoneId[]; activeZoneId?: CityZoneId }) {
   return (
     <group>
@@ -669,7 +688,7 @@ export function QuestBeacons({ zoneIds, activeZoneId }: { zoneIds: CityZoneId[];
   );
 }
 
-export function CityEnvironment({ energy, compact = false }: { energy: number; compact?: boolean }) {
+export function CityEnvironment({ energy, completedZoneIds, activeZoneId, compact = false }: { energy: number; completedZoneIds: CityZoneId[]; activeZoneId: CityZoneId; compact?: boolean }) {
   const buildings = useMemo(() => {
     const positions: Array<{ x: number; z: number }> = [];
     for (const x of BLOCKS) for (const z of BLOCKS) {
@@ -719,6 +738,7 @@ export function CityEnvironment({ energy, compact = false }: { energy: number; c
           floors={3 + index % 3}
           color={PALETTE[index % PALETTE.length]}
           accent={['#e56f67', '#7769ee', '#0ea5e9', '#14b8a6'][index % 4]}
+          glow={energy / 100}
           rotation={z > 0 ? Math.PI : 0}
         />
       ))}
@@ -735,7 +755,8 @@ export function CityEnvironment({ energy, compact = false }: { energy: number; c
       <CafeTerrace />
       <MarketStalls />
       <StreetFurniture compact={compact} />
-      <CityCitizens compact={compact} />
+      <CityStoryNpcs activeZoneId={activeZoneId} restoredZoneIds={completedZoneIds} compact={compact} />
+      <StoryRestoration completedZoneIds={completedZoneIds} compact={compact} />
 
       <CityCar position={[-3.1, 0.28, 42]} color="#e66a5b" />
       <CityCar position={[3.1, 0.28, 23]} rotation={Math.PI} color="#e5b84d" />
@@ -754,7 +775,7 @@ export function CityEnvironment({ energy, compact = false }: { energy: number; c
         <Lamp key={`c-${value}`} position={[-25, 0.3, value - 9]} flip={1} />,
         <Lamp key={`d-${value}`} position={[25, 0.3, value + 9]} flip={-1} />,
       ])}
-      <CityNature compact={compact} />
+      <CityNature compact={compact} bloomLevel={completedZoneIds.length} />
       <Clouds compact={compact} />
     </group>
   );

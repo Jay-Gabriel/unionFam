@@ -22,6 +22,11 @@ export async function GET() {
         activeDays: 5,
         activeExperimentProgress: 60,
         completedExperiments: 1,
+        confirmedInsights: 1,
+        confirmedProfiles: 1,
+        reflections: 1,
+        confirmedLearnings: 1,
+        resources: 2,
       },
     });
   }
@@ -29,16 +34,33 @@ export async function GET() {
   try {
     const user = await requireUser();
     const supabase = createClient();
-    const [{ count: answerCount, error: answerError }, { count: conversationCount, error: conversationError }, { count: experimentCount, error: experimentError }, { data: events, error: eventsError }, { data: flow, error: flowError }, { data: experimentRows, error: experimentsError }] = await Promise.all([
+    const [
+      { count: answerCount, error: answerError },
+      { count: conversationCount, error: conversationError },
+      { count: experimentCount, error: experimentError },
+      { data: events, error: eventsError },
+      { data: flow, error: flowError },
+      { data: experimentRows, error: experimentsError },
+      { count: confirmedInsightCount, error: insightError },
+      { count: confirmedProfileCount, error: profileError },
+      { count: reflectionCount, error: reflectionError },
+      { count: confirmedLearningCount, error: learningError },
+      { count: resourceCount, error: resourceError },
+    ] = await Promise.all([
       supabase.from('user_answers').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('deleted_at', null),
       supabase.from('conversations').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('deleted_at', null),
       supabase.from('experiments').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('deleted_at', null),
       supabase.from('activity_events').select('event_date').eq('user_id', user.id).order('event_date', { ascending: false }).limit(400),
       supabase.from('question_flow_versions').select('id').eq('status', 'published').order('published_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('experiments').select('status, progress_percent').eq('user_id', user.id).is('deleted_at', null),
+      supabase.from('confirmed_insights').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('deleted_at', null),
+      supabase.from('life_profile_versions').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'confirmed').eq('is_current', true),
+      supabase.from('reflections').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('learning_records').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'confirmed').is('deleted_at', null),
+      supabase.from('resources').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('deleted_at', null),
     ]);
-    if (answerError || conversationError || experimentError || eventsError || flowError || experimentsError) {
-      throw answerError || conversationError || experimentError || eventsError || flowError || experimentsError;
+    if (answerError || conversationError || experimentError || eventsError || flowError || experimentsError || insightError || profileError || reflectionError || learningError || resourceError) {
+      throw answerError || conversationError || experimentError || eventsError || flowError || experimentsError || insightError || profileError || reflectionError || learningError || resourceError;
     }
     const uniqueDays = [...new Set((events || []).map((event: { event_date: string }) => event.event_date))];
     let streak = 0;
@@ -92,6 +114,11 @@ export async function GET() {
         activeDays: uniqueDays.length,
         activeExperimentProgress: activeExperiment?.progress_percent || 0,
         completedExperiments,
+        confirmedInsights: confirmedInsightCount || 0,
+        confirmedProfiles: confirmedProfileCount || 0,
+        reflections: reflectionCount || 0,
+        confirmedLearnings: confirmedLearningCount || 0,
+        resources: resourceCount || 0,
       },
     });
   } catch (error) {
