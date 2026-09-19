@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import type { CityZone, VirtualInput, WorldJourney } from './world-types';
 import { CITY_ZONES } from './world-data';
-import { mergeVirtualInput } from './city-input';
+import { emitGlobalEmote, mergeVirtualInput, setGlobalVirtualInput } from './city-input';
 import type { WorldSessionSummary } from './world-session';
 
 const EMOTES = ['❤️', '👋', '✨', '🕊️'];
@@ -57,9 +57,15 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
     };
   }, []);
 
+  const triggerEmoteAction = (emoji: string) => {
+    emitGlobalEmote(emoji);
+    onEmote(emoji);
+  };
+
   const updateVirtualInput = (patch: Partial<VirtualInput>) => {
     const next = mergeVirtualInput(virtualInput.current, patch);
     virtualInput.current = next;
+    setGlobalVirtualInput(patch);
     onVirtualInput(next);
   };
 
@@ -325,8 +331,8 @@ export function CityHud({ journey, currentZone, collectedShards, onEmote, onVirt
               key={emoji}
               type="button"
               data-interactive="true"
-              onTouchStart={(e) => { e.stopPropagation(); onEmote(emoji); }}
-              onClick={(e) => { e.stopPropagation(); onEmote(emoji); }}
+              onTouchStart={(e) => { e.stopPropagation(); triggerEmoteAction(emoji); }}
+              onClick={(e) => { e.stopPropagation(); triggerEmoteAction(emoji); }}
               className="grid h-8 w-8 place-items-center rounded-full text-sm transition-transform hover:bg-white/15 active:scale-125"
             >
               {emoji}
