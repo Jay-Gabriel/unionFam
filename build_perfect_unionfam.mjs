@@ -1,8 +1,13 @@
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 console.log('=== INTEGRATING OFFICIAL UNIONFAM BLUEPRINT 7.0 CONSULTING ENGINE ===');
 
-const CHUNKS_DIR = '/home/jay/office-graffico-clone/_next/static/chunks';
+const CHUNKS_DIR = path.join(__dirname, '_next/static/chunks');
 
 // 1. Restore pristine chunks
 fs.copyFileSync(`${CHUNKS_DIR}/0ro772wcmsc4w.js.orig`, `${CHUNKS_DIR}/0ro772wcmsc4w.js`);
@@ -401,10 +406,80 @@ fs.writeFileSync(`${CHUNKS_DIR}/08wq3b45gsv3v.js`, c08, 'utf8');
 console.log('✓ Updated 08wq3b45gsv3v.js hotspot labels.');
 
 // 4. Generate clean index.html
-let origHtml = fs.readFileSync('/home/jay/office-graffico-clone/index.original.html', 'utf8');
+const origHtmlPath = path.join(__dirname, 'index.original.html');
+const indexHtmlPath = path.join(__dirname, 'index.html');
+let origHtml = fs.readFileSync(origHtmlPath, 'utf8');
 let html = origHtml.replace(/<script>\(function\(\)\{function c\(\).*?<\/script><\/body>/s, '</body>');
 html = html.replace(/<title>.*?<\/title>/, '<title>UnionFam Life Lab | 3D Studio &amp; Life Design</title>');
-fs.writeFileSync('/home/jay/office-graffico-clone/index.html', html, 'utf8');
+fs.writeFileSync(indexHtmlPath, html, 'utf8');
 console.log('✓ Generated clean index.html.');
+
+// 5. Ensure api/radio_stations.json exists for Vercel serverless / static serving
+const apiDir = path.join(__dirname, 'api');
+if (!fs.existsSync(apiDir)) {
+  fs.mkdirSync(apiDir, { recursive: true });
+}
+const radioStationsData = {
+  presets: [
+    {
+      channel: 1,
+      stationUuid: "unionfam-focus-1",
+      name: "Life Lab Focus - Deep Thinking",
+      genre: "Electronic / Deep Ambient",
+      homepage: "https://unionfam.vn/",
+      fallbackStreamUrl: "https://nr9.newradio.it/proxy/ebaruffa?mp=/stream",
+      embeddingPermission: "granted",
+      streamUrl: "https://nr9.newradio.it/proxy/ebaruffa?mp=/stream",
+      source: "unionfam-radio"
+    },
+    {
+      channel: 2,
+      stationUuid: "unionfam-reflection-2",
+      name: "Mindful Reflection - Calm Lo-Fi",
+      genre: "Lo-Fi / Soul Reflection",
+      homepage: "https://unionfam.vn/",
+      fallbackStreamUrl: "https://funkyradio.streamingmedia.it/play.mp3",
+      embeddingPermission: "granted",
+      streamUrl: "https://funkyradio.streamingmedia.it/play.mp3",
+      source: "unionfam-radio"
+    },
+    {
+      channel: 3,
+      stationUuid: "unionfam-ambient-3",
+      name: "Quiet Ambient - Life Design",
+      genre: "Classic Soul & Ambient",
+      homepage: "https://unionfam.vn/",
+      fallbackStreamUrl: "https://rblive.it:8040/radio.mp3",
+      embeddingPermission: "granted",
+      streamUrl: "https://rblive.it:8040/radio.mp3",
+      source: "unionfam-radio"
+    },
+    {
+      channel: 4,
+      stationUuid: "unionfam-jazz-4",
+      name: "Easy Jazz Soul - Evening Pause",
+      genre: "Smooth Jazz & Chillout",
+      homepage: "https://unionfam.vn/",
+      fallbackStreamUrl: "https://sphera.fluidstream.eu/easy_jazz.mp3",
+      embeddingPermission: "granted",
+      streamUrl: "https://sphera.fluidstream.eu/easy_jazz.mp3",
+      source: "unionfam-radio"
+    },
+    {
+      channel: 5,
+      stationUuid: "unionfam-clarity-5",
+      name: "Classical Clarity - Decision Making",
+      genre: "Italian Acoustic & Pop",
+      homepage: "https://unionfam.vn/",
+      fallbackStreamUrl: "https://stream.lolliradio.net/lolli_italia.mp3",
+      embeddingPermission: "granted",
+      streamUrl: "https://stream.lolliradio.net/lolli_italia.mp3",
+      source: "unionfam-radio"
+    }
+  ],
+  resolvedAt: new Date().toISOString()
+};
+fs.writeFileSync(path.join(apiDir, 'radio_stations.json'), JSON.stringify(radioStationsData, null, 2), 'utf8');
+console.log('✓ Ensured api/radio_stations.json is up to date.');
 
 console.log('=== BUILD COMPLETED SUCCESSFULLY! ===');
