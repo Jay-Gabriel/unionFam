@@ -1,0 +1,6 @@
+User-Agent: *
+Allow: /
+Disallow: /api/
+Disallow: /ui
+
+Sitemap: https://office.graffico.it/sitemap.xml

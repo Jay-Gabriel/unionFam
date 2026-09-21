@@ -1,0 +1,46 @@
+name: UnionFam 3D Life Lab CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-verify:
+    name: Build & Verify 3D WebGL Bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Build Script
+        run: |
+          node build_perfect_unionfam.mjs
+
+      - name: Verify JavaScript Syntax & Assets Integrity
+        run: |
+          node -c _next/static/chunks/2nb77gdn5hy4t.js
+          node -c server.mjs
+          test -f index.html
+          test -f models/baked/office.glb
+          test -f models/baked/env_probe.exr
+          echo "✓ All WebGL 3D models and runtime chunks verified successfully!"
+
+      - name: Automated Smoke Test Server
+        run: |
+          PORT=3005 node server.mjs &
+          SERVER_PID=$!
+          sleep 3
+          curl -f http://localhost:3005/ || exit 1
+          curl -f http://localhost:3005/api/radio/stations || exit 1
+          kill $SERVER_PID
+          echo "✓ Local HTTP Server smoke test passed!"

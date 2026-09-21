@@ -1,25 +1,29 @@
-# Local secrets
-.env
-.env.local
-.env.*.local
-
-# Next.js / Node
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Next.js & Build outputs
 .next/
 out/
-coverage/
-playwright-report/
-test-results/
-
-# Local Supabase/runtime files
-.supabase/
-supabase/.temp/
-
-# Editor / OS
-.DS_Store
-*.log
+build/
+dist/
 *.tsbuildinfo
 
+# Environment variables
+.env
+.env*.local
+!.env.example
 
-.vercel
-.env*
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

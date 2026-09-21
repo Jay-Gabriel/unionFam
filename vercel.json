@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "name": "union-fam",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "."
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/radio/stations",
+      "headers": { "content-type": "application/json" },
+      "dest": "/api/radio_stations.json"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

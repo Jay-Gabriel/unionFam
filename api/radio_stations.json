@@ -1,0 +1,60 @@
+{
+  "presets": [
+    {
+      "channel": 1,
+      "stationUuid": "unionfam-focus-1",
+      "name": "Life Lab Focus - Deep Thinking",
+      "genre": "Electronic / Deep Ambient",
+      "homepage": "https://unionfam.vn/",
+      "fallbackStreamUrl": "https://nr9.newradio.it/proxy/ebaruffa?mp=/stream",
+      "embeddingPermission": "granted",
+      "streamUrl": "https://nr9.newradio.it/proxy/ebaruffa?mp=/stream",
+      "source": "unionfam-radio"
+    },
+    {
+      "channel": 2,
+      "stationUuid": "unionfam-reflection-2",
+      "name": "Mindful Reflection - Calm Lo-Fi",
+      "genre": "Lo-Fi / Soul Reflection",
+      "homepage": "https://unionfam.vn/",
+      "fallbackStreamUrl": "https://funkyradio.streamingmedia.it/play.mp3",
+      "embeddingPermission": "granted",
+      "streamUrl": "https://funkyradio.streamingmedia.it/play.mp3",
+      "source": "unionfam-radio"
+    },
+    {
+      "channel": 3,
+      "stationUuid": "unionfam-ambient-3",
+      "name": "Quiet Ambient - Life Design",
+      "genre": "Classic Soul & Ambient",
+      "homepage": "https://unionfam.vn/",
+      "fallbackStreamUrl": "https://rblive.it:8040/radio.mp3",
+      "embeddingPermission": "granted",
+      "streamUrl": "https://rblive.it:8040/radio.mp3",
+      "source": "unionfam-radio"
+    },
+    {
+      "channel": 4,
+      "stationUuid": "unionfam-jazz-4",
+      "name": "Easy Jazz Soul - Evening Pause",
+      "genre": "Smooth Jazz & Chillout",
+      "homepage": "https://unionfam.vn/",
+      "fallbackStreamUrl": "https://sphera.fluidstream.eu/easy_jazz.mp3",
+      "embeddingPermission": "granted",
+      "streamUrl": "https://sphera.fluidstream.eu/easy_jazz.mp3",
+      "source": "unionfam-radio"
+    },
+    {
+      "channel": 5,
+      "stationUuid": "unionfam-clarity-5",
+      "name": "Classical Clarity - Decision Making",
+      "genre": "Italian Acoustic & Pop",
+      "homepage": "https://unionfam.vn/",
+      "fallbackStreamUrl": "https://stream.lolliradio.net/lolli_italia.mp3",
+      "embeddingPermission": "granted",
+      "streamUrl": "https://stream.lolliradio.net/lolli_italia.mp3",
+      "source": "unionfam-radio"
+    }
+  ],
+  "resolvedAt": "2026-09-21T16:30:00.000Z"
+}
