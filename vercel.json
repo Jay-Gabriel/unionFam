@@ -1,27 +1,49 @@
 {
-  "version": 2,
-  "name": "union-fam",
-  "builds": [
+  "framework": null,
+  "buildCommand": "node build_perfect_unionfam.mjs",
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "."
-      }
+      "source": "/api/radio/stations",
+      "destination": "/api/radio_stations.json"
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!api/|_next/|models/|textures/|fonts/|photos/|videos/|logos/|draco/|vendor/|favicon.ico|share.webp|robots.txt|sitemap.xml).*$)",
+      "destination": "/index.html"
     }
   ],
-  "routes": [
+  "headers": [
     {
-      "src": "/api/radio/stations",
-      "headers": { "content-type": "application/json" },
-      "dest": "/api/radio_stations.json"
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
-      "handle": "filesystem"
+      "source": "/models/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/textures/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }
