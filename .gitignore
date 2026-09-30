@@ -10,7 +10,6 @@ coverage/
 .next/
 out/
 build/
-dist/
 *.tsbuildinfo
 
 # Environment variables

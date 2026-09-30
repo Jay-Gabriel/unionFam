@@ -128,11 +128,24 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // If requesting root or a non-file SPA route, default to index.html
   if (pathname === '/') {
     pathname = '/index.html';
   }
 
-  const filePath = path.join(__dirname, pathname);
+  // Look in dist/ first (production build), then fallback to __dirname
+  let filePath = path.join(__dirname, 'dist', pathname);
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    filePath = path.join(__dirname, pathname);
+  }
+
+  // SPA Fallback: if file doesn't exist and not an API call, serve dist/index.html
+  if ((!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) && !pathname.startsWith('/api/')) {
+    const distIndex = path.join(__dirname, 'dist', 'index.html');
+    if (fs.existsSync(distIndex)) {
+      filePath = distIndex;
+    }
+  }
 
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     const ext = path.extname(filePath).toLowerCase();
