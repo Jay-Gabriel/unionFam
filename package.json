@@ -1,25 +1,32 @@
 {
-  "name": "unionfam-lifelab-3d",
-  "version": "2.0.0",
-  "description": "UnionFam Life Lab — 3D Interactive Studio, Living Life Map & AI Companion",
-  "type": "module",
+  "name": "life-lab",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "node server.mjs",
-    "build": "node build_perfect_unionfam.mjs",
-    "start": "node server.mjs"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
-  "engines": {
-    "node": ">=18.0.0"
+  "keywords": [],
+  "type": "module",
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.49.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
+    "three": "^0.186.1"
   },
-  "keywords": [
-    "unionfam",
-    "life-lab",
-    "threejs",
-    "webgl",
-    "ai-companion",
-    "living-life-map",
-    "3d-studio"
-  ],
-  "author": "UnionFam Team",
-  "license": "MIT"
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1"
+  }
 }
