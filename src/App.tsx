@@ -32,6 +32,9 @@ export const App: React.FC = () => {
   // Active step in the side panel ('chat' vs 'experiment')
   const [activeStep, setActiveStep] = useState<'chat' | 'experiment'>('chat');
 
+  // Mobile View Tab ('map' vs 'chat')
+  const [mobileTab, setMobileTab] = useState<'map' | 'chat'>('map');
+
   // Official UnionFam Blueprint 7.0 Experiment State
   const [currentExperiment, setCurrentExperiment] = useState({
     title: '30 Phút Tự Quyết Mỗi Tối (No Distraction)',
@@ -441,34 +444,50 @@ export const App: React.FC = () => {
       {/* 2. Main Content Viewport */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left / Center Living Map Viewport */}
-        <div className="flex-1 h-full relative">
+        <div className={`flex-1 h-full relative ${mobileTab === 'chat' ? 'hidden md:block' : 'block'}`}>
           <LivingMap3D
             nodes={nodes}
-            onSelectNode={handleSelectNode}
+            onSelectNode={(node) => {
+              handleSelectNode(node);
+            }}
             selectedNodeId={selectedNodeId}
             currentFocusId={currentFocusId}
           />
+
+          {/* Floating Action Button on Mobile to open AI Chat & Experiment */}
+          <div className="md:hidden absolute bottom-4 right-4 z-30 flex flex-col gap-2">
+            <button
+              onClick={() => setMobileTab('chat')}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold px-4 py-2.5 rounded-2xl shadow-[0_8px_25px_rgba(245,158,11,0.5)] flex items-center gap-2 text-xs cursor-pointer active:scale-95 animate-pulse-glow"
+            >
+              <span className="w-2 h-2 rounded-full bg-stone-950 animate-ping" />
+              <span>💬 Đối Thoại & Thử Nghiệm</span>
+            </button>
+          </div>
         </div>
 
         {/* Right UnionFam Blueprint 7.0 Consulting & Experiment Panel */}
-        <ConsultingEnginePanel
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          onProvideFeedback={handleProvideFeedback}
-          onOpenRepair={() => setIsRepairOpen(true)}
-          onOpenKeyModal={() => setIsKeyModalOpen(true)}
-          hasGeminiKey={Boolean(geminiApiKey)}
-          topicTitle={topicTitle}
-          isAiThinking={isAiThinking}
-          currentExperiment={currentExperiment}
-          onToggleExperimentDay={handleToggleExperimentDay}
-          onChangeEnergy={handleChangeEnergy}
-          activeStep={activeStep}
-          onChangeActiveStep={(step) => {
-            setActiveStep(step);
-            if (step === 'experiment') completeQuestStep(3);
-          }}
-        />
+        <div className={`h-full ${mobileTab === 'map' ? 'hidden md:block' : 'block w-full md:w-[470px]'}`}>
+          <ConsultingEnginePanel
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            onProvideFeedback={handleProvideFeedback}
+            onOpenRepair={() => setIsRepairOpen(true)}
+            onOpenKeyModal={() => setIsKeyModalOpen(true)}
+            hasGeminiKey={Boolean(geminiApiKey)}
+            topicTitle={topicTitle}
+            isAiThinking={isAiThinking}
+            currentExperiment={currentExperiment}
+            onToggleExperimentDay={handleToggleExperimentDay}
+            onChangeEnergy={handleChangeEnergy}
+            activeStep={activeStep}
+            onChangeActiveStep={(step) => {
+              setActiveStep(step);
+              if (step === 'experiment') completeQuestStep(3);
+            }}
+            onCloseMobile={() => setMobileTab('map')}
+          />
+        </div>
       </div>
 
       {/* 3. Bottom Action Bar */}

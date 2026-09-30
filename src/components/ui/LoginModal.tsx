@@ -40,30 +40,30 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLoginSuccess }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fadeIn">
-      <div className="bg-[#20242a] border border-amber-500/40 rounded-3xl w-full max-w-lg shadow-[0_0_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 md:p-4 animate-fadeIn">
+      <div className="bg-[#20242a] border border-amber-500/40 rounded-3xl w-full max-w-md md:max-w-lg max-h-[92vh] shadow-[0_0_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col">
         {/* Header with Fantasy UnionFam Brand */}
-        <div className="p-6 border-b border-stone-700/60 bg-[#191c21] flex flex-col items-center text-center relative">
-          <div className="w-14 h-14 rounded-2xl bg-[#3d3224] border-2 border-amber-400 flex items-center justify-center shadow-xl mb-3">
-            <svg className="w-8 h-8 text-amber-300 transform -rotate-45" viewBox="0 0 24 24" fill="currentColor">
+        <div className="p-4 md:p-6 border-b border-stone-700/60 bg-[#191c21] flex flex-col items-center text-center relative shrink-0">
+          <div className="w-11 h-11 md:w-14 md:h-14 rounded-2xl bg-[#3d3224] border-2 border-amber-400 flex items-center justify-center shadow-xl mb-2 md:mb-3">
+            <svg className="w-6 h-6 md:w-8 md:h-8 text-amber-300 transform -rotate-45" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="12,2 15,10 22,12 15,14 12,22 9,14 2,12 9,10" />
             </svg>
           </div>
           <div className="flex items-center gap-2">
-            <h2 className="font-serif-title font-bold text-2xl text-stone-100 tracking-wide">
+            <h2 className="font-serif-title font-bold text-xl md:text-2xl text-stone-100 tracking-wide">
               Life Lab
             </h2>
             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
               UnionFam Hub
             </span>
           </div>
-          <p className="text-xs text-amber-300/90 font-medium mt-1">
+          <p className="text-[11px] md:text-xs text-amber-300/90 font-medium mt-1">
             "Hãy kiếm tiền, nhưng trước tiên hãy biết tiền đang phục vụ cuộc đời nào."
           </p>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-5">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-5 overflow-y-auto">
           {/* 1. Google One-Click Login Button */}
           <div className="space-y-2">
             <button

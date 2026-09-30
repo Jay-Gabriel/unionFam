@@ -42,25 +42,25 @@ export const InteractiveHandsOnTour: React.FC<InteractiveHandsOnTourProps> = ({
   const allCompleted = quests.every((q) => q.isCompleted);
 
   return (
-    <div className="fixed top-16 left-1/2 -translate-x-1/2 z-40 w-full max-w-2xl px-4 animate-slideDown pointer-events-auto select-none">
-      <div className="bg-[#1f2329]/95 border-2 border-amber-400/80 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.8)] backdrop-blur-md p-4 text-stone-200">
+    <div className="fixed top-14 md:top-16 left-1/2 -translate-x-1/2 z-40 w-full max-w-2xl px-2 md:px-4 animate-slideDown pointer-events-auto select-none">
+      <div className="bg-[#1f2329]/95 border-2 border-amber-400/80 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.8)] backdrop-blur-md p-3 md:p-4 text-stone-200">
         {/* Quest Top Header */}
-        <div className="flex items-center justify-between pb-2.5 border-b border-stone-700/60">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shadow-md">
-              {allCompleted ? <Trophy className="w-4 h-4 text-amber-300 animate-bounce" /> : currentQuest.icon}
+        <div className="flex items-center justify-between pb-2 border-b border-stone-700/60">
+          <div className="flex items-center gap-2 md:gap-2.5">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shadow-md shrink-0">
+              {allCompleted ? <Trophy className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-300 animate-bounce" /> : currentQuest.icon}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-serif-title font-bold text-sm text-stone-100">
-                  {allCompleted ? '🎉 Bạn đã làm chủ Life Lab!' : `Nhiệm vụ thực hành ${currentQuestIndex + 1}/${quests.length}`}
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <span className="font-serif-title font-bold text-xs md:text-sm text-stone-100">
+                  {allCompleted ? '🎉 Làm chủ Life Lab!' : `Nhiệm vụ ${currentQuestIndex + 1}/${quests.length}`}
                 </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/25 text-amber-300 border border-amber-500/30">
-                  Interactive Guide
+                <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider px-1.5 md:px-2 py-0.5 rounded-full bg-amber-500/25 text-amber-300 border border-amber-500/30">
+                  Guide
                 </span>
               </div>
-              <p className="text-[11px] text-stone-400">
-                {allCompleted ? 'Bạn đã sẵn sàng cho hành trình thấu hiểu bản thân trọn vẹn.' : currentQuest.title}
+              <p className="text-[10px] md:text-[11px] text-stone-400 truncate max-w-[200px] sm:max-w-none">
+                {allCompleted ? 'Bạn đã sẵn sàng cho hành trình thấu hiểu bản thân.' : currentQuest.title}
               </p>
             </div>
           </div>

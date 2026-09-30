@@ -101,31 +101,31 @@ export const GuideTourModal: React.FC<GuideTourModalProps> = ({ isOpen, onClose 
   const isFirst = currentStep === 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 md:p-4 animate-fadeIn">
       <div className="bg-[#20242a] border border-amber-500/50 rounded-3xl w-full max-w-2xl shadow-[0_0_50px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Top Header */}
-        <div className="p-6 border-b border-stone-700/60 bg-[#1a1d22] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shadow-lg">
-              <BookOpen className="w-6 h-6 text-amber-300" />
+        <div className="p-4 md:p-6 border-b border-stone-700/60 bg-[#1a1d22] flex items-center justify-between">
+          <div className="flex items-center gap-2.5 md:gap-3">
+            <div className="w-9 h-9 md:w-11 md:h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shadow-lg shrink-0">
+              <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-amber-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-serif-title font-bold text-lg text-stone-100">
-                  Hướng Dẫn Khám Phá Life Lab
+                <h2 className="font-serif-title font-bold text-base md:text-lg text-stone-100">
+                  Hướng Dẫn Khám Phá
                 </h2>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/25 text-amber-300 border border-amber-500/40">
-                  Kịch bản V7
+                <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider px-1.5 md:px-2 py-0.5 rounded-full bg-amber-500/25 text-amber-300 border border-amber-500/40">
+                  V7
                 </span>
               </div>
-              <p className="text-xs text-stone-400 mt-0.5">
-                Cẩm nang trải nghiệm bản đồ 3D The Living Map & AI Coaching
+              <p className="text-[11px] md:text-xs text-stone-400 mt-0.5">
+                Cẩm nang trải nghiệm bản đồ 3D & AI Coaching
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-stone-400 hover:text-stone-200 hover:bg-stone-700/50 cursor-pointer transition-colors"
+            className="p-1.5 md:p-2 rounded-xl text-stone-400 hover:text-stone-200 hover:bg-stone-700/50 cursor-pointer transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

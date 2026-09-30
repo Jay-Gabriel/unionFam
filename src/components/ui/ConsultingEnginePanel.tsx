@@ -36,6 +36,7 @@ interface ConsultingEnginePanelProps {
   onChangeEnergy: (energy: number) => void;
   activeStep: 'chat' | 'experiment';
   onChangeActiveStep: (step: 'chat' | 'experiment') => void;
+  onCloseMobile?: () => void;
 }
 
 export const ConsultingEnginePanel: React.FC<ConsultingEnginePanelProps> = ({
@@ -52,6 +53,7 @@ export const ConsultingEnginePanel: React.FC<ConsultingEnginePanelProps> = ({
   onChangeEnergy,
   activeStep,
   onChangeActiveStep,
+  onCloseMobile,
 }) => {
   const [inputText, setInputText] = useState('');
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -73,37 +75,45 @@ export const ConsultingEnginePanel: React.FC<ConsultingEnginePanelProps> = ({
   const progressPct = Math.round((checkedDaysCount / 7) * 100);
 
   return (
-    <div className="w-[470px] h-full bg-[#1b1f24]/98 border-l border-stone-800 flex flex-col justify-between p-4 text-stone-200 z-10 shrink-0 select-text">
-      {/* 1. Header with Tab Navigation & Gemini AI Key Badge */}
-      <div className="flex items-center justify-between pb-2.5 border-b border-stone-800">
-        <div className="flex items-center gap-1.5 bg-[#14161a] p-1 rounded-xl border border-stone-700/60">
+    <div className="w-full md:w-[470px] h-full bg-[#1b1f24]/98 border-l border-stone-800 flex flex-col justify-between p-3 md:p-4 text-stone-200 z-10 shrink-0 select-text overflow-hidden">
+      {/* 1. Header with Tab Navigation & Mobile Back button */}
+      <div className="flex items-center justify-between pb-2 border-b border-stone-800 gap-2 shrink-0">
+        {onCloseMobile && (
+          <button
+            onClick={onCloseMobile}
+            className="md:hidden flex items-center gap-1 bg-[#14161a] hover:bg-stone-800 border border-stone-700 text-amber-300 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 active:scale-95"
+          >
+            <span>🗺️ Bản đồ</span>
+          </button>
+        )}
+        <div className="flex items-center gap-1 bg-[#14161a] p-1 rounded-xl border border-stone-700/60 flex-1 overflow-x-auto no-scrollbar">
           <button
             onClick={() => onChangeActiveStep('chat')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex-1 px-2 md:px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-center ${
               activeStep === 'chat'
                 ? 'bg-amber-500 text-stone-950 shadow-md'
                 : 'text-stone-400 hover:text-stone-200'
             }`}
           >
-            💬 1. Đối Thoại Phản Chiếu
+            💬 1. Đối Thoại
           </button>
           <button
             onClick={() => onChangeActiveStep('experiment')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`flex-1 px-2 md:px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap ${
               activeStep === 'experiment'
                 ? 'bg-emerald-500 text-stone-950 shadow-md'
                 : 'text-stone-400 hover:text-stone-200'
             }`}
           >
-            <Rocket className="w-3.5 h-3.5" />
-            <span>2. Thử Nghiệm 7 Ngày ({checkedDaysCount}/7)</span>
+            <Rocket className="w-3 md:w-3.5 h-3 md:h-3.5" />
+            <span>2. Thử Nghiệm ({checkedDaysCount}/7)</span>
           </button>
         </div>
 
         {/* UnionFam Blueprint 7.0 AI Status Badge */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] md:text-[11px] font-semibold shrink-0">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
-          <span>UnionFam AI · Active</span>
+          <span>Active</span>
         </div>
       </div>
 
