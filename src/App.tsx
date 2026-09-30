@@ -52,40 +52,40 @@ export const App: React.FC = () => {
     {
       id: 0,
       title: 'Khám phá Bản đồ 3D',
-      instruction: 'Hãy nhấp chuột vào một địa danh trên The Living Map (ví dụ: Work, Money, Relationships hoặc Desired Difference).',
-      hint: 'Giữ chuột trái để xoay 3D 360°, nhấp vào thẻ địa danh để hướng ngọn hải đăng tới đó.',
+      instruction: 'Chạm vào một địa danh trên The Living Map (Work, Money, Relationships...).',
+      hint: 'Vuốt 1 ngón để xoay 360°, dùng 2 ngón phóng to/thu nhỏ, chạm vào công trình để hướng ngọn hải đăng.',
       isCompleted: false,
       icon: <MapPin className="w-4 h-4 text-emerald-400" />,
     },
     {
       id: 1,
-      title: 'Đối thoại với AI Coaching',
-      instruction: 'Hãy chọn một câu hỏi mẫu (Q1, Q2, Q5) hoặc gõ tin nhắn vào ô chat bên phải.',
-      hint: 'Bạn có thể chia sẻ về áp lực sự nghiệp, tiền bạc hoặc cảm giác mắc kẹt hiện tại.',
+      title: 'Đối thoại Phản chiếu AI',
+      instruction: 'Chọn một câu hỏi mẫu (Q1, Q2, Q5) hoặc gõ tin nhắn vào ô chat.',
+      hint: 'Chia sẻ về áp lực sự nghiệp, tiền bạc hoặc cảm giác mắc kẹt để AI phản chiếu.',
       isCompleted: false,
       icon: <MessageSquare className="w-4 h-4 text-sky-400" />,
     },
     {
       id: 2,
       title: 'Xác thực Insight (Verify)',
-      instruction: 'Hãy bấm nút [ Right on ] dưới khung chat để xác nhận AI đã hiểu đúng và xem pháo hoa + thăng cấp Clarity Score!',
-      hint: 'Nếu AI hiểu chưa đúng, bạn có thể bấm [ ✦ Repair ] để tự sửa lại định nghĩa.',
+      instruction: 'Bấm nút [ Right on ] dưới khung chat để nhận pháo hoa + thăng cấp Clarity!',
+      hint: 'Nếu AI hiểu chưa đúng, bấm [ ✦ Repair ] để tự sửa lại định nghĩa.',
       isCompleted: false,
       icon: <Sparkles className="w-4 h-4 text-amber-400" />,
     },
     {
       id: 3,
       title: 'Thực hành Thử nghiệm 7 Ngày',
-      instruction: 'Chuyển sang tab [ 🧪 2. Thử Nghiệm 7 Ngày ] và tích thử vào các ngày hoàn thành hoặc chỉnh thanh Năng lượng.',
-      hint: 'Thử nghiệm giúp bạn kiểm chứng giả thuyết bằng hành vi nhỏ và tự rút ra bài học.',
+      instruction: 'Chuyển sang tab [ 🧪 2. Thử Nghiệm ] và tích thử vào các ngày hoặc chỉnh Năng lượng.',
+      hint: 'Thử nghiệm giúp bạn kiểm chứng giả thuyết bằng hành vi nhỏ thực tế.',
       isCompleted: false,
       icon: <Rocket className="w-4 h-4 text-amber-300" />,
     },
     {
       id: 4,
       title: 'Kiểm tra Memory Center',
-      instruction: 'Hãy bấm nút [ Memory Center ] ở thanh công cụ dưới cùng để kiểm tra các insight và thử nghiệm đã được bảo lưu an toàn.',
-      hint: 'Bạn luôn có quyền xem, sửa, xóa hoặc thu hồi bất kỳ ký ức nào theo kịch bản V7.',
+      instruction: 'Bấm nút [ Memory ] ở thanh công cụ dưới cùng để xem các insight đã lưu an toàn.',
+      hint: 'Bạn luôn có quyền xem, sửa, xóa hoặc thu hồi bất kỳ ký ức nào theo V7.',
       isCompleted: false,
       icon: <Brain className="w-4 h-4 text-purple-400" />,
     },
@@ -436,7 +436,7 @@ export const App: React.FC = () => {
     <div className="w-screen h-screen flex flex-col bg-[#181a1b] overflow-hidden select-none">
       {/* 1. Top Navigation Bar */}
       <TopBar
-        sessionTitle={user ? `${user.name} — UnionFam Blueprint V7` : 'UnionFam Life Lab'}
+        sessionTitle={user ? `${user.name} · Life Lab` : 'Life Lab V7'}
         clarityState={clarityScore}
         onOpenGuide={() => setIsGuideOpen(true)}
       />
