@@ -1,43 +1,16 @@
 {
-  "framework": null,
-  "buildCommand": "node build_perfect_unionfam.mjs",
-  "outputDirectory": ".",
-  "cleanUrls": true,
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/radio/stations",
-      "destination": "/api/radio_stations.json"
-    },
-    {
-      "source": "/app/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/((?!api/|_next/|models/|textures/|fonts/|photos/|videos/|logos/|draco/|vendor/|favicon.ico|share.webp|robots.txt|sitemap.xml).*$)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/models/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/textures/(.*)",
+      "source": "/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
