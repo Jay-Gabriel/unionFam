@@ -3,7 +3,24 @@ import { config } from '../config.js';
 
 const { Pool } = pg;
 
-export const pool = new Pool({ connectionString: config.databaseUrl });
+/**
+ * Serverless-friendly pool: tái dùng qua global để tránh tạo pool mới mỗi cold start,
+ * giới hạn connection (managed Postgres như Neon có giới hạn), bật SSL khi cần.
+ */
+const g = globalThis as unknown as { __lifelabPool?: pg.Pool };
+
+function makePool(): pg.Pool {
+  const needSsl = /\bsslmode=require\b/.test(config.databaseUrl) || process.env.PGSSL === 'true';
+  return new Pool({
+    connectionString: config.databaseUrl,
+    max: Number(process.env.PG_POOL_MAX ?? (config.nodeEnv === 'production' ? 3 : 10)),
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 8_000,
+    ssl: needSsl ? { rejectUnauthorized: false } : undefined,
+  });
+}
+
+export const pool: pg.Pool = g.__lifelabPool ?? (g.__lifelabPool = makePool());
 
 export type Querier = pg.PoolClient | pg.Pool;
 
