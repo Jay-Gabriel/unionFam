@@ -38,8 +38,6 @@ export function App() {
       setMessages([
         { role: 'assistant', text: 'Chào bạn. Mình là Life Lab — một không gian để bạn nhìn rõ hơn điều đang quan trọng với mình. Mình không phải chuyên gia trị liệu hay dịch vụ cấp cứu. Điều gì đang ở trong tâm trí bạn hôm nay?' },
       ]);
-      // đẩy state khỏi ENTRY/CONSENT bằng một lượt khởi tạo rỗng (ui_action)
-      void advance(s.session_id, s.state_version, { ui_action: { type: 'CONSENT_CONTINUE' } }, false);
     } catch (e) {
       setError(humanError(e));
     }
@@ -57,7 +55,7 @@ export function App() {
     setSending(true);
     setError(null);
     try {
-      const r = await api.sendTurn(sid, { ...body, expected_state_version: version }, crypto.randomUUID());
+      const r = await api.sendTurn(sid, { ...body }, crypto.randomUUID());
       setStateVersion(r.state_version);
       setConvState(r.state);
       setSafety(r.safety.flow !== 'NONE' ? r.safety : null);

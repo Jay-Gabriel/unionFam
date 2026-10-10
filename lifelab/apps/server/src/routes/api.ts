@@ -37,12 +37,18 @@ api.post('/sessions', async (req, res) => {
   if (!parsed.success) return err(res, 400, 'VALIDATION_ERROR', parsed.error.message);
 
   const session = await createSession({ userId: parsed.data.user_id ?? null, memoryMode: parsed.data.memory_mode });
+  // Consent đã được thu thập ở UI (memory_mode) → đưa phiên tới WHAT_MATTERS_NOW để tin nhắn
+  // đầu tiên của người dùng được phản chiếu ngay, không lặp lại bước consent trong chat.
+  await pool.query(
+    `UPDATE sessions SET current_state = 'WHAT_MATTERS_NOW', previous_state = 'CONSENT', state_version = state_version + 1 WHERE id = $1`,
+    [session.id],
+  );
   const ent = getEntitlement('FREE');
   return res.status(201).json({
     session_id: session.id,
-    state: session.current_state,
-    state_version: session.state_version,
-    consent_required: true,
+    state: 'WHAT_MATTERS_NOW',
+    state_version: session.state_version + 1,
+    consent_required: false,
     limits: { turn_limit_per_session: ent.turnLimitPerSession, note: ent.note },
     request_id: res.locals.requestId,
   });
