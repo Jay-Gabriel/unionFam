@@ -1,0 +1,395 @@
+
+Life Lab User State
+Cấu trúc V8.2 sử dụng dữ liệu và quyền ưu tiên canonical của V8.7
+Quyết định thiết kế. Giữ mô hình bảy trục của thiết kế V8.2 gồm Safety, Engagement, Clarity, Agency, Relationship, Journey và Memory and Meaning. Mỗi trục được cập nhật bằng token, schema, permission và thứ tự ưu tiên của V8.7. User State là snapshot vận hành, không phải nhãn tính cách.
+Thành phần
+Quyết định
+Khung tổ chức
+Bảy trục User State theo bản thiết kế V8.2
+Nguồn token và runtime
+V8.7 Canonical Conversation Flow
+Cách triển khai
+State vector đa trục; không dùng một state machine tuyến tính cho con người
+Nguyên tắc dữ liệu
+User Statement có thẩm quyền cao hơn AI Observation; chỉ nội dung xác nhận và được phép mới được lưu
+
+1 Ranh giới kiến trúc
+Khái niệm
+Vai trò
+Ví dụ V8.7
+Conversation State
+Bước mà Life Lab đang thực hiện
+CURRENT_EXPERIENCE, VERIFY, REPAIR, OUTCOME_SELECTION
+User State
+Điều đang đúng về nhu cầu tương tác của người dùng lúc này
+POSSIBLY_LOW, CONFIRMED, WANTS_OPTIONS
+Session Outcome
+Giá trị người dùng muốn giữ sau checkpoint
+CONFIRMED_INSIGHT, BETTER_QUESTION, MEANINGFUL_NEXT_STEP, LIFE_EXPERIMENT, REFLECTIVE_PAUSE
+Life Map
+Cách hiểu dài hạn đã được xác nhận
+Current Life, The Gap, Current Focus
+Memory
+Bản ghi có nguồn, trạng thái xác nhận và permission
+USER_STATEMENT, AI_OBSERVATION, CONFIRMED_INSIGHT
+
+2 Tổng quan bảy trục
+USER STATE
+├─ 1 SAFETY
+├─ 2 ENGAGEMENT
+├─ 3 CLARITY
+├─ 4 AGENCY
+├─ 5 RELATIONSHIP
+├─ 6 JOURNEY
+└─ 7 MEMORY AND MEANING
+Các trục độc lập với nhau. Người dùng có thể CONFIRMED về một insight, POSSIBLY_LOW về năng lượng, WANTS_TO_PAUSE về Agency và vẫn ở EXPERIMENT_REFLECTION trong Journey.
+3 Trục 1 Safety
+Safety có thẩm quyền cao nhất, nhưng áp dụng đúng quy tắc V8.7: S0–S1 không ghi đè USER_STOP; S2 chỉ hỏi tối đa một câu an toàn; S3 được gửi phản hồi khẩn cấp ngắn trước CLOSE.
+State
+Điều đang xảy ra
+Hành động bắt buộc
+S0_CLEAR
+Không có tín hiệu nguy hiểm
+Tiếp tục luồng canonical
+S1_DISTRESS
+Đau khổ nhưng chưa có nguy cơ rõ
+Giảm áp lực; phản chiếu; tôn trọng quyền dừng
+S2_AMBIGUOUS_RISK
+Tín hiệu nguy hiểm còn mơ hồ
+Tạm ngắt flow; hỏi tối đa một câu an toàn trực tiếp
+S3_IMMEDIATE_RISK
+Nguy cơ tức thời
+Phản hồi khẩn cấp ngắn; chuyển CLOSE
+
+4 Trục 2 Engagement
+Engagement mô tả khả năng và mong muốn tiếp tục tương tác, không đánh giá người dùng có hợp tác hay không. Token vận hành dưới đây giữ cấu trúc V8.2 nhưng ánh xạ vào field và state canonical của V8.7.
+User State
+Ánh xạ V8.7
+Response behavior
+ENGAGED
+energy_signal = NORMAL
+Giữ nhịp hiện tại; một câu hỏi chính mỗi lượt
+UNCERTAIN
+LOW_PRESSURE_ENTRY hoặc người dùng nói chưa biết
+Giảm độ trừu tượng; ưu tiên câu hỏi mở rồi mới đưa lựa chọn ngắn
+LOW_ENERGY
+energy_signal = POSSIBLY_LOW
+Rút ngắn; CHECKPOINT; mời dừng hoặc giữ một điều quan trọng
+OVERWHELMED
+FOCUS_NARROWING
+Thu hẹp một trọng tâm; không hỏi về tất cả vấn đề
+PAUSING
+energy_signal = USER_WANTS_PAUSE
+Không mở câu hỏi khám phá mới
+STOP_REQUESTED
+user_requested_stop = true
+CLOSE ngay; không tóm tắt, lưu, feedback hoặc hỏi cuối
+
+Không gán LOW_ENERGY chỉ từ một câu trả lời ngắn. V8.7 yêu cầu nhìn context và cho phép câu trả lời ngắn nhưng đủ rõ.
+5 Trục 3 Clarity
+Clarity luôn gắn với một subject cụ thể như một trải nghiệm, insight hoặc Current Focus. Nó không phải điểm số mức độ hiểu bản thân nói chung.
+User State
+Verification status V8.7
+Transition
+UNEXPLORED
+Chưa có subject
+WHAT_MATTERS_NOW hoặc LOW_PRESSURE_ENTRY
+EXPRESSING
+Chưa tạo hypothesis
+CURRENT_EXPERIENCE → MEANING_OR_DESIRED_DIFFERENCE
+HYPOTHESIS
+UNVERIFIED
+MINI_REFLECTION → VERIFY
+PARTIALLY_CONFIRMED
+PARTIAL
+REPAIR; phản chiếu lại một lần
+CONFIRMED
+CONFIRMED
+CURRENT_FOCUS hoặc SESSION_OUTCOME_CHECKPOINT
+REJECTED
+REJECTED
+Ngừng dùng hypothesis; REPAIR
+UNCLEAR
+Giữ mở
+Tối đa một câu làm rõ hoặc PAUSE
+
+CONFIRMED chỉ được tạo từ xác nhận của người dùng. Một AI Observation dù có confidence cao vẫn là UNVERIFIED cho đến khi được xác nhận.
+6 Trục 4 Agency
+Agency ghi nhận người dùng muốn Life Lab hỗ trợ theo cách nào. Cấu trúc này thay menu dài của V8.2 bằng Outcome Selection hai tầng của V8.7.
+User State
+Tín hiệu người dùng
+State hoặc outcome V8.7
+WANTS_TO_BE_HEARD
+Chỉ muốn nói hoặc được phản chiếu
+REFLECT; không tự động hỏi tiếp
+WANTS_TO_UNDERSTAND
+Muốn nhìn rõ trải nghiệm hoặc ý nghĩa
+ASK, REFLECT, CONNECT, VERIFY
+WANTS_TO_EXPLORE
+Muốn đi thêm một lớp
+CONTINUE_EXPLORATION
+WANTS_OPTIONS
+Muốn xem các hướng
+PERMISSION_BEFORE_ADVICE → EXPLORE_OPTIONS
+WANTS_SMALL_STEP
+Muốn một bước nhỏ khả thi
+MEANINGFUL_NEXT_STEP
+WANTS_EXPERIMENT
+Muốn kiểm chứng qua trải nghiệm
+LIFE_EXPERIMENT
+WANTS_TO_PAUSE
+Điều vừa rõ đã đủ hoặc muốn suy nghĩ
+REFLECTIVE_PAUSE hoặc CLOSE
+
+6.1 Advice permission
+Token
+Quy tắc
+NOT_REQUESTED
+Chưa có permission đưa lời khuyên
+GRANTED_FOR_CURRENT_SCOPE
+Yêu cầu trực tiếp của người dùng là permission cho đúng phạm vi vừa hỏi
+REVOKED
+Người dùng không muốn tiếp tục nhận gợi ý
+
+Xác nhận Current Focus không đồng nghĩa với permission nhận lời khuyên. Permission không tự mở rộng sang chủ đề hoặc quyết định có tác động lớn khác.
+7 Trục 5 Relationship
+Relationship State không đo độ thân thiết. Nó giúp Life Lab biết mức độ hiệu chỉnh và nhu cầu sửa chữa trong cách đồng hành.
+State
+Ý nghĩa
+Runtime behavior
+NEW
+Chưa có preference được xác nhận
+Không suy đoán phong cách người dùng
+CALIBRATING
+Đang học độ dài, độ trực tiếp và nhịp hỏi
+Đề xuất cách hiểu rồi mời xác nhận
+ALIGNED
+Cách đồng hành hiện tại đã được xác nhận
+Dùng trong phạm vi phù hợp; luôn cho phép sửa
+REPAIR_NEEDED
+Người dùng nói AI hiểu sai hoặc phản hồi lệch
+Ưu tiên REPAIR trước khi tiếp tục khám phá
+TRUST_SENSITIVE
+Có lỗi về memory, privacy hoặc vượt permission
+Sửa dữ liệu; giải thích ngắn; không tự bảo vệ
+RETURNING
+Người dùng quay lại với history cũ
+Hỏi lại dữ liệu cũ còn đúng trước khi sử dụng
+
+8 Trục 6 Journey
+Journey State đặt người dùng trong Human Growth Loop của V8.7 mà không biến hành trình thành tiến trình tuyến tính hoặc điểm số.
+State
+Ý nghĩa
+Đối tượng đang hoạt động
+FIRST_SESSION
+Đang tạo một kết quả đầu tiên có giá trị
+Session Outcome
+OPEN_EXPLORATION
+Có câu hỏi đang mở
+Current Focus hoặc Better Question
+DECISION_EXPLORATION
+Đang nhìn lựa chọn, điều kiện và trade-off
+Decision Record
+EXPERIMENT_DESIGN
+Đang thiết kế phép thử
+Experiment draft
+EXPERIMENT_ACTIVE
+Đang sống với lựa chọn thử
+Active Life Experiment
+EXPERIMENT_REFLECTION
+Đang nhìn lại điều thực sự xảy ra
+Check-in và Reflection
+REDESIGN
+Learning cho thấy cần đổi hướng hoặc đổi cách thử
+Desired Life, Current Focus hoặc Experiment
+INTEGRATE
+Muốn đưa learning vào cách sống
+Life Map update proposal
+DORMANT
+Không có vòng đang hoạt động
+Không đồng nghĩa bỏ cuộc
+
+8.1 State sau Reflection
+Learning outcome
+User State
+Hướng tiếp theo
+Rõ hơn và muốn hành động
+ACT
+MEANINGFUL_NEXT_STEP hoặc LIFE_EXPERIMENT
+Vẫn đang khám phá
+EXPLORE
+CONTINUE_EXPLORATION
+Nhận ra hướng hiện tại không phù hợp
+REDESIGN
+Quay lại Desired Difference hoặc Current Focus
+Đã xác nhận lựa chọn
+CONTINUE
+Không cần phân tích thêm; người dùng chọn bước tiếp
+
+9 Trục 7 Memory and Meaning
+Trục này giữ nguyên tinh thần V8.2 nhưng dùng hệ phân cấp bằng chứng và permission của V8.7.
+Loại dữ liệu
+Thẩm quyền
+Quy tắc
+SYSTEM_CONTEXT
+Trạng thái kỹ thuật
+Không phải hồ sơ con người
+USER_STATEMENT
+Điều người dùng trực tiếp nói
+Dữ liệu gốc; không được AI diễn giải lại thành sự thật khác
+AI_OBSERVATION
+Điều AI nhận thấy
+Luôn là giả thuyết; không ghi đè User Statement
+CONFIRMED_INSIGHT
+Cách hiểu được người dùng xác nhận
+Chỉ lưu khi có permission
+
+9.1 Meaning status
+Token
+Cách sử dụng
+UNVERIFIED
+AI hypothesis hoặc pattern chưa được xác nhận
+CONFIRMED
+Người dùng xác nhận đầy đủ
+PARTIAL
+Chỉ phần được xác nhận có thể được giữ; phần còn lại phải Repair
+REJECTED
+Không tiếp tục dùng làm nền suy luận
+CORRECTED
+Giữ cách diễn đạt mới của người dùng
+SUPERSEDED
+Cách hiểu cũ đã được thay bởi dữ liệu mới
+UNCLEAR
+Chưa đủ rõ; không ép tạo learning
+
+9.2 Memory permission
+Token
+Runtime behavior
+ASK_LATER
+Chưa hỏi hoặc chưa đến thời điểm phù hợp
+ALLOWED
+Chỉ lưu đúng nội dung đã hiển thị và được người dùng chọn
+NO_MEMORY
+Hội thoại có thể tiếp tục nhưng không cập nhật Life Map, insight, focus, question, experiment hoặc summary dài hạn
+
+10 User State Snapshot
+{
+  "safety": {"state": "S0_CLEAR", "source": "SYSTEM_ASSESSMENT"},
+  "engagement": {
+    "state": "ENGAGED",
+    "v87_energy_signal": "NORMAL",
+    "confidence": 0.82,
+    "evidence_ids": ["evt_41"]
+  },
+  "clarity": {
+    "state": "HYPOTHESIS",
+    "subject_id": "work_autonomy",
+    "verification_status": "UNVERIFIED"
+  },
+  "agency": {
+    "state": "WANTS_TO_UNDERSTAND",
+    "advice_permission": "NOT_REQUESTED",
+    "source": "USER_EXPLICIT"
+  },
+  "relationship": {"state": "CALIBRATING"},
+  "journey": {"state": "OPEN_EXPLORATION", "object_id": "focus_102"},
+  "memory_and_meaning": {
+    "meaning_status": "UNVERIFIED",
+    "memory_mode": "ASK_LATER"
+  },
+  "user_requested_stop": false,
+  "updated_at": "2026-10-08T10:30:00+07:00"
+}
+11 Thứ tự ưu tiên runtime
+Immediate Crisis Safety.
+User Stop.
+Permission and Privacy.
+Conversation State Machine và canonical schemas.
+Relationship Repair và User Correction.
+Engagement và energy signal.
+Agency và support intent được người dùng chọn.
+Clarity, Journey và Conversation Techniques.
+Ví dụ và lời thoại mẫu không được ghi đè thứ tự trên.
+12 Ma trận chọn phản hồi
+User State nổi bật
+Response action
+Ràng buộc canonical
+S2_AMBIGUOUS_RISK
+SAFETY_CHECK
+Tối đa một câu an toàn
+STOP_REQUESTED
+CLOSE
+Không hỏi, lưu hoặc feedback
+REPAIR_NEEDED + HYPOTHESIS
+REPAIR
+Vô hiệu hóa cách hiểu cũ
+LOW_ENERGY + WANTS_TO_UNDERSTAND
+CHECKPOINT
+Ngắn; tối đa ba lựa chọn; cho phép dừng
+ENGAGED + EXPRESSING
+REFLECT hoặc ASK
+Một câu hỏi chính; tối đa 2–3 câu cùng mục đích trước checkpoint
+CONFIRMED + WANTS_OPTIONS
+PROPOSE
+Phải có advice permission trong đúng scope
+CONFIRMED + WANTS_TO_PAUSE
+SESSION_OUTCOME_CHECKPOINT
+Không tự động chuyển Memory Permission
+EXPERIMENT_REFLECTION + UNCLEAR
+REFLECT
+Không ép tạo Learning hoặc Life Map update
+
+13 Quy tắc cập nhật
+Mỗi state phải có source, scope, updated_at và lifetime; state suy luận phải có confidence và evidence_ids.
+USER_EXPLICIT và USER_CORRECTION có thẩm quyền cao hơn AI_INFERENCE.
+Không suy rộng trạng thái của một subject thành đặc điểm toàn bộ con người.
+State tạm thời hết hiệu lực khi ngữ cảnh thay đổi hoặc phiên đóng.
+REJECTED observation không được quay lại bằng từ khác nếu không có bằng chứng mới.
+Only CONFIRMED plus ALLOWED may update Life Map or long-term memory.
+Một Compass entry, một câu trả lời hoặc một lần xuất hiện không đủ tạo pattern.
+14 Bộ field MVP
+Trục
+Field
+Giá trị MVP
+Safety
+safety_level
+S0, S1, S2, S3
+Engagement
+energy_signal
+NORMAL, POSSIBLY_LOW, USER_WANTS_PAUSE
+Engagement
+user_requested_stop
+true, false
+Clarity
+verification_status
+UNVERIFIED, CONFIRMED, PARTIAL, REJECTED
+Agency
+support_intent
+HEARD, UNDERSTAND, EXPLORE, OPTIONS, STEP, EXPERIMENT, PAUSE
+Agency
+advice_permission
+NOT_REQUESTED, GRANTED_FOR_CURRENT_SCOPE, REVOKED
+Relationship
+relationship_state
+NEW, CALIBRATING, ALIGNED, REPAIR_NEEDED, TRUST_SENSITIVE
+Journey
+journey_state
+FIRST_SESSION, OPEN_EXPLORATION, EXPERIMENT_ACTIVE, REFLECTION, REDESIGN, INTEGRATE, DORMANT
+Memory
+memory_mode
+ASK_LATER, ALLOWED, NO_MEMORY
+Meaning
+meaning_status
+UNVERIFIED, CONFIRMED, PARTIAL, REJECTED, CORRECTED, SUPERSEDED, UNCLEAR
+
+15 Acceptance criteria
+Người dùng yêu cầu dừng làm STOP_REQUESTED có hiệu lực ngay và chuyển CLOSE.
+Insight chưa xác nhận không thể trở thành CONFIRMED_INSIGHT hoặc Life Map node.
+Current Focus được xác nhận không tự cấp advice permission.
+POSSIBLY_LOW làm phản hồi ngắn hơn nhưng không tạo nhãn né tránh hoặc thiếu hợp tác.
+PARTIAL luôn dẫn tới REPAIR trước khi sử dụng insight cho Current Focus.
+NO_MEMORY ngăn mọi cập nhật dài hạn nhưng không buộc kết thúc hội thoại.
+Learning UNCLEAR không bị ép thành Discover, Refine hoặc Confirm.
+Dữ liệu cũ của người dùng RETURNING phải được kiểm tra lại trước khi dùng cho quyết định hiện tại.
+16 Kết luận
+Bản thiết kế này giữ hình thức dễ hiểu của V8.2: bảy trục mô tả người dùng trong tương tác. V8.7 cung cấp thẩm quyền runtime, permission theo scope, Outcome Selection hai tầng, Session Outcome Checkpoint, field canonical và quy tắc Safety mới. Kết quả là một User State đủ gần con người để điều chỉnh hội thoại, nhưng đủ chặt để không biến suy luận của AI thành danh tính hoặc sự thật lâu dài.
