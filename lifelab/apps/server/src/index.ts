@@ -18,6 +18,24 @@ export function createApp() {
 
   app.get('/health', (_req, res) => res.json({ ok: true, version: '8.7.2', provider: config.aiProvider }));
 
+  // Chẩn đoán kết nối DB — fail nhanh (không treo tới function timeout).
+  app.get('/health/db', async (_req, res) => {
+    const started = Date.now();
+    let host = 'unknown', port = 'unknown';
+    try {
+      const u = new URL(config.databaseUrl.replace(/^postgres(ql)?:\/\//, 'http://'));
+      host = u.hostname; port = u.port;
+    } catch { /* ignore */ }
+    try {
+      const { pool } = await import('./db/pool.js');
+      const client = await pool.connect();
+      try { await client.query('select 1'); } finally { client.release(); }
+      res.json({ db: 'ok', host, port, ms: Date.now() - started });
+    } catch (e) {
+      res.status(503).json({ db: 'fail', host, port, ms: Date.now() - started, error: (e as Error).message.slice(0, 120) });
+    }
+  });
+
   app.use('/api/v1', api);
 
   // fallback error contract (không lộ stack)

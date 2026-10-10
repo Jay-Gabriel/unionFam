@@ -15,7 +15,7 @@ function makePool(): pg.Pool {
     connectionString: config.databaseUrl,
     max: Number(process.env.PG_POOL_MAX ?? (config.nodeEnv === 'production' ? 3 : 10)),
     idleTimeoutMillis: 10_000,
-    connectionTimeoutMillis: 8_000,
+    connectionTimeoutMillis: 5_000,
     ssl: needSsl ? { rejectUnauthorized: false } : undefined,
   });
 }
