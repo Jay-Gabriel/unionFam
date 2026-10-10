@@ -7,7 +7,21 @@ import { api } from './routes/api.js';
 export function createApp() {
   const app = express();
   app.use(cors({ origin: config.corsOrigin }));
-  app.use(express.json({ limit: '256kb' }));
+  // Parse JSON với mọi content-type (Vercel đôi khi không set đúng).
+  app.use(express.json({ limit: '256kb', type: () => true }));
+
+  // Normalize body: trên serverless, req.body có thể là string/Buffer → ép về object.
+  app.use((req, _res, next) => {
+    if (typeof req.body === 'string') {
+      try { req.body = req.body.length ? JSON.parse(req.body) : {}; } catch { req.body = {}; }
+    } else if (Buffer.isBuffer(req.body)) {
+      const s = req.body.toString('utf8');
+      try { req.body = s.length ? JSON.parse(s) : {}; } catch { req.body = {}; }
+    } else if (req.body == null) {
+      req.body = {};
+    }
+    next();
+  });
 
   // request id + server time
   app.use((req, res, next) => {
