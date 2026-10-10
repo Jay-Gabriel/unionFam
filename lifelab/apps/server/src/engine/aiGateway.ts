@@ -120,26 +120,36 @@ export class GeminiProvider implements AiProvider {
   name = 'gemini';
   async generate(ctx: GatewayContext): Promise<string> {
     if (!config.aiApiKey) throw new Error('MISSING_AI_KEY');
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.aiModel}:generateContent?key=${config.aiApiKey}`;
     const prompt = renderPrompt(ctx);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), config.aiTimeoutMs);
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, responseMimeType: 'application/json' },
-        }),
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error(`GEMINI_HTTP_${res.status}`);
-      const data = (await res.json()) as any;
-      return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-    } finally {
-      clearTimeout(timer);
+    // Thử model cấu hình; nếu model không tồn tại (404) hoặc bad request (400) → fallback alias -latest.
+    const models = [config.aiModel, 'gemini-flash-latest'].filter((v, i, a) => a.indexOf(v) === i);
+    let lastErr: Error | null = null;
+    for (const model of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.aiApiKey}`;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), config.aiTimeoutMs);
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.4, responseMimeType: 'application/json' },
+          }),
+          signal: controller.signal,
+        });
+        if (res.status === 404 || res.status === 400) {
+          lastErr = new Error(`GEMINI_HTTP_${res.status}`);
+          continue; // thử model kế tiếp
+        }
+        if (!res.ok) throw new Error(`GEMINI_HTTP_${res.status}`);
+        const data = (await res.json()) as any;
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      } finally {
+        clearTimeout(timer);
+      }
     }
+    throw lastErr ?? new Error('GEMINI_NO_MODEL');
   }
 }
 

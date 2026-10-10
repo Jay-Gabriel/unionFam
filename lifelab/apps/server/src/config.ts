@@ -19,13 +19,21 @@ function parseSafetyResources(): SafetyResourceCfg[] {
 
 export const config = {
   port: Number(process.env.PORT ?? 8787),
-  databaseUrl: process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/lifelab',
+  databaseUrl:
+    process.env.DATABASE_URL ??
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_PRISMA_URL ??
+    'postgres://postgres:postgres@localhost:5432/lifelab',
   nodeEnv: process.env.NODE_ENV ?? 'development',
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
 
-  // AI provider
-  aiProvider: (process.env.AI_PROVIDER ?? 'mock') as 'mock' | 'gemini' | 'openai',
-  aiApiKey: process.env.AI_API_KEY ?? '',
+  // AI provider — hỗ trợ cả AI_API_KEY và GEMINI_API_KEY (biến có sẵn trên Vercel).
+  aiProvider: (process.env.AI_PROVIDER ??
+    ((process.env.AI_API_KEY || process.env.GEMINI_API_KEY) ? 'gemini' : 'mock')) as
+    | 'mock'
+    | 'gemini'
+    | 'openai',
+  aiApiKey: process.env.AI_API_KEY ?? process.env.GEMINI_API_KEY ?? '',
   aiModel: process.env.AI_MODEL ?? 'gemini-flash-latest',
   aiTimeoutMs: Number(process.env.AI_TIMEOUT_MS ?? 12000),
 
