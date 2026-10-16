@@ -1,0 +1,8 @@
+{
+  "name": "lifelab-redirect-bridge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "cd .. && npm install && npm run build && rm -rf lifelab/dist && cp -r dist lifelab/dist"
+  }
+}
