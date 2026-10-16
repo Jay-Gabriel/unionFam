@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Compass, Sparkles, Send, ArrowLeft, ArrowDown, Key, RotateCcw, Volume2, VolumeX, ShieldCheck, ChevronDown, CheckCircle2, Bot } from 'lucide-react';
+import { Compass, Sparkles, Send, ArrowLeft, ArrowDown, Key, RotateCcw, Volume2, VolumeX, ShieldCheck, ChevronDown, CheckCircle2, Bot, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { getStoredGeminiKey, saveStoredGeminiKey, clearStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
 
 interface CosmicStoryRoadProps {
   onBackToArches: () => void;
@@ -42,23 +43,9 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
       timestamp: 'Ngay bây giờ',
     },
   ]);
-  // Helper to load Gemini API key safely across Vercel client and local storage
-  const getInitialKey = () => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('life_lab_gemini_key');
-      if (saved) return saved;
-    }
-    const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
-    if (envKey) return envKey;
-    try {
-      return atob('QVEuQWI4Uk42TFk1V1RBaTAtVGFacGlMTnB1OEJ0WjVDb1FPY0d5MjltdTl6TW81VncxeHc=');
-    } catch {
-      return '';
-    }
-  };
 
   const [inputText, setInputText] = useState('');
-  const [apiKey, setApiKey] = useState(getInitialKey);
+  const [apiKey, setApiKey] = useState<string>(getStoredGeminiKey);
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
 
@@ -208,49 +195,6 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
     };
   }, []);
 
-  // Smart Context-Aware Life Lab Engine for when API key is not yet set
-  const generateIntelligentLifeLabReply = (rawInput: string): string => {
-    const text = rawInput.toLowerCase().trim();
-
-    // 1. Greetings
-    if (/^(alo|hi|chào|hello|helo|ê|ơi|chao|alooo|hey)/i.test(text) || text.length <= 4) {
-      const greetings = [
-        'Chào bạn nhé! Mình ở đây lắng nghe bạn đây. Bạn vừa bước qua con đường ánh sáng này, lúc này tâm trí bạn đang băn khoăn hay trăn trở điều gì về tiền bạc và cuộc sống không?',
-        'Chào người bạn đồng hành! Rất vui được gặp bạn ở ngưỡng cửa này. Hãy cứ thoải mái chia sẻ, ở Life Lab không ai phán xét bạn cả.',
-        'Chào bạn! Mình sẵn sàng lắng nghe rồi. Có câu chuyện tài chính hay cảm giác nào đang làm bạn bận lòng lúc này không?',
-      ];
-      return greetings[Math.floor(Math.random() * greetings.length)];
-    }
-
-    // 2. Identity / Purpose
-    if (text.includes('bạn là ai') || text.includes('life lab') || text.includes('giúp gì') || text.includes('làm gì')) {
-      return 'Mình là người bạn đồng hành AI của Life Lab. Mục tiêu của mình không phải là dạy bạn làm giàu cấp tốc hay khuyên bạn đầu tư vào đâu, mà là cùng bạn nhìn sâu vào mối quan hệ giữa bạn và tiền bạc: Giúp bạn hiểu vì sao mình chi tiêu, đâu là nỗi sợ ngầm, và tiền đang thực sự phục vụ cuộc đời nào.';
-    }
-
-    // 3. Stress / Anxiety / Fear
-    if (text.includes('áp lực') || text.includes('stress') || text.includes('mệt') || text.includes('lo') || text.includes('sợ') || text.includes('bế tắc') || text.includes('buồn')) {
-      return 'Nghe bạn chia sẻ, mình cảm nhận rõ sức nặng và sự mệt mỏi mà bạn đang gánh. Thường thì cảm giác này xuất phát từ việc ta vô thức gánh kỳ vọng của người khác hoặc sợ một tương lai bất định. Bạn có muốn gọi tên cụ thể khoản chi hay nỗi lo nào đang làm bạn đau đầu nhất lúc này không?';
-    }
-
-    // 4. Debt / Losses / Crypto / Investment
-    if (text.includes('nợ') || text.includes('mất tiền') || text.includes('lỗ') || text.includes('crypto') || text.includes('chứng khoán') || text.includes('phá sản')) {
-      return 'Những vết nứt tài chính đó thật sự đau đớn, nhưng trong triết lý Kintsugi của Life Lab, một vết nứt không định nghĩa sự thất bại vĩnh viễn. Nó chỉ là dữ liệu cho thấy chiếc la bàn cũ cần được hiệu chỉnh lại và dát vàng bằng sự hiểu biết. Hiện tại khoản nợ hoặc mất mát đó có đang trực tiếp bóp nghẹt cuộc sống hàng ngày của bạn không?';
-    }
-
-    // 5. Impulsive Spending / Shopping / FOMO
-    if (text.includes('mua') || text.includes('chi tiêu') || text.includes('tiêu tiền') || text.includes('shopping') || text.includes('fomo') || text.includes('bốc đồng')) {
-      return 'Cảm giác muốn mua sắm ngay lập tức thường là tín hiệu tâm trí đang kiệt sức và khao khát một sự tự thưởng nhanh chóng. Lần tới, thử tự tặng cho mình 24 giờ tĩnh lặng trước khi bấm thanh toán, xem cảm giác thôi thúc ấy có còn mạnh mẽ như lúc đầu không nhé.';
-    }
-
-    // 6. Earning money / Financial Freedom / Savings
-    if (text.includes('kiếm tiền') || text.includes('làm giàu') || text.includes('tiết kiệm') || text.includes('tự do') || text.includes('thu nhập') || text.includes('lương')) {
-      return 'Tiền bạc xét cho cùng là dòng chảy năng lượng. Khi bạn định nghĩa rõ ràng: "Tôi muốn tiền phục vụ một cuộc đời tự do, khỏe mạnh và an tâm ra sao", thì từng đồng tiền bạn kiếm được và chi đi mới thực sự tìm thấy bến đỗ ý nghĩa. Mục tiêu lớn nhất của bạn trong 6 tháng tới là gì?';
-    }
-
-    // 7. General reflective default (Non-repetitive, encouraging)
-    return `Mình lắng nghe câu chuyện của bạn: "${rawInput}". Mỗi quyết định chi tiêu hay lo âu tài chính thực chất đều phản chiếu một nhu cầu sâu kín bên trong bạn. Nếu nhìn nhận vấn đề này với lòng bao dung và sự tỉnh thức, bạn thấy bước đi nhỏ nhất mình có thể làm hôm nay là gì?`;
-  };
-
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || isAiTyping) return;
@@ -267,99 +211,38 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
     setInputText('');
     setIsAiTyping(true);
 
-    if (apiKey) {
-      try {
-        const historyParts = messages.slice(-4).map(m => ({
-          role: m.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: m.text }],
-        }));
-
-        const systemPrompt = `Bạn là Life Lab Sanctuary AI Companion (Blueprint V8.7.2).
-MỤC TIÊU: Đồng hành tâm lý tài chính, lắng nghe thấu cảm, không phán xét, phản chiếu sâu sắc câu hỏi: "Tiền đang phục vụ cuộc đời nào?".
-QUY TẮC BẮT BUỘC:
-- Nói chuyện tự nhiên, đời thường, gần gũi như một người anh em / Tech Lead / Coach đồng hành ngồi cạnh bạn.
-- TUYỆT ĐỐI KHÔNG lặp lại câu từ rập khuôn, không nói máy móc hay chào hỏi khách sáo.
-- Giữ câu trả lời trong khoảng 2-4 câu sâu lắng, khơi mở nhận thức.`;
-
-        const requestPayload = {
-          systemInstruction: {
-            parts: [{ text: systemPrompt }],
-          },
-          contents: [
-            ...historyParts,
-            {
-              role: 'user',
-              parts: [{ text: userText }],
-            },
-          ],
-        };
-
-        let response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestPayload),
-          }
-        );
-
-        if (!response.ok) {
-          response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(requestPayload),
-            }
-          );
-        }
-
-        const data = await response.json();
-        const candidatePart = data.candidates?.[0]?.content?.parts?.find((p: any) => p.text);
-        const aiText = candidatePart?.text || generateIntelligentLifeLabReply(userText);
-        setMessages(prev => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: 'ai',
-            text: aiText,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]);
-      } catch (err) {
-        // Fallback gracefully to smart engine
-        setMessages(prev => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: 'ai',
-            text: generateIntelligentLifeLabReply(userText),
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]);
-      } finally {
-        setIsAiTyping(false);
-      }
-    } else {
-      setTimeout(() => {
-        const reply = generateIntelligentLifeLabReply(userText);
-        setMessages(prev => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: 'ai',
-            text: reply,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]);
-        setIsAiTyping(false);
-      }, 900);
+    try {
+      const activeKey = apiKey.trim() || getStoredGeminiKey();
+      const result = await callGeminiCompanionAPI(activeKey, userText, messages);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: 'ai',
+          text: result.text,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: 'ai',
+          text: 'Mình vẫn đang ở đây lắng nghe bạn. Khi đứng trước các quyết định tiền bạc, đâu là câu hỏi lớn nhất đang thôi thúc bạn tìm lời giải đáp?',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
+      setIsAiTyping(false);
     }
   };
 
   const handleSaveApiKey = (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('life_lab_gemini_key', apiKey.trim());
+    const clean = apiKey.trim();
+    saveStoredGeminiKey(clean);
+    setApiKey(clean);
     setShowKeyInput(false);
     confetti({ particleCount: 50, spread: 50 });
   };
@@ -445,12 +328,20 @@ QUY TẮC BẮT BUỘC:
               onClick={() => setShowKeyInput(!showKeyInput)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-serif transition ${
                 apiKey
-                  ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/30'
+                  ? apiKey.startsWith('AIzaSy')
+                    ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/30'
+                    : 'bg-sky-500/20 border-sky-400/60 text-sky-200 hover:bg-sky-500/30'
                   : 'bg-amber-500/20 border-amber-300/50 text-amber-200 hover:bg-amber-500/30'
               }`}
             >
               <Key className="w-3.5 h-3.5" />
-              <span>{apiKey ? 'Gemini AI: Đã Kết Nối' : 'Kích Hoạt Gemini API'}</span>
+              <span>
+                {apiKey
+                  ? apiKey.startsWith('AIzaSy')
+                    ? 'Gemini AI: Sẵn Sàng (AI Studio)'
+                    : 'Gemini Token: Đã Nhận'
+                  : 'Sanctuary Dialog Engine'}
+              </span>
             </button>
 
             {onGoToExperiments && (
@@ -467,37 +358,37 @@ QUY TẮC BẮT BUỘC:
 
         {/* API Key Modal Drawer */}
         {showKeyInput && (
-          <div className="fixed top-20 right-6 z-50 w-80 p-5 rounded-2xl bg-stone-950/95 border border-amber-400/50 shadow-2xl backdrop-blur-xl animate-fadeIn">
+          <div className="fixed top-20 right-6 z-50 w-84 p-5 rounded-2xl bg-stone-950/95 border border-amber-400/50 shadow-2xl backdrop-blur-xl animate-fadeIn">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-xs font-serif text-amber-200 font-semibold flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-amber-400" />
                 <span>Kết Nối Gemini AI Trực Tiếp</span>
               </h4>
             </div>
-            <p className="text-[11px] text-stone-300 mb-3 leading-relaxed">
-              Dán Google Gemini API Key của bạn vào đây để AI phản chiếu trực tiếp theo thời gian thực (Key được lưu an toàn trên trình duyệt của bạn):
+            <p className="text-[11px] text-stone-300 mb-2 leading-relaxed">
+              Dán Google AI Studio API Key (bắt đầu bằng <code className="text-amber-300 font-mono">AIzaSy...</code>) để AI phản hồi trực tiếp thời gian thực:
             </p>
             <form onSubmit={handleSaveApiKey} className="space-y-3">
               <input
-                type="password"
+                type="text"
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
                 placeholder="AIzaSy..."
                 className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-amber-400 font-mono"
               />
-              <div className="flex justify-between items-center text-xs">
-                {apiKey ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      localStorage.removeItem('life_lab_gemini_key');
-                      setApiKey('');
-                    }}
-                    className="text-[10px] text-rose-400 hover:underline"
-                  >
-                    Xóa Key
-                  </button>
-                ) : <span />}
+              <div className="flex items-center justify-between text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearStoredGeminiKey();
+                    const defaultKey = getStoredGeminiKey();
+                    setApiKey(defaultKey);
+                  }}
+                  className="text-[10px] text-amber-400/90 hover:underline flex items-center gap-1"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Dùng Key Mặc Định</span>
+                </button>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -508,7 +399,7 @@ QUY TẮC BẮT BUỘC:
                   </button>
                   <button
                     type="submit"
-                    className="px-3.5 py-1 bg-amber-400 hover:bg-amber-300 text-stone-950 font-semibold rounded-lg text-xs"
+                    className="px-3.5 py-1 bg-amber-400 hover:bg-amber-300 text-stone-950 font-semibold rounded-lg text-xs shadow-md"
                   >
                     Lưu Key
                   </button>
@@ -614,12 +505,18 @@ QUY TẮC BẮT BUỘC:
                     <h3 className="font-serif text-base text-amber-200 font-medium flex items-center gap-2">
                       <span>Life Lab Mirror Companion</span>
                       {apiKey ? (
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/40">
-                          Gemini Pro Active
-                        </span>
+                        apiKey.startsWith('AIzaSy') ? (
+                          <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/40">
+                            Gemini Pro Active
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-sky-500/20 text-sky-200 px-2 py-0.5 rounded-full border border-sky-400/40">
+                            Gemini Token Active
+                          </span>
+                        )
                       ) : (
                         <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/40">
-                          Smart Dialog Engine
+                          Sanctuary Dialog Engine
                         </span>
                       )}
                     </h3>
@@ -654,7 +551,7 @@ QUY TẮC BẮT BUỘC:
                       className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                         msg.sender === 'user'
                           ? 'bg-amber-400 text-stone-950 font-sans font-medium rounded-br-none shadow-md'
-                          : 'bg-stone-900/95 border border-white/10 text-stone-200 font-serif rounded-bl-none shadow-lg'
+                          : 'bg-stone-900/95 border border-white/10 text-stone-200 font-serif rounded-bl-none shadow-lg whitespace-pre-line'
                       }`}
                     >
                       {msg.text}
@@ -679,6 +576,12 @@ QUY TẮC BẮT BUỘC:
 
               {/* Quick Reflection Prompts */}
               <div className="px-6 py-2 bg-stone-900/40 border-t border-white/5 flex gap-2 overflow-x-auto text-[11px] font-serif text-amber-200/80">
+                <button
+                  onClick={() => setInputText('Gợi ý cho tôi hướng bắt đầu hiệu chỉnh tâm lý tài chính')}
+                  className="px-3 py-1 rounded-full bg-amber-400/15 hover:bg-amber-400/30 text-amber-300 border border-amber-400/30 transition whitespace-nowrap font-medium"
+                >
+                  ✨ "Gợi ý cho tôi"
+                </button>
                 <button
                   onClick={() => setInputText('Tôi luôn cảm thấy bất an dù trong tài khoản vẫn còn tiền tiết kiệm.')}
                   className="px-3 py-1 rounded-full bg-white/5 hover:bg-amber-400/20 hover:text-amber-200 border border-white/10 transition whitespace-nowrap"

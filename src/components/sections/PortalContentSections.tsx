@@ -17,6 +17,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { getStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
 
 interface PortalContentSectionsProps {
   onOpenPortalModal: (portal: 'story_chat' | 'experiment' | 'wisdom') => void;
@@ -37,7 +38,7 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
   const [activeChecklist, setActiveChecklist] = useState<boolean[]>([true, true, true, false, false, false, false]);
   const [sliderQ6, setSliderQ6] = useState<number>(8.0);
 
-  const handleSendQuickChat = (e: React.FormEvent) => {
+  const handleSendQuickChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickMessage.trim() || isTyping) return;
 
@@ -46,14 +47,21 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
     setQuickMessage('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      let reply = 'Mình lắng nghe được nỗi trăn trở sâu xa ấy. Bạn thấy không, tiền chưa bao giờ là vấn đề số học đơn thuần; nó phản chiếu chính xác những gì bạn đang trân quý hoặc đang cố né tránh. Hãy bước vào Cổng 1 để chúng ta đào sâu thêm nhé.';
-      if (userText.toLowerCase().includes('lo') || userText.toLowerCase().includes('sợ')) {
-        reply = 'Cảm giác lo âu là tiếng chuông báo hiệu bạn đang gánh vác những kỳ vọng không phải của mình. Hãy hít một hơi sâu và cho phép bản thân được buông lỏng một chút.';
-      }
-      setChatLog(prev => [...prev, { sender: 'ai', text: reply }]);
+    try {
+      const activeKey = getStoredGeminiKey();
+      const res = await callGeminiCompanionAPI(activeKey, userText, chatLog);
+      setChatLog(prev => [...prev, { sender: 'ai', text: res.text }]);
+    } catch {
+      setChatLog(prev => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: 'Mình vẫn đang ở đây lắng nghe bạn. Khi bạn nghĩ về câu hỏi "Tiền đang phục vụ cuộc đời nào?", điều gì dâng lên đầu tiên trong lòng bạn?',
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 1100);
+    }
   };
 
   const toggleDayCheck = (idx: number) => {
@@ -152,7 +160,7 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
                     className={`max-w-[88%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                       msg.sender === 'user'
                         ? 'bg-amber-400 text-stone-950 font-sans font-medium rounded-br-sm shadow-md'
-                        : 'bg-stone-800/80 border border-white/10 text-stone-200 font-serif rounded-bl-sm'
+                        : 'bg-stone-800/80 border border-white/10 text-stone-200 font-serif rounded-bl-sm whitespace-pre-line'
                     }`}
                   >
                     {msg.text}
@@ -166,6 +174,31 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:0.4s]" />
                 </div>
               )}
+            </div>
+
+            {/* Quick Prompts */}
+            <div className="pt-2 pb-1 flex gap-1.5 overflow-x-auto text-[10px] font-serif text-amber-200/80">
+              <button
+                type="button"
+                onClick={() => setQuickMessage('Gợi ý cho tôi hướng bắt đầu hiệu chỉnh tâm lý tài chính')}
+                className="px-2.5 py-1 rounded-full bg-amber-400/15 hover:bg-amber-400/30 text-amber-300 border border-amber-400/30 transition whitespace-nowrap"
+              >
+                ✨ "Gợi ý cho tôi"
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickMessage('Tôi hay mua sắm bốc đồng mỗi khi stress.')}
+                className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-amber-400/20 text-stone-300 hover:text-amber-200 border border-white/10 transition whitespace-nowrap"
+              >
+                "Hay mua sắm khi stress"
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickMessage('Tiền đang phục vụ cuộc đời nào?')}
+                className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-amber-400/20 text-stone-300 hover:text-amber-200 border border-white/10 transition whitespace-nowrap"
+              >
+                "Tiền phục vụ cuộc đời nào?"
+              </button>
             </div>
 
             {/* Quick Chat Input */}
