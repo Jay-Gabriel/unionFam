@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { X, Award, ShieldAlert, Sparkles, BookOpen, CheckCircle2, RotateCcw, Plus, Feather, Flame, HeartHandshake } from 'lucide-react';
-import { AuthButton } from '../auth/AuthButton';
 import { saveMemoryToCloud, loadMemoriesFromCloud } from '../../services/supabaseService';
 
 interface WisdomModalProps {
@@ -126,7 +125,6 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <AuthButton compact />
             <button
               onClick={onBackToArches}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-400/30 text-amber-200/80 hover:text-amber-100 hover:bg-amber-400/10 text-xs font-serif transition"

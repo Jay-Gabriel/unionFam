@@ -23,7 +23,6 @@ import {
 import confetti from 'canvas-confetti';
 import { getStoredGeminiKey, saveStoredGeminiKey, clearStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
 import { BETA_CONFIG, SessionOutcomeType } from '../../config/betaFlags';
-import { AuthButton } from '../auth/AuthButton';
 import { saveConversationToCloud, loadConversationFromCloud, saveMemoryToCloud } from '../../services/supabaseService';
 
 interface CosmicStoryRoadProps {
@@ -450,9 +449,6 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   : 'Sanctuary Dialog Engine'}
               </span>
             </button>
-
-            {/* Google Account Auth & Cloud Sync */}
-            <AuthButton compact />
 
             {onGoToExperiments && (
               <button

@@ -6,7 +6,6 @@ import { CosmicStoryRoad } from './components/portals/CosmicStoryRoad';
 import { ExperimentModal } from './components/portals/ExperimentModal';
 import { WisdomModal } from './components/portals/WisdomModal';
 import { Volume2, VolumeX } from 'lucide-react';
-import { AuthButton } from './components/auth/AuthButton';
 
 export const App: React.FC = () => {
   const [activePortal, setActivePortal] = useState<'none' | 'story_chat' | 'experiment' | 'wisdom'>('none');
@@ -64,9 +63,8 @@ export const App: React.FC = () => {
         <SacredWaterCanvas />
       </div>
 
-      {/* Top Floating Controls: Ambient Sound & Google Auth */}
+      {/* Top Floating Ambient Sound Control */}
       <div className="fixed top-6 right-6 z-40 flex items-center gap-3">
-        <AuthButton />
         <button
           onClick={toggleAudio}
           title={ambientSound ? 'Tắt âm thanh tĩnh tại' : 'Bật tần số thư giãn 174Hz'}
