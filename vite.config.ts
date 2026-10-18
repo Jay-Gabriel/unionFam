@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   server: {
     port: 5173,
     host: true,

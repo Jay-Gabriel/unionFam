@@ -23,6 +23,8 @@ import {
 import confetti from 'canvas-confetti';
 import { getStoredGeminiKey, saveStoredGeminiKey, clearStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
 import { BETA_CONFIG, SessionOutcomeType } from '../../config/betaFlags';
+import { AuthButton } from '../auth/AuthButton';
+import { saveConversationToCloud, loadConversationFromCloud, saveMemoryToCloud } from '../../services/supabaseService';
 
 interface CosmicStoryRoadProps {
   onBackToArches: () => void;
@@ -76,6 +78,17 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
   const [memoryConsent, setMemoryConsent] = useState<'granted' | 'declined' | null>(null);
   const [isSessionClosed, setIsSessionClosed] = useState(false);
   const [checkpointNote, setCheckpointNote] = useState('');
+  const [conversationId, setConversationId] = useState<string>(() => Date.now().toString());
+
+  // Tải lại hội thoại đã lưu (từ Supabase khi đã đăng nhập Google hoặc LocalStorage)
+  useEffect(() => {
+    loadConversationFromCloud().then(saved => {
+      if (saved && saved.messages && saved.messages.length > 0) {
+        setConversationId(saved.conversationId);
+        setMessages(saved.messages);
+      }
+    });
+  }, []);
 
   // Auto-scroll whenever messages change or AI is typing
   useEffect(() => {
@@ -234,32 +247,34 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages(prev => [...prev, newMsg]);
+    const updatedWithUser: Message[] = [...messages, newMsg];
+    setMessages(updatedWithUser);
+    saveConversationToCloud(conversationId, updatedWithUser);
     setInputText('');
     setIsAiTyping(true);
 
     try {
       const activeKey = apiKey.trim() || getStoredGeminiKey();
       const result = await callGeminiCompanionAPI(activeKey, trimmed, messages);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          sender: 'ai',
-          text: result.text,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: 'ai',
+        text: result.text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      const updatedWithAi: Message[] = [...updatedWithUser, aiMsg];
+      setMessages(updatedWithAi);
+      saveConversationToCloud(conversationId, updatedWithAi);
     } catch {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          sender: 'ai',
-          text: 'Mình vẫn đang ở đây lắng nghe bạn. Bạn cứ thong thả chia sẻ điều đang chiếm nhiều năng lượng nhất lúc này, chúng ta sẽ cùng nhìn lại từng chút một.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+      const fallbackMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: 'ai',
+        text: 'Mình vẫn đang ở đây lắng nghe bạn. Bạn cứ thong thả chia sẻ điều đang chiếm nhiều năng lượng nhất lúc này, chúng ta sẽ cùng nhìn lại từng chút một.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      const updatedWithFallback: Message[] = [...updatedWithUser, fallbackMsg];
+      setMessages(updatedWithFallback);
+      saveConversationToCloud(conversationId, updatedWithFallback);
     } finally {
       setIsAiTyping(false);
     }
@@ -300,15 +315,31 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
       ? 'Đã lưu đúc kết vào bộ nhớ an toàn của bạn cho các phiên sau.'
       : 'Đã hoàn tất phiên không lưu (No Memory). Dữ liệu này không được ghi dài hạn.';
 
-    setMessages(prev => [
-      ...prev,
-      {
+    const outcomeMsg: Message = {
+      id: Date.now().toString(),
+      sender: 'ai',
+      text: `✨ **Đúc kết phiên đã ghi nhận**: ${outcomeText}${checkpointNote ? `\n\n*Chi tiết*: "${checkpointNote}"` : ''}\n\n🛡️ *Trạng thái bộ nhớ*: ${memoryNote}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    const updatedWithOutcome: Message[] = [...messages, outcomeMsg];
+    setMessages(updatedWithOutcome);
+
+    // Lưu phiên và đúc kết lên Supabase / LocalStorage
+    saveConversationToCloud(conversationId, updatedWithOutcome, {
+      type: selectedOutcome,
+      text: checkpointNote || outcomeText,
+    });
+
+    if (memoryConsent === 'granted') {
+      saveMemoryToCloud({
         id: Date.now().toString(),
-        sender: 'ai',
-        text: `✨ **Đúc kết phiên đã ghi nhận**: ${outcomeText}${checkpointNote ? `\n\n*Chi tiết*: "${checkpointNote}"` : ''}\n\n🛡️ *Trạng thái bộ nhớ*: ${memoryNote}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
+        category: 'insight',
+        title: outcomeText,
+        reflection: checkpointNote || `Phiên hội thoại ngày ${new Date().toLocaleDateString('vi-VN')}: ${outcomeText}`,
+        date: 'Vừa xong',
+      });
+    }
 
     setShowCheckpointModal(false);
     confetti({ particleCount: 40, spread: 45 });
@@ -419,6 +450,9 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   : 'Sanctuary Dialog Engine'}
               </span>
             </button>
+
+            {/* Google Account Auth & Cloud Sync */}
+            <AuthButton compact />
 
             {onGoToExperiments && (
               <button

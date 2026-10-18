@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Award, ShieldAlert, Sparkles, BookOpen, CheckCircle2, RotateCcw, Plus, Feather, Flame, HeartHandshake } from 'lucide-react';
+import { AuthButton } from '../auth/AuthButton';
+import { saveMemoryToCloud, loadMemoriesFromCloud } from '../../services/supabaseService';
 
 interface WisdomModalProps {
   isOpen: boolean;
@@ -33,8 +35,18 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
     { id: 5, name: 'Tự Do Lựa Chọn', subtitle: 'Sovereignty', color: 'from-purple-400 to-indigo-600', unlocked: false, desc: 'Tự do bước tiếp theo nhịp sống riêng, không bị cuốn theo người khác.' },
   ]);
 
-  // Saved Insights / Memories (Initialized empty - requires real session consent)
+  // Saved Insights / Memories (Tự động tải từ Supabase hoặc LocalStorage)
   const [memories, setMemories] = useState<WisdomItem[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadMemoriesFromCloud().then(items => {
+        if (items && items.length > 0) {
+          setMemories(items);
+        }
+      });
+    }
+  }, [isOpen]);
 
   // Kintsugi Form
   const [newTitle, setNewTitle] = useState('');
@@ -57,12 +69,22 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
     };
 
     setMemories([newItem, ...memories]);
+    saveMemoryToCloud(newItem);
     setNewTitle('');
     setNewReflection('');
   };
 
   const handleApplyKintsugi = (id: string) => {
     if (!kintsugiNote.trim()) return;
+    const target = memories.find(m => m.id === id);
+    if (target) {
+      const updated: WisdomItem = {
+        ...target,
+        kintsugiRepaired: true,
+        repairedNote: kintsugiNote.trim(),
+      };
+      saveMemoryToCloud(updated);
+    }
     setMemories(memories.map(m => {
       if (m.id === id) {
         return {
@@ -104,6 +126,7 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <AuthButton compact />
             <button
               onClick={onBackToArches}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-400/30 text-amber-200/80 hover:text-amber-100 hover:bg-amber-400/10 text-xs font-serif transition"
