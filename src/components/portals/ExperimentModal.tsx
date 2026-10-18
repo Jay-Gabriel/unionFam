@@ -9,11 +9,11 @@ interface ExperimentModalProps {
 }
 
 export const ExperimentModal: React.FC<ExperimentModalProps> = ({ isOpen, onClose, onGoToWisdom }) => {
-  const [days, setDays] = useState<boolean[]>([true, true, true, false, false, false, false]);
-  const [energyLevel, setEnergyLevel] = useState<number>(8.5);
-  const [experimentTitle, setExperimentTitle] = useState('30 Phút Tự Quyết Mỗi Tối (No Distraction)');
+  const [days, setDays] = useState<boolean[]>([false, false, false, false, false, false, false]);
+  const [energyLevel, setEnergyLevel] = useState<number>(5.0);
+  const [experimentTitle, setExperimentTitle] = useState('Bước Thử Nhỏ Đời Sống (Micro Experiment)');
   const [experimentDesc, setExperimentDesc] = useState(
-    'Mỗi buổi tối dành 30 phút không chạm điện thoại, ghi lại 3 quyết định bạn tự đưa ra trong ngày mà không bị chi phối bởi ý kiến bên ngoài.'
+    'Thực hiện một hành động nhỏ trong 1–3 ngày tới để quan sát cảm giác và nhịp sống của bạn sau phiên đối thoại.'
   );
 
   if (!isOpen) return null;

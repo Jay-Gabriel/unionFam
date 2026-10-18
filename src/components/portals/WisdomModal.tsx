@@ -24,41 +24,17 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'gems' | 'memories' | 'kintsugi'>('gems');
   
-  // 5 Clarity Gems state
+  // 5 Clarity Dimensions state
   const [gems, setGems] = useState([
-    { id: 1, name: 'Tỉnh Thức', subtitle: 'Awareness', color: 'from-amber-400 to-amber-600', unlocked: true, desc: 'Biết rõ tiền đang chảy về đâu mà không sợ hãi.' },
-    { id: 2, name: 'Nhận Diện Khoảng Cách', subtitle: 'The Gap', color: 'from-rose-400 to-rose-600', unlocked: true, desc: 'Thấy rõ độ lệch giữa giá trị cốt lõi và chi tiêu bốc đồng.' },
-    { id: 3, name: 'Vùng Đệm An Tâm', subtitle: 'Safe Haven', color: 'from-emerald-400 to-emerald-600', unlocked: true, desc: 'Tách rời cảm giác sinh tồn khỏi số dư tài khoản ngân hàng.' },
-    { id: 4, name: 'Sứ Mệnh Phục Vụ', subtitle: 'Core Purpose', color: 'from-cyan-400 to-blue-600', unlocked: false, desc: 'Định hình rõ rệt tiền đang phục vụ cuộc đời nào.' },
-    { id: 5, name: 'Tự Do Thực Sự', subtitle: 'Sovereignty', color: 'from-purple-400 to-indigo-600', unlocked: false, desc: 'Làm chủ quyết định tài chính mà không còn bị thúc ép bởi FOMO.' },
+    { id: 1, name: 'Tỉnh Thức', subtitle: 'Awareness', color: 'from-amber-400 to-amber-600', unlocked: false, desc: 'Nhìn nhận thực tế cuộc sống và công việc mà không tự phán xét.' },
+    { id: 2, name: 'Nhận Diện Khoảng Cách', subtitle: 'The Gap', color: 'from-rose-400 to-rose-600', unlocked: false, desc: 'Thấy rõ ranh giới giữa áp lực kỳ vọng và nhu cầu nội tại.' },
+    { id: 3, name: 'Vùng Đệm An Tâm', subtitle: 'Safe Haven', color: 'from-emerald-400 to-emerald-600', unlocked: false, desc: 'Tạo khoảng lặng bình tâm để đưa ra quyết định vững chãi.' },
+    { id: 4, name: 'Ý Nghĩa Thực Sự', subtitle: 'Core Purpose', color: 'from-cyan-400 to-blue-600', unlocked: false, desc: 'Định hình rõ điều bản thân thực sự trân trọng lúc này.' },
+    { id: 5, name: 'Tự Do Lựa Chọn', subtitle: 'Sovereignty', color: 'from-purple-400 to-indigo-600', unlocked: false, desc: 'Tự do bước tiếp theo nhịp sống riêng, không bị cuốn theo người khác.' },
   ]);
 
-  // Saved Insights / Memories
-  const [memories, setMemories] = useState<WisdomItem[]>([
-    {
-      id: 'm1',
-      category: 'core_value',
-      title: 'Tiền là dòng năng lượng luân chuyển',
-      reflection: 'Khi chi tiêu trong lo âu, tôi đang bóp nghẹt dòng chảy. Mỗi đồng tiền rời đi phải mang lòng biết ơn và sự tin tưởng.',
-      date: 'Hôm nay',
-    },
-    {
-      id: 'm2',
-      category: 'boundary',
-      title: 'Quy tắc 24h đối với áp lực FOMO',
-      reflection: 'Mỗi khi bị thôi thúc mua sắm vì áp lực bạn bè hoặc ưu đãi gấp, tự thưởng cho mình 24h tĩnh lặng trước khi thanh toán.',
-      date: 'Hôm qua',
-    },
-    {
-      id: 'm3',
-      category: 'insight',
-      title: 'Vết nứt không phải là thất bại',
-      reflection: 'Khoản chi sai lầm tuần trước không định nghĩa giá trị con người tôi. Đó chỉ là dữ liệu để hiệu chỉnh la bàn nội tâm.',
-      kintsugiRepaired: true,
-      repairedNote: 'Đã hiệu chỉnh: Chuyển hóa cảm giác tội lỗi thành bài học quản trị cảm xúc.',
-      date: '3 ngày trước',
-    },
-  ]);
+  // Saved Insights / Memories (Initialized empty - requires real session consent)
+  const [memories, setMemories] = useState<WisdomItem[]>([]);
 
   // Kintsugi Form
   const [newTitle, setNewTitle] = useState('');
@@ -292,7 +268,17 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
 
               {/* Memory List */}
               <div className="space-y-3">
-                {memories.map(item => (
+                {memories.length === 0 ? (
+                  <div className="p-8 text-center rounded-2xl bg-stone-900/30 border border-white/5 space-y-3">
+                    <p className="font-serif text-sm text-stone-300">
+                      Chưa có đúc kết nào được lưu.
+                    </p>
+                    <p className="text-xs text-stone-400 font-sans max-w-md mx-auto leading-relaxed">
+                      Life Lab không tạo sẵn dữ liệu cá nhân giả định. Sau khi bạn hoàn thành phiên đối thoại đầu tiên và đồng ý cấp quyền lưu nhớ (Memory Permission), các đúc kết của bạn sẽ hiển thị tại đây.
+                    </p>
+                  </div>
+                ) : (
+                  memories.map(item => (
                   <div
                     key={item.id}
                     className={`p-4 rounded-2xl border transition-all ${
@@ -328,7 +314,7 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
                       </div>
                     )}
                   </div>
-                ))}
+                )))}
               </div>
             </div>
           )}

@@ -1,7 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Compass, Sparkles, Send, ArrowLeft, ArrowDown, Key, RotateCcw, Volume2, VolumeX, ShieldCheck, ChevronDown, CheckCircle2, Bot, RefreshCw } from 'lucide-react';
+import {
+  Compass,
+  Sparkles,
+  Send,
+  ArrowLeft,
+  ArrowDown,
+  Key,
+  RotateCcw,
+  Volume2,
+  VolumeX,
+  ShieldCheck,
+  ChevronDown,
+  CheckCircle2,
+  Bot,
+  RefreshCw,
+  PauseCircle,
+  BookmarkCheck,
+  Check,
+  X,
+  ArrowRight
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getStoredGeminiKey, saveStoredGeminiKey, clearStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
+import { BETA_CONFIG, SessionOutcomeType } from '../../config/betaFlags';
 
 interface CosmicStoryRoadProps {
   onBackToArches: () => void;
@@ -39,7 +60,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'Chào bạn. Khi bước hết con đường ánh sáng này, bạn đã để lại phía sau những ồn ào vội vã. Giờ đây, khi đối diện với chính mình, nỗi trăn trở lớn nhất về tiền bạc mà bạn muốn chia sẻ là gì?',
+      text: 'Chào bạn. Chúng ta không cần giải quyết toàn bộ cuộc sống hôm nay. Bạn có thể bắt đầu từ điều đang chiếm nhiều suy nghĩ hoặc năng lượng. Bạn muốn bắt đầu từ đâu?',
       timestamp: 'Ngay bây giờ',
     },
   ]);
@@ -48,6 +69,13 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
   const [apiKey, setApiKey] = useState<string>(getStoredGeminiKey);
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
+
+  // Beta Master V8.7.2 Checkpoint & Memory State
+  const [showCheckpointModal, setShowCheckpointModal] = useState(false);
+  const [selectedOutcome, setSelectedOutcome] = useState<SessionOutcomeType | null>(null);
+  const [memoryConsent, setMemoryConsent] = useState<'granted' | 'declined' | null>(null);
+  const [isSessionClosed, setIsSessionClosed] = useState(false);
+  const [checkpointNote, setCheckpointNote] = useState('');
 
   // Auto-scroll whenever messages change or AI is typing
   useEffect(() => {
@@ -195,15 +223,14 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
     };
   }, []);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() || isAiTyping) return;
+  const submitMessage = async (textToSend: string) => {
+    const trimmed = textToSend.trim();
+    if (!trimmed || isAiTyping || isSessionClosed) return;
 
-    const userText = inputText.trim();
     const newMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
-      text: userText,
+      text: trimmed,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -213,7 +240,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
 
     try {
       const activeKey = apiKey.trim() || getStoredGeminiKey();
-      const result = await callGeminiCompanionAPI(activeKey, userText, messages);
+      const result = await callGeminiCompanionAPI(activeKey, trimmed, messages);
       setMessages(prev => [
         ...prev,
         {
@@ -229,13 +256,62 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
         {
           id: (Date.now() + 1).toString(),
           sender: 'ai',
-          text: 'Mình vẫn đang ở đây lắng nghe bạn. Khi đứng trước các quyết định tiền bạc, đâu là câu hỏi lớn nhất đang thôi thúc bạn tìm lời giải đáp?',
+          text: 'Mình vẫn đang ở đây lắng nghe bạn. Bạn cứ thong thả chia sẻ điều đang chiếm nhiều năng lượng nhất lúc này, chúng ta sẽ cùng nhìn lại từng chút một.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
     } finally {
       setIsAiTyping(false);
     }
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitMessage(inputText);
+  };
+
+  // P0-01: User Stop handler (dừng phiên ngay, không hỏi feedback hay ép lưu memory)
+  const handleUserStop = () => {
+    setIsSessionClosed(true);
+    setMessages(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        sender: 'ai',
+        text: 'Cảm ơn bạn đã ghé lại và dành thời gian cho chính mình. Chúng ta dừng tại đây nhé. Khi nào cần một khoảng lặng để nhìn lại, bạn luôn có thể quay lại.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  };
+
+  // P0-06 & P0-08: Session Outcome Checkpoint & Memory Permission
+  const handleConfirmCheckpoint = () => {
+    if (!selectedOutcome) return;
+    const outcomeLabels: Record<SessionOutcomeType, string> = {
+      REFLECTIVE_PAUSE: 'Dừng lại với điều vừa rõ',
+      BETTER_QUESTION: 'Giữ một câu hỏi ngẫm nghĩ',
+      CONFIRMED_INSIGHT: 'Tiếp tục khám phá thấu suốt',
+      MEANINGFUL_NEXT_STEP: 'Nhìn rõ một quyết định',
+      LIFE_EXPERIMENT: 'Thử một bước nhỏ thực tế',
+    };
+
+    const outcomeText = outcomeLabels[selectedOutcome];
+    const memoryNote = memoryConsent === 'granted'
+      ? 'Đã lưu đúc kết vào bộ nhớ an toàn của bạn cho các phiên sau.'
+      : 'Đã hoàn tất phiên không lưu (No Memory). Dữ liệu này không được ghi dài hạn.';
+
+    setMessages(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        sender: 'ai',
+        text: `✨ **Đúc kết phiên đã ghi nhận**: ${outcomeText}${checkpointNote ? `\n\n*Chi tiết*: "${checkpointNote}"` : ''}\n\n🛡️ *Trạng thái bộ nhớ*: ${memoryNote}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+
+    setShowCheckpointModal(false);
+    confetti({ particleCount: 40, spread: 45 });
   };
 
   const handleSaveApiKey = (e: React.FormEvent) => {
@@ -419,18 +495,17 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             style={getStepStyle(0.0, 0.06, 0.18)}
             className="absolute text-center max-w-3xl space-y-4 px-4"
           >
-            <h1 className="font-playfair text-4xl sm:text-6xl md:text-7xl text-stone-100 font-normal drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]">
-              Cổng Thức Tỉnh
+            <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl text-stone-100 font-normal drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]">
+              Khoảng Lặng Để Bắt Đầu
             </h1>
-            <div className="font-playfair text-lg sm:text-2xl md:text-3xl text-amber-100/90 leading-relaxed font-light space-y-2 drop-shadow-md">
-              <p>Đây là phiên làm việc đầu tiên của bạn cùng Life Lab.</p>
-              <p className="italic text-amber-200">Một lời hiệu triệu sống động.</p>
-              <p>Một ngưỡng cửa chuyển hóa.</p>
-              <p className="text-amber-100">Một bước ngoặt tâm thức ngụy trang dưới hình hài một trang web.</p>
+            <div className="font-serif text-base sm:text-xl md:text-2xl text-amber-100/90 leading-relaxed font-light space-y-2 drop-shadow-md">
+              <p>Dành riêng cho bạn một không gian chậm lại giữa guồng quay công việc và cuộc sống.</p>
+              <p className="italic text-amber-200">Không cần giải quyết toàn bộ cuộc sống hôm nay.</p>
+              <p className="text-amber-100">Chỉ cần bắt đầu từ một điều đang chiếm nhiều suy nghĩ hoặc năng lượng nhất lúc này.</p>
             </div>
             <div className="pt-6">
               <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-stone-950/70 border border-amber-300/50 backdrop-blur-md text-amber-200 text-xs font-mono tracking-widest uppercase shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-bounce">
-                <span>CUỘN CHUỘT ĐỂ CON ĐƯỜNG CHẠY TIẾP</span>
+                <span>CUỘN CHUỘT ĐỂ TIẾP TỤC KHÁM PHÁ</span>
                 <ChevronDown className="w-3.5 h-3.5" />
               </span>
             </div>
@@ -442,13 +517,13 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             className="absolute text-center max-w-3xl space-y-4 p-8 sm:p-12 rounded-3xl bg-stone-950/80 border border-amber-300/40 backdrop-blur-xl shadow-[0_0_50px_rgba(245,158,11,0.25)]"
           >
             <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-amber-300 block">
-              CHẶNG 1 • TIẾNG GỌI NỘI TÂM
+              CHẶNG 1 • LẮNG NGHE ĐIỀU ĐANG DIỄN RA
             </span>
-            <p className="font-playfair text-2xl sm:text-4xl lg:text-5xl text-amber-100 leading-snug drop-shadow-lg">
-              "Bạn chưa bao giờ thiếu tiền.<br />Thứ bạn thực sự thiếu là sự thấu tỏ:<br /><span className="text-amber-300 font-medium italic">Tiền đang phục vụ cuộc đời nào?</span>"
+            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl text-amber-100 leading-snug drop-shadow-lg">
+              "Đôi khi sự kiệt sức không đến từ việc bạn làm chưa đủ tốt,<br />Mà từ việc chưa có dịp nhìn rõ:<br /><span className="text-amber-300 font-medium italic">Điều gì đang thực sự lấy đi năng lượng của mình?</span>"
             </p>
             <p className="text-stone-300 text-xs sm:text-sm font-sans max-w-xl mx-auto leading-relaxed pt-2">
-              Khi chi tiêu trong sợ hãi, ta bóp nghẹt chính mình. Khi chi tiêu bằng sự tỉnh thức, tiền bạc trở thành đôi cánh tự do.
+              Không phán xét, không áp đặt giải pháp. Hãy bắt đầu từ việc gọi tên chính xác điều bạn đang trải qua.
             </p>
           </div>
 
@@ -458,13 +533,13 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             className="absolute text-center max-w-3xl space-y-4 p-8 sm:p-12 rounded-3xl bg-stone-950/80 border border-purple-400/40 backdrop-blur-xl shadow-[0_0_50px_rgba(168,85,247,0.25)]"
           >
             <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-purple-300 block">
-              CHẶNG 2 • KHOẢNG CÁCH (THE GAP)
+              CHẶNG 2 • TÁCH RỜI ÁP LỰC VÀ NHU CẦU NỘI TẠI
             </span>
-            <p className="font-playfair text-2xl sm:text-4xl lg:text-5xl text-purple-100 leading-snug drop-shadow-lg">
-              "Mỗi đồng tiền rời khỏi tài khoản<br />Là một lá phiếu bạn bầu cho tương lai mà bạn tin tưởng."
+            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl text-purple-100 leading-snug drop-shadow-lg">
+              "Đâu là áp lực từ hoàn cảnh xung quanh,<br />Và đâu là điều bạn thực sự muốn dành sự ưu tiên lúc này?"
             </p>
             <p className="text-stone-300 text-xs sm:text-sm font-sans max-w-xl mx-auto leading-relaxed pt-2">
-              Bạn có đang dùng tiền để tôn vinh sự sống và bình yên, hay đang dùng nó để làm vừa lòng những kỳ vọng của người khác?
+              Khi nhìn rõ ranh giới giữa kỳ vọng bên ngoài và nhịp sống của chính mình, sự bối rối sẽ dần nhường chỗ cho sự bình thản.
             </p>
           </div>
 
@@ -474,13 +549,13 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             className="absolute text-center max-w-3xl space-y-4 p-8 sm:p-12 rounded-3xl bg-stone-950/80 border border-emerald-400/40 backdrop-blur-xl shadow-[0_0_50px_rgba(16,185,129,0.25)]"
           >
             <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-emerald-300 block">
-              CHẶNG 3 • DÁT VÀNG KINTSUGI
+              CHẶNG 3 • TỰ DO LỰA CHỌN CÁCH TIẾP TỤC
             </span>
-            <p className="font-playfair text-2xl sm:text-4xl lg:text-5xl text-emerald-100 leading-snug drop-shadow-lg">
-              "Vết nứt hôm qua không phải là thất bại.<br />Đó là nơi ánh sáng của trí tuệ bắt đầu rọi vào."
+            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl text-emerald-100 leading-snug drop-shadow-lg">
+              "Bạn không bắt buộc phải hành động hay quyết định ngay.<br />Dừng lại với một điều vừa rõ đã là một kết quả trọn vẹn."
             </p>
             <p className="text-stone-300 text-xs sm:text-sm font-sans max-w-xl mx-auto leading-relaxed pt-2">
-              Những sai lầm chi tiêu trong quá khứ chỉ là dữ liệu để hiệu chỉnh lại la bàn. Hãy tha thứ cho chính mình và bước tiếp.
+              Giữ một câu hỏi ngẫm nghĩ, thử một bước nhỏ, hoặc đơn giản là cho phép mình dừng lại nghỉ ngơi.
             </p>
           </div>
 
@@ -527,6 +602,27 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* P0-06 Session Outcome Checkpoint Button */}
+                  <button
+                    onClick={() => setShowCheckpointModal(true)}
+                    className="text-[11px] text-amber-200 font-serif bg-amber-400/15 hover:bg-amber-400/25 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1 shadow-sm"
+                    title="Đúc kết phiên đối thoại (Master V8.7.2 Checkpoint)"
+                  >
+                    <BookmarkCheck className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Đúc Kết Phiên</span>
+                  </button>
+
+                  {/* P0-01 User Stop Button */}
+                  <button
+                    onClick={handleUserStop}
+                    disabled={isSessionClosed}
+                    className="text-[11px] text-stone-300 font-serif bg-white/5 hover:bg-stone-800 disabled:opacity-40 px-2.5 py-1 rounded-full border border-white/10 transition flex items-center gap-1"
+                    title="Dừng phiên trò chuyện ngay lúc này"
+                  >
+                    <PauseCircle className="w-3.5 h-3.5 text-stone-400" />
+                    <span>{isSessionClosed ? 'Đã dừng' : 'Dừng lại'}</span>
+                  </button>
+
                   <button
                     onClick={() => setShowKeyInput(true)}
                     className="text-[11px] text-amber-300/90 font-mono bg-amber-400/10 hover:bg-amber-400/20 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1"
@@ -574,31 +670,34 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                 <div ref={chatEndRef} className="h-2 w-full" />
               </div>
 
-              {/* Quick Reflection Prompts */}
-              <div className="px-6 py-2 bg-stone-900/40 border-t border-white/5 flex gap-2 overflow-x-auto text-[11px] font-serif text-amber-200/80">
+              {/* Quick Reflection Prompts (Product Brief V1.0 - Launch Beta Profile) */}
+              <div className="px-5 py-2.5 bg-stone-900/60 border-t border-white/5 flex gap-2 overflow-x-auto text-[11px] font-serif items-center">
+                <span className="text-[10px] text-stone-400 font-mono flex items-center pr-1 uppercase tracking-wider shrink-0">
+                  Lựa chọn mở đầu:
+                </span>
                 <button
-                  onClick={() => setInputText('Gợi ý cho tôi hướng bắt đầu hiệu chỉnh tâm lý tài chính')}
-                  className="px-3 py-1 rounded-full bg-amber-400/15 hover:bg-amber-400/30 text-amber-300 border border-amber-400/30 transition whitespace-nowrap font-medium"
+                  type="button"
+                  onClick={() => submitMessage('Công việc đang lấy quá nhiều thời gian.')}
+                  disabled={isSessionClosed}
+                  className="px-3 py-1.5 rounded-full bg-amber-400/15 hover:bg-amber-400/30 text-amber-200 border border-amber-400/30 transition whitespace-nowrap shrink-0 hover:scale-105"
                 >
-                  ✨ "Gợi ý cho tôi"
+                  "Công việc đang lấy quá nhiều thời gian."
                 </button>
                 <button
-                  onClick={() => setInputText('Tôi luôn cảm thấy bất an dù trong tài khoản vẫn còn tiền tiết kiệm.')}
-                  className="px-3 py-1 rounded-full bg-white/5 hover:bg-amber-400/20 hover:text-amber-200 border border-white/10 transition whitespace-nowrap"
+                  type="button"
+                  onClick={() => submitMessage('Tôi đang cân nhắc một thay đổi.')}
+                  disabled={isSessionClosed}
+                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-amber-400/20 text-stone-300 hover:text-amber-200 border border-white/10 transition whitespace-nowrap shrink-0 hover:scale-105"
                 >
-                  "Tôi luôn bất an dù còn tiền"
+                  "Tôi đang cân nhắc một thay đổi."
                 </button>
                 <button
-                  onClick={() => setInputText('Tôi hay mua sắm bốc đồng mỗi khi áp lực công việc lên cao.')}
-                  className="px-3 py-1 rounded-full bg-white/5 hover:bg-amber-400/20 hover:text-amber-200 border border-white/10 transition whitespace-nowrap"
+                  type="button"
+                  onClick={() => submitMessage('Tôi chưa biết, chỉ muốn bắt đầu nói.')}
+                  disabled={isSessionClosed}
+                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-amber-400/20 text-stone-300 hover:text-amber-200 border border-white/10 transition whitespace-nowrap shrink-0 hover:scale-105"
                 >
-                  "Tôi hay mua sắm khi stress"
-                </button>
-                <button
-                  onClick={() => setInputText('Làm sao để biết tiền của mình đang thực sự phục vụ cuộc đời nào?')}
-                  className="px-3 py-1 rounded-full bg-white/5 hover:bg-amber-400/20 hover:text-amber-200 border border-white/10 transition whitespace-nowrap"
-                >
-                  "Tiền đang phục vụ cuộc đời nào?"
+                  "Tôi chưa biết, chỉ muốn bắt đầu nói."
                 </button>
               </div>
 
@@ -607,13 +706,18 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                 <input
                   type="text"
                   value={inputText}
+                  disabled={isSessionClosed}
                   onChange={e => setInputText(e.target.value)}
-                  placeholder="Gõ tâm sự hoặc câu hỏi của bạn tại điểm đích con đường..."
-                  className="flex-1 bg-stone-950/90 border border-stone-700/60 rounded-2xl px-4 py-3 text-xs sm:text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-400 transition"
+                  placeholder={
+                    isSessionClosed
+                      ? 'Phiên đối thoại đã khép lại. Bạn có thể nhấn Đúc kết phiên để xem hoặc tải lại trang.'
+                      : 'Gõ chia sẻ của bạn tại không gian này (không giới hạn chủ đề)...'
+                  }
+                  className="flex-1 bg-stone-950/90 border border-stone-700/60 rounded-2xl px-4 py-3 text-xs sm:text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-400 transition disabled:opacity-50"
                 />
                 <button
                   type="submit"
-                  disabled={!inputText.trim() || isAiTyping}
+                  disabled={!inputText.trim() || isAiTyping || isSessionClosed}
                   className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 disabled:opacity-40 text-stone-950 font-serif font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.4)]"
                 >
                   <span>Gửi</span>
@@ -637,8 +741,137 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             />
           </div>
 
-          <span className="font-mono text-[11px] text-amber-300">Khung Chat AI (100%)</span>
+          <span className="font-mono text-[11px] text-amber-300">Không Gian Đối Thoại (100%)</span>
         </div>
+
+        {/* Session Outcome Checkpoint Modal (P0-06 & P0-08) */}
+        {showCheckpointModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+            <div className="w-full max-w-xl rounded-3xl bg-stone-950 border border-amber-400/40 p-6 sm:p-8 space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div>
+                  <h3 className="font-serif text-lg sm:text-xl text-amber-200 font-medium flex items-center gap-2">
+                    <BookmarkCheck className="w-5 h-5 text-amber-400" />
+                    <span>Đúc Kết Phiên Đối Thoại</span>
+                  </h3>
+                  <p className="text-xs text-stone-400 font-sans mt-0.5">
+                    Session Outcome Checkpoint • Life Lab Master V8.7.2
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCheckpointModal(false)}
+                  className="p-1 rounded-full text-stone-400 hover:text-stone-200 hover:bg-white/5"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 5 Outcomes Choice */}
+              <div className="space-y-3">
+                <label className="text-xs font-mono uppercase tracking-wider text-amber-300/80 block">
+                  1. Bạn muốn khép lại phiên hôm nay với kết quả nào?
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {[
+                    { id: 'REFLECTIVE_PAUSE', title: 'Dừng với điều vừa rõ', desc: 'Không cần làm gì thêm, cho phép bản thân nghỉ ngơi.' },
+                    { id: 'BETTER_QUESTION', title: 'Giữ một câu hỏi ngẫm nghĩ', desc: 'Mang theo một câu hỏi lắng đọng để quan sát.' },
+                    { id: 'CONFIRMED_INSIGHT', title: 'Tiếp tục khám phá thấu suốt', desc: 'Nhìn sâu hơn vào gốc rễ điều đang diễn ra.' },
+                    { id: 'MEANINGFUL_NEXT_STEP', title: 'Nhìn rõ một quyết định', desc: 'Một lựa chọn mà bạn cảm thấy yên tâm khi bước tiếp.' },
+                    { id: 'LIFE_EXPERIMENT', title: 'Thử một bước nhỏ thực tế', desc: 'Một vi hành động nhỏ, nhẹ nhàng trong 1-3 ngày tới.' },
+                  ].map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedOutcome(item.id as SessionOutcomeType)}
+                      className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                        selectedOutcome === item.id
+                          ? 'bg-amber-400/20 border-amber-400 text-amber-100 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                          : 'bg-stone-900/60 border-stone-800 text-stone-300 hover:border-stone-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-serif text-xs font-medium text-amber-200">{item.title}</span>
+                        {selectedOutcome === item.id && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                      </div>
+                      <p className="text-[11px] text-stone-400 font-sans mt-1 leading-snug">{item.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Optional Snapshot Note */}
+              <div className="space-y-2">
+                <label className="text-xs font-mono uppercase tracking-wider text-amber-300/80 block">
+                  2. Điều gì đọng lại rõ ràng nhất với bạn? (Tùy chọn)
+                </label>
+                <input
+                  type="text"
+                  value={checkpointNote}
+                  onChange={e => setCheckpointNote(e.target.value)}
+                  placeholder="Ví dụ: Mình nhận ra mình đang quá cầu toàn trong công việc..."
+                  className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3.5 py-2.5 text-xs text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              {/* Memory Permission (P0-08 / Privacy Contract) */}
+              <div className="p-4 rounded-2xl bg-stone-900/80 border border-amber-300/20 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span className="font-serif text-xs text-stone-200 font-medium">Quyền Lưu Trữ Bộ Nhớ (Memory Permission)</span>
+                </div>
+                <p className="text-[11px] text-stone-400 font-sans leading-relaxed">
+                  Life Lab chỉ lưu nội dung này nếu bạn đồng ý. Bạn có thể xem, chỉnh sửa hoặc xóa bất cứ lúc nào.
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setMemoryConsent('granted')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-serif transition flex items-center gap-1.5 ${
+                      memoryConsent === 'granted'
+                        ? 'bg-emerald-500/30 border border-emerald-400 text-emerald-200'
+                        : 'bg-white/5 border border-white/10 text-stone-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <Check className="w-3 h-3 text-emerald-400" />
+                    <span>Lưu vào bộ nhớ cho phiên sau</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMemoryConsent('declined')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-serif transition flex items-center gap-1.5 ${
+                      memoryConsent === 'declined'
+                        ? 'bg-rose-500/20 border border-rose-400 text-rose-200'
+                        : 'bg-white/5 border border-white/10 text-stone-400 hover:text-stone-300'
+                    }`}
+                  >
+                    <X className="w-3 h-3 text-rose-400" />
+                    <span>Không lưu (No Memory)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCheckpointModal(false)}
+                  className="px-4 py-2 text-xs text-stone-400 hover:text-stone-200"
+                >
+                  Quay lại đối thoại
+                </button>
+                <button
+                  type="button"
+                  disabled={!selectedOutcome || memoryConsent === null}
+                  onClick={handleConfirmCheckpoint}
+                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-40 text-stone-950 font-serif font-semibold text-xs transition shadow-md flex items-center gap-2"
+                >
+                  <span>Xác nhận & Khép lại phiên</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 

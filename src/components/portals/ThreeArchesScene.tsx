@@ -28,23 +28,23 @@ export const ThreeArchesScene: React.FC<ThreeArchesSceneProps> = ({
         </div>
       </div>
 
-      {/* 2. Top Royalty Banner Title: Script Style "Remember who you are" (Matching Screenshot 21-24-42) */}
+      {/* 2. Top Royalty Banner Title: Script Style "Hiểu điều đang diễn ra" */}
       <div className="relative z-20 pt-8 md:pt-12 text-center px-4 max-w-4xl">
         <h1
-          className="font-script text-5xl sm:text-7xl md:text-8xl lg:text-[98px] text-[#fff685] leading-tight tracking-wide"
+          className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-[68px] text-[#fff685] font-normal leading-tight tracking-wide"
           style={{
             textShadow: '0 3px 12px rgba(10, 8, 25, 0.75), 0 0 25px rgba(255, 235, 120, 0.95), 0 0 50px rgba(245, 158, 11, 0.6)',
           }}
         >
-          Nhớ lại bạn thực sự là ai
+          Hiểu điều đang diễn ra. Nhìn rõ điều quan trọng.
         </h1>
         <p
-          className="font-cinzel text-xs sm:text-sm md:text-base text-amber-100 tracking-[0.4em] uppercase mt-1 md:mt-2 font-bold"
+          className="font-cinzel text-xs sm:text-sm md:text-base text-amber-100 tracking-[0.3em] uppercase mt-2 md:mt-3 font-semibold"
           style={{
             textShadow: '0 2px 6px rgba(0, 0, 0, 0.85), 0 0 12px rgba(255, 215, 80, 0.6)',
           }}
         >
-          CHỌN CÁNH CỔNG CỦA BẠN • CHOOSE YOUR PATH
+          HỆ THỐNG ĐỒNG HÀNH PHẢN CHIẾU CHO NGƯỜI ĐI LÀM • LIFE LAB BETA
         </p>
       </div>
 
@@ -86,13 +86,13 @@ export const ThreeArchesScene: React.FC<ThreeArchesSceneProps> = ({
             {/* Glowing Golden Text Inside Arch (Super Crisp with Dark Under-shadow) */}
             <div className="text-center my-auto px-2 z-10 pt-8 sm:pt-12">
               <p
-                className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[46px] font-extrabold text-[#fff47a] leading-tight group-hover:scale-105 transition-transform duration-300"
+                className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[44px] font-extrabold text-[#fff47a] leading-tight group-hover:scale-105 transition-transform duration-300"
                 style={{
                   textShadow:
                     '0 3px 6px rgba(10, 8, 25, 0.85), 0 0 16px rgba(255, 230, 110, 0.9), 0 0 35px rgba(255, 215, 80, 0.6)',
                 }}
               >
-                Ai Đang Cầm<br />La Bàn<br />Của Bạn?
+                Khoảng Lặng<br />Để Nhìn Lại
               </p>
             </div>
 
@@ -104,7 +104,7 @@ export const ThreeArchesScene: React.FC<ThreeArchesSceneProps> = ({
                   textShadow: '0 2px 5px rgba(0, 0, 0, 0.9), 0 0 10px rgba(255, 215, 80, 0.8)',
                 }}
               >
-                — Câu Chuyện & Chat —
+                — Phiên Đầu Tiên —
               </span>
             </div>
           </div>
@@ -137,13 +137,13 @@ export const ThreeArchesScene: React.FC<ThreeArchesSceneProps> = ({
 
             <div className="text-center my-auto px-2 z-10 pt-8 sm:pt-12">
               <p
-                className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[46px] font-extrabold text-[#fff47a] leading-tight group-hover:scale-105 transition-transform duration-300"
+                className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[44px] font-extrabold text-[#fff47a] leading-tight group-hover:scale-105 transition-transform duration-300"
                 style={{
                   textShadow:
                     '0 3px 6px rgba(10, 8, 25, 0.85), 0 0 16px rgba(255, 230, 110, 0.9), 0 0 35px rgba(255, 215, 80, 0.6)',
                 }}
               >
-                Bạn Có Dám<br />Thử Nghiệm<br />7 Ngày?
+                Thử Nghiệm<br />Trong Đời Sống
               </p>
             </div>
 
@@ -154,7 +154,7 @@ export const ThreeArchesScene: React.FC<ThreeArchesSceneProps> = ({
                   textShadow: '0 2px 5px rgba(0, 0, 0, 0.9), 0 0 10px rgba(255, 215, 80, 0.8)',
                 }}
               >
-                — Thí Nghiệm —
+                — Bước Thử Nhỏ —
               </span>
             </div>
           </div>
@@ -187,13 +187,13 @@ export const ThreeArchesScene: React.FC<ThreeArchesSceneProps> = ({
 
             <div className="text-center my-auto px-2 z-10 pt-8 sm:pt-12">
               <p
-                className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[46px] font-extrabold text-[#fff47a] leading-tight group-hover:scale-105 transition-transform duration-300"
+                className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[44px] font-extrabold text-[#fff47a] leading-tight group-hover:scale-105 transition-transform duration-300"
                 style={{
                   textShadow:
                     '0 3px 6px rgba(10, 8, 25, 0.85), 0 0 16px rgba(255, 230, 110, 0.9), 0 0 35px rgba(255, 215, 80, 0.6)',
                 }}
               >
-                5 Bảo Vật<br />Hiệu Chỉnh<br />Tâm Trí
+                Học Từ<br />Trải Nghiệm Thật
               </p>
             </div>
 
@@ -204,7 +204,7 @@ export const ThreeArchesScene: React.FC<ThreeArchesSceneProps> = ({
                   textShadow: '0 2px 5px rgba(0, 0, 0, 0.9), 0 0 10px rgba(255, 215, 80, 0.8)',
                 }}
               >
-                — Bài Học —
+                — Đúc Kết Cá Nhân —
               </span>
             </div>
           </div>
@@ -300,11 +300,11 @@ export const ThreeArchesScene: React.FC<ThreeArchesSceneProps> = ({
         <div className="flex items-center gap-2 mb-2">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
           <span className="text-[10px] font-mono tracking-widest uppercase text-amber-300 font-bold">
-            Life Lab Blueprint V8.7.2
+            Life Lab Beta · First Session
           </span>
         </div>
         <p className="font-serif text-xs sm:text-sm text-stone-200 leading-relaxed italic drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-          "Sâu thẳm bên trong, bạn biết rõ một điều gì đó cần phải thay đổi... Bạn không sinh ra để làm nô lệ cho những lo âu chi tiêu. Hãy bước qua cánh cổng để nhớ lại bản thể tự do đích thực của mình."
+          "Chúng ta không cần giải quyết toàn bộ cuộc sống hôm nay. Bạn có thể bắt đầu từ một điều đang chiếm nhiều suy nghĩ hoặc năng lượng nhất lúc này."
         </p>
       </div>
 

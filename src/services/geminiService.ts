@@ -1,5 +1,5 @@
-// Life Lab Sanctuary AI Companion Service (Blueprint V8.7.2)
-// Multi-modal intelligent assistant supporting Gemini API & Sanctuary Dynamic Dialogue Engine
+// Life Lab Companion Service (Product Brief V1.0 & Master V8.7.2 Beta Profile)
+// Dedicated for young professionals (23-35) balancing work, life, and personal agency
 
 export const DEFAULT_ENCODED_KEY = 'QVEuQWI4Uk42TFk1V1RBaTAtVGFacGlMTnB1OEJ0WjVDb1FPY0d5MjltdTl6TW81VncxeHc=';
 
@@ -58,6 +58,7 @@ export interface GeminiResponseResult {
   text: string;
   source: 'gemini' | 'sanctuary_engine';
   errorDetail?: string;
+  isUserStop?: boolean;
 }
 
 export const callGeminiCompanionAPI = async (
@@ -66,22 +67,48 @@ export const callGeminiCompanionAPI = async (
   history: { sender: 'ai' | 'user'; text: string }[]
 ): Promise<GeminiResponseResult> => {
   const cleanKey = apiKey.trim();
+  const trimmed = userMessage.trim().toLowerCase();
+
+  // 1. FAST PATH: Check User Stop intent (P0-01)
+  if (/^(dừng|dừng lại|thôi|thôi nhé|stop|dừng ở đây|không muốn nói nữa|nghỉ thôi|hết rồi)$/i.test(trimmed)) {
+    return {
+      text: 'Được, chúng ta dừng ở đây nhé. Bạn không cần nói thêm hoặc quyết định gì lúc này. Chúc bạn có một khoảng thời gian nghỉ ngơi yên bình.',
+      source: 'sanctuary_engine',
+      isUserStop: true,
+    };
+  }
 
   // If no key provided at all, immediately use smart dynamic dialogue engine
   if (!cleanKey) {
     return {
-      text: generateDynamicSanctuaryReply(userMessage),
+      text: generateDynamicSanctuaryReply(userMessage, history),
       source: 'sanctuary_engine',
     };
   }
 
-  const systemInstruction = `Bạn là Life Lab Mirror Companion (Blueprint V8.7.2).
-MỤC TIÊU CỐT LÕI: Đồng hành tâm lý tài chính tỉnh thức, phản chiếu sâu sắc câu hỏi: "Tiền đang phục vụ cuộc đời nào?".
-PHONG CÁCH GIAO TIẾP:
-- Nói chuyện tự nhiên theo văn nói, gần gũi, ấm áp, như một người anh em / Tech Lead / Coach chiêm nghiệm ngồi đối diện bên ly trà.
-- TUYỆT ĐỐI KHÔNG lặp lại cấu trúc câu rập khuôn, không chào hỏi sách vở hay văn bản hành chính.
-- Lắng nghe thấu cảm, không phán xét bất kỳ sai lầm chi tiêu nào.
-- Giữ câu trả lời sâu sắc trong 2-4 câu, khơi mở góc nhìn tỉnh thức.`;
+  const systemInstruction = `Bạn là Life Lab Companion (Product Brief V1.0 & Master V8.7.2).
+MỤC TIÊU SẢN PHẨM:
+Hệ thống đồng hành phản chiếu giúp người đi làm trẻ (23–35 tuổi) đang mắc kẹt giữa công việc và cuộc sống nhìn rõ điều đang diễn ra, xác định điều quan trọng, nhìn rõ lựa chọn và học từ trải nghiệm thật. Life Lab KHÔNG quyết định thay người dùng.
+
+QUY TẮC BẮT BUỘC (CONVERSATION RUNTIME CONTRACT):
+1. NGÔN TỪ NHẸ NHÀNG, KHÔNG KHẲNG ĐỊNH QUÁ ĐÀ:
+   - Dùng Hypothesis Language: "Có vẻ...", "Theo trải nghiệm của bạn...", "Dường như...".
+   - Tuyệt đối không phán xét, không suy diễn quá xa từ dữ liệu ít (không bảo môi trường là "cỗ máy", không khen "dũng cảm", không kết luận "bản chất triệt tiêu không gian sống").
+2. PHẢN CHIẾU VÀ XÁC NHẬN (REFLECT & VERIFY):
+   - Phản chiếu 1–2 câu tóm tắt điều người dùng vừa nói.
+   - Luôn mời xác nhận: "Tôi hiểu như vậy có đúng không, hay còn điều gì khác?".
+3. REPAIR KHI NGƯỜI DÙNG SỬA ("Không hẳn", "Không phải", "Chưa đúng"):
+   - Cảm ơn người dùng đã đính chính.
+   - Bỏ ngay giả thuyết cũ, thừa nhận cách hiểu trước chưa chuẩn.
+   - Tóm tắt lại theo đúng ý mới và mời xác nhận lại.
+4. QUESTION BUDGET:
+   - TUYỆT ĐỐI KHÔNG hỏi 2 câu dồn dập trong một lượt. Tối đa chỉ 1 câu hỏi mở hoặc câu xác nhận.
+5. KHÔNG KHÓA VÀO TÀI CHÍNH:
+   - Không tự động kéo về tiền bạc/vùng đệm nếu người dùng đang nói về công việc, thời gian hay năng lượng.
+6. KHÔNG GIẢ VỜ LÀ CON NGƯỜI:
+   - Không nói "mình luôn ngồi đây chờ bạn". Giữ sự bình an, tôn trọng ranh giới và nâng đỡ.
+7. ĐỘ DÀI:
+   - Ngắn gọn, súc tích trong 2–4 câu. Tôn trọng quyền không hành động của người dùng.`;
 
   const historyParts: ChatHistoryItem[] = history.slice(-4).map(m => ({
     role: m.sender === 'user' ? 'user' : 'model',
@@ -101,7 +128,6 @@ PHONG CÁCH GIAO TIẾP:
     ],
   };
 
-  // List of models to try in order of capability & speed
   const candidateModels = [
     'gemini-2.0-flash',
     'gemini-1.5-flash',
@@ -111,7 +137,6 @@ PHONG CÁCH GIAO TIẾP:
 
   let lastError = '';
 
-  // Attempt 1: Standard URL query param
   for (const model of candidateModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
@@ -139,7 +164,7 @@ PHONG CÁCH GIAO TIẾP:
     }
   }
 
-  // Attempt 2: If key is OAuth / Bearer token (often starting with AQ. or ya29.)
+  // Attempt 2: Bearer auth if applicable
   if (cleanKey.startsWith('AQ.') || cleanKey.startsWith('ya29.')) {
     for (const model of candidateModels) {
       try {
@@ -169,80 +194,92 @@ PHONG CÁCH GIAO TIẾP:
     }
   }
 
-  // If we reach here, Gemini API authentication failed
-  // Provide transparent, helpful guidance to the user while continuing conversation seamlessly
-  const isKeyFormatInvalid = !cleanKey.startsWith('AIzaSy');
-  const helpfulNotice = isKeyFormatInvalid
-    ? `[Lưu ý kết nối: Khóa API hiện tại (${cleanKey.slice(0, 4)}...${cleanKey.slice(-4)}) chưa được Google AI Studio xác thực. Khóa chuẩn thường bắt đầu bằng 'AIzaSy...' tạo miễn phí tại aistudio.google.com/app/apikey. Bạn có thể bấm 'Đổi Key' ở góc trên để cập nhật bất cứ lúc nào.]\n\n`
-    : `[Lưu ý kết nối: Google API tạm thời phản hồi: ${lastError.slice(0, 80)}. Hệ thống đang đối thoại qua Sanctuary Engine.]\n\n`;
-
-  const fallbackText = generateDynamicSanctuaryReply(userMessage);
-
   return {
-    text: `${helpfulNotice}${fallbackText}`,
+    text: generateDynamicSanctuaryReply(userMessage, history),
     source: 'sanctuary_engine',
     errorDetail: lastError,
   };
 };
 
-// Comprehensive, non-repetitive dialogue engine tailored for Life Lab financial consciousness
-export const generateDynamicSanctuaryReply = (rawInput: string): string => {
+// Comprehensive, hypothesis-based Life Lab dialogue engine matching Product Brief V1.0
+export const generateDynamicSanctuaryReply = (
+  rawInput: string,
+  history?: { sender: 'ai' | 'user'; text: string }[]
+): string => {
   const text = rawInput.toLowerCase().trim();
 
-  // 1. Direct request for advice / guidance ("gợi ý cho tôi", "tư vấn", "làm gì", "hướng dẫn")
-  if (text.includes('gợi ý') || text.includes('lời khuyên') || text.includes('tư vấn') || text.includes('nên làm gì') || text.includes('bắt đầu từ đâu') || text.includes('chỉ tôi')) {
-    const suggestions = [
-      `Tại ngưỡng cửa Life Lab, mình gợi ý bạn 3 bước đi thực tế để bắt đầu:\n\n1. Quan sát không phán xét: Mở sao kê 3 ngày gần nhất, nhận diện cảm xúc (vui, sợ hay áp lực) khi tiêu tiền.\n2. Thử nghiệm 7 ngày tĩnh lặng: Dừng mọi khoản mua sắm bốc đồng vượt quá 500k trong 24 giờ suy ngẫm.\n3. Khắc ghi bài học Kintsugi: Chuyển hóa một sai lầm tài chính trong quá khứ thành sự tỉnh thức.\n\nTrong 3 điều này, điều nào đang chạm tới bạn nhiều nhất?`,
-      `Nếu bạn đang cần một gợi ý ngay lúc này: Hãy tạm gác việc tính toán con số sang một bên. Tự hỏi mình: 'Khoản chi nào trong tháng qua khiến tâm trí mình nhẹ nhõm nhất, và khoản nào làm mình trăn trở nhất?'. Đó chính là chiếc la bàn đầu tiên giúp bạn định vị lại dòng tiền.`,
-      `Một gợi ý chân thành cho bạn: Hãy bắt đầu từ việc tạo 'Vùng Đệm An Tâm' nhỏ nhất — dù chỉ là một khoản tiền đủ cho 2 tuần sinh hoạt nhưng không bao giờ chạm tới vì FOMO. Cảm giác có chỗ dựa tâm lý sẽ thay đổi hoàn toàn cách bạn đưa ra các quyết định tiếp theo.`,
-    ];
-    return suggestions[Math.floor(Math.random() * suggestions.length)];
+  // 1. User Stop (P0-01)
+  if (/^(dừng|dừng lại|thôi|thôi nhé|stop|dừng ở đây|không muốn nói nữa|nghỉ thôi)$/i.test(text)) {
+    return 'Được, chúng ta dừng ở đây nhé. Bạn không cần nói thêm hoặc quyết định gì lúc này. Chúc bạn có một khoảng thời gian nghỉ ngơi yên bình.';
   }
 
-  // 2. Greetings & Check-in
-  if (/^(alo|hi|chào|hello|helo|ê|ơi|chao|alooo|hey|bạn ơi)/i.test(text) || text.length <= 4) {
-    const greetings = [
-      'Chào bạn nhé! Mình ở đây bên bạn rồi. Khi đứng trước những con đường ánh sáng này, điều gì đang thôi thúc bạn bước vào tìm câu trả lời?',
-      'Rất vui được đối thoại cùng bạn. Hãy cứ thả lỏng và chia sẻ tự nhiên như với một người anh em, ở Life Lab mọi trăn trở đều được tôn trọng.',
-      'Chào bạn! Mình sẵn sàng lắng nghe rồi đây. Trong mối quan hệ với tiền bạc, có nút thắt nào bạn đang muốn tháo gỡ hôm nay?',
-    ];
-    return greetings[Math.floor(Math.random() * greetings.length)];
+  // 2. REPAIR triggers: User correcting previous understanding (P0-02)
+  if (
+    text.startsWith('không hẳn') ||
+    text.startsWith('không phải') ||
+    text.startsWith('chưa đúng') ||
+    text.startsWith('sai rồi') ||
+    text.includes('tôi chưa muốn nói về') ||
+    text.includes('không có ý đó')
+  ) {
+    if (text.includes('tiền') || text.includes('tài chính')) {
+      return 'Cảm ơn bạn đã đính chính. Vậy lúc này bạn chưa muốn đi vào khía cạnh tài chính; điều bạn muốn nhìn nhận là sự phân bổ thời gian và cấu trúc công việc. Tôi hiểu đúng hơn chưa?';
+    }
+    if (text.includes('cách tôi đang làm') || text.includes('công việc hay')) {
+      return 'Cảm ơn bạn đã làm rõ. Vậy điều bạn muốn phân biệt là khó khăn nằm ở bản thân công việc hay ở cách mình đang sắp xếp. Tôi hiểu như vậy đã sát với suy nghĩ của bạn chưa?';
+    }
+    return `Cảm ơn bạn đã sửa. Tôi xin phép ghi nhận lại theo đúng ý bạn: "${rawInput}". Tôi hiểu như vậy đã đúng với điều bạn đang trải nghiệm chưa?`;
   }
 
-  // 3. Identity & What Life Lab is
-  if (text.includes('bạn là ai') || text.includes('life lab') || text.includes('là gì') || text.includes('giới thiệu')) {
-    return 'Mình là Life Lab Mirror Companion — chiếc gương phản chiếu tâm thức tài chính. Mình không dạy bạn mẹo làm giàu cấp tốc hay phím lệnh đầu tư, mà giúp bạn nhìn thấu vì sao mình chi tiêu, đâu là nỗi sợ vô thức, và giúp tiền bạc thực sự phụng sự cuộc đời tự do của bạn.';
+  // 3. User just wants to be heard / no exercises / no decision pressure
+  if (
+    text.includes('chỉ muốn được lắng nghe') ||
+    text.includes('chưa muốn quyết định') ||
+    text.includes('không muốn làm bài tập') ||
+    text.includes('nghe một chút')
+  ) {
+    return 'Được, lúc này chúng ta không cần đưa ra quyết định hay làm bài tập nào cả. Bạn có thể chia sẻ theo nhịp điệu thoải mái nhất của mình; hoặc bất cứ lúc nào muốn dừng lại nghỉ ngơi, bạn chỉ cần nói nhé.';
   }
 
-  // 4. Stress, Overwhelm, Exhaustion, Fear
-  if (text.includes('áp lực') || text.includes('stress') || text.includes('mệt') || text.includes('lo') || text.includes('sợ') || text.includes('bế tắc') || text.includes('kiệt sức')) {
-    const stressReplies = [
-      'Mình cảm nhận được áp lực nặng nề bạn đang gánh. Phần lớn nỗi sợ tiền bạc thực ra đến từ việc ta sợ làm thất vọng người khác hoặc sợ một kịch bản tồi tệ do tâm trí tự vẽ ra. Hãy hít một hơi thật sâu: Hiện tại, ngay lúc này, bạn vẫn đang an toàn và có toàn quyền lựa chọn cách phản ứng.',
-      'Khi tâm trí kiệt sức, mọi quyết định tài chính đều dễ bị méo mó. Thay vì cố gắng giải quyết tất cả cùng lúc, bạn hãy chọn ra một việc nhỏ nhất có thể kiểm soát hôm nay. Bạn có muốn chia sẻ cụ thể điều gì đang tạo sức ép lớn nhất lên bạn không?',
-    ];
-    return stressReplies[Math.floor(Math.random() * stressReplies.length)];
+  // 4. Initial Option 1: Work taking too much time/energy
+  if (
+    text.includes('công việc đang lấy quá nhiều thời gian') ||
+    text.includes('quá nhiều thời gian') ||
+    (text.includes('công việc') && (text.includes('chiếm') || text.includes('mệt') || text.includes('kiệt sức') || text.includes('thời gian cho gia đình')))
+  ) {
+    return 'Có vẻ công việc hiện tại đang đòi hỏi nhiều thời gian và năng lượng hơn mức bạn mong muốn, khiến các khoảng không gian khác trong cuộc sống bị thu hẹp lại. Tôi hiểu như vậy có đúng với trải nghiệm của bạn không, hay còn khía cạnh nào khác đang diễn ra?';
   }
 
-  // 5. Debt, Losses, Investments, Trading, Financial wounds
-  if (text.includes('nợ') || text.includes('mất tiền') || text.includes('lỗ') || text.includes('crypto') || text.includes('chứng khoán') || text.includes('phá sản') || text.includes('trắng tay')) {
-    return 'Khoản lỗ hay nợ nần là một vết nứt rất nhức nhối. Nhưng triết lý Kintsugi của Life Lab coi vết nứt là nơi ánh sáng trí tuệ bắt đầu rọi vào. Sai lầm trong quá khứ là học phí để bạn hiểu rõ giới hạn và bản lĩnh của mình. Bạn đã rút ra bài học cốt lõi nào từ biến cố ấy chưa?';
+  // 5. Initial Option 2: Considering a change
+  if (
+    text.includes('cân nhắc một thay đổi') ||
+    text.includes('nghỉ việc') ||
+    text.includes('chuyển việc') ||
+    text.includes('đổi hướng')
+  ) {
+    return 'Đứng trước một sự thay đổi thường mang lại nhiều băn khoăn xen lẫn sự thận trọng. Lúc này, điều gì đang khiến bạn nghĩ về sự thay đổi đó nhiều nhất?';
   }
 
-  // 6. Impulsive shopping, FOMO, Retail therapy
-  if (text.includes('mua') || text.includes('chi tiêu') || text.includes('tiêu tiền') || text.includes('shopping') || text.includes('fomo') || text.includes('bốc đồng')) {
-    return 'Nhiều khi ta mua sắm không phải vì cần món đồ, mà vì muốn mua một cảm giác tự thưởng nhanh chóng sau chuỗi ngày mệt mỏi. Lần tới trước khi thanh toán, hãy thử cho mình 24 giờ khoảng đệm. Nếu sau 24 giờ cảm xúc đó tan đi, bạn vừa tiết kiệm được cả tiền bạc lẫn sự bình an đấy.';
+  // 6. Initial Option 3: Don't know yet, just want to talk
+  if (
+    text.includes('chưa biết') ||
+    text.includes('chỉ muốn bắt đầu nói') ||
+    text.includes('bắt đầu từ đâu') ||
+    text.includes('không biết nói gì')
+  ) {
+    return 'Rất tự nhiên khi ta cảm thấy ngổn ngang và chưa biết bắt đầu từ đâu. Bạn có thể nói ra bất cứ điều gì vừa lướt qua trong đầu, hoặc một khoảnh khắc trong ngày khiến bạn cảm thấy cạn năng lượng nhất.';
   }
 
-  // 7. Freedom, Purpose, Core values
-  if (text.includes('tự do') || text.includes('ý nghĩa') || text.includes('mục đích') || text.includes('cuộc sống') || text.includes('hạnh phúc')) {
-    return 'Tự do tài chính thực sự không phải là sở hữu số tiền vô hạn, mà là khả năng nói "KHÔNG" với những thứ không thuộc về giá trị cốt lõi của bạn. Khi tiền bạc biết phục vụ bình yên và sức khỏe của bạn, bạn đã giàu có hơn 90% những người chỉ chạy theo số dư.';
+  // 7. General greetings
+  if (/^(alo|hi|chào|hello|helo|ê|ơi|chao|alooo|hey)/i.test(text) || text.length <= 4) {
+    return 'Chào bạn. Chúng ta không cần giải quyết toàn bộ cuộc sống hôm nay. Bạn có thể bắt đầu từ điều đang chiếm nhiều suy nghĩ hoặc năng lượng nhất lúc này. Bạn muốn bắt đầu từ đâu?';
   }
 
-  // 8. General open reflection with variety
-  const dynamicReflections = [
-    `Chia sẻ của bạn chạm vào một khía cạnh rất thực tế. Tiền bạc luôn mang năng lượng của người sở hữu nó: khi chi tiêu trong sự thấu tỏ, ta nuôi dưỡng bình yên; khi chi tiêu trong vô thức, ta nhân đôi bất an. Góc nhìn này gợi cho bạn suy nghĩ gì?`,
-    `Cảm ơn bạn đã trải lòng. Mọi câu chuyện về tiền thực chất đều là câu chuyện về mối quan hệ giữa ta với chính mình. Nếu được viết lại một quy tắc tài chính cho riêng bạn từ hôm nay, bạn sẽ đặt ra nguyên tắc nào đầu tiên?`,
-    `Mình đang ngẫm nghĩ cùng bạn đây. Điều kỳ diệu là chỉ cần bạn dám đối diện thẳng thắn và gọi tên đúng cảm xúc, nửa chặng đường gỡ rối đã hoàn tất rồi. Bước tiếp theo bạn muốn khám phá là gì?`,
-  ];
-  return dynamicReflections[Math.floor(Math.random() * dynamicReflections.length)];
+  // 8. Workload & mandatory hours
+  if (text.includes('giờ làm') || text.includes('khối lượng') || text.includes('quá tải') || text.includes('deadline')) {
+    return 'Theo trải nghiệm của bạn, áp lực chính dường như đến từ khối lượng công việc và yêu cầu bắt buộc của hoàn cảnh, khiến khả năng tự điều tiết của bạn bị hạn chế. Tôi hiểu như vậy có đúng không?';
+  }
+
+  // 9. Default thoughtful hypothesis reflection
+  return `Tôi đang lắng nghe chia sẻ của bạn về: "${rawInput}". Có vẻ điều này đang chiếm một phần năng lượng đáng kể trong tâm trí bạn. Tôi hiểu như vậy có đúng trọng tâm chưa, hay bạn muốn làm rõ thêm điều gì?`;
 };
