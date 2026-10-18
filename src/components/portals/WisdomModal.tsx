@@ -171,7 +171,7 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
                   Hành trình 5 Tầng Tinh Luyện
                 </h3>
                 <p className="text-stone-300 text-xs sm:text-sm font-sans leading-relaxed">
-                  Trong Life Lab, trí tuệ tài chính không đo bằng tài khoản nhiều hay ít, mà đo bằng mức độ sáng rõ của 5 viên ngọc này trong tâm thức bạn.
+                  Tại Life Lab, sự vững vàng trong cuộc sống không đo bằng sự bận rộn hay kỳ vọng bên ngoài, mà đo bằng sự sáng rõ và tự chủ trong chính tâm trí bạn.
                 </p>
               </div>
 
@@ -331,7 +331,7 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
                     Triết Lý Kintsugi: Khi Vết Nứt Trở Thành Vẻ Đẹp
                   </h3>
                   <p className="text-stone-300 text-xs sm:text-sm font-sans leading-relaxed">
-                    Trong nghệ thuật gốm Nhật Bản, khi một chiếc chén vỡ, người thợ không vứt đi mà dùng vàng ròng để hàn gắn lại. Tại Life Lab, mọi sai lầm chi tiêu, mọi hiểu lầm của AI hay những khoảnh khắc bối rối đều được đón nhận. Bạn có thể hiệu chỉnh lại định nghĩa để trí tuệ của mình thêm vững chãi.
+                    Trong nghệ thuật gốm Nhật Bản, khi một chiếc chén vỡ, người thợ không vứt đi mà dùng vàng ròng để hàn gắn lại. Tại Life Lab, mọi va vấp trong đời sống, những khoảnh khắc bối rối hay chưa thấu suốt đều được đón nhận. Bạn có thể nhìn nhận lại và hiệu chỉnh để tâm trí thêm vững chãi.
                   </p>
                 </div>
               </div>

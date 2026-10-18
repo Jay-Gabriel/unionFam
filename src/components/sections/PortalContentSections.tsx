@@ -239,17 +239,17 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
             <span>CÁNH CỔNG THỨ HAI • 5 LIFE EXPERIMENTS</span>
           </div>
           <h2 className="font-playfair text-3xl sm:text-5xl text-amber-100 leading-tight">
-            5 Gói Thí Nghiệm Chuyển Hóa
+            5 Hướng Thử Nghiệm Trong Đời Sống
           </h2>
           <p className="font-sans text-stone-300 text-sm sm:text-base leading-relaxed">
-            "Sự thật không đến từ việc đọc thêm lý thuyết. Sự thật chỉ được chứng minh qua những thí nghiệm vi mô mà bạn dám thực hiện trong đời sống thường nhật."
+            "Sự thật không đến từ việc đọc thêm lý thuyết. Sự thật được sáng tỏ qua những bước thử nhỏ mà bạn áp dụng vào nhịp sống, công việc và các mối quan hệ mỗi ngày."
           </p>
         </div>
 
-        {/* 5 Distinct Experiment Offerings (Analogous to 5 Services on original site) */}
+        {/* 5 Distinct Experiment Offerings (Universal Life & Work issues) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           
-          {/* Card 1: The Deep Session */}
+          {/* Card 1: The Focus Session */}
           <div className="p-6 rounded-3xl bg-stone-900/60 border border-white/10 hover:border-amber-400/40 transition duration-300 flex flex-col justify-between group">
             <div className="space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-center text-amber-300 group-hover:scale-110 transition">
@@ -257,21 +257,21 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
               </div>
               <span className="text-[10px] font-mono tracking-widest uppercase text-amber-300/80">THÍ NGHIỆM 01</span>
               <h3 className="font-serif text-xl text-stone-100 group-hover:text-amber-200 transition">
-                Phiên Soi Chiếu Cốt Lõi (The Core Session)
+                Phiên Soi Chiếu Trọng Tâm (The Focus Session)
               </h3>
               <p className="text-stone-300 text-xs sm:text-sm font-sans leading-relaxed">
-                Đối diện trực diện với những khoản chi tiêu bị kìm nén. Nhận diện cảm xúc tội lỗi và chuyển hóa nó thành sự bình an sâu thẳm.
+                Dành một khoảng lặng chân thật để gọi tên chính xác điều đang vướng mắc: áp lực công việc, sự trì hoãn, hay một quyết định cá nhân đang khiến bạn băn khoăn.
               </p>
             </div>
             <div className="pt-6 mt-6 border-t border-white/5 flex items-center justify-between">
-              <span className="text-xs text-amber-200/70 font-serif">Thời lượng: 60 Phút</span>
+              <span className="text-xs text-amber-200/70 font-serif">Thời lượng: 30 – 45 Phút</span>
               <span className="text-xs text-amber-300 font-semibold group-hover:translate-x-1 transition flex items-center gap-1">
-                Khai mở <ArrowRight className="w-3.5 h-3.5" />
+                Khám phá <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </div>
           </div>
 
-          {/* Card 2: Mind Recomposition */}
+          {/* Card 2: Mind & Rhythm Reset */}
           <div className="p-6 rounded-3xl bg-stone-900/60 border border-white/10 hover:border-amber-400/40 transition duration-300 flex flex-col justify-between group">
             <div className="space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-400/30 flex items-center justify-center text-purple-300 group-hover:scale-110 transition">
@@ -279,21 +279,21 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
               </div>
               <span className="text-[10px] font-mono tracking-widest uppercase text-purple-300/80">THÍ NGHIỆM 02</span>
               <h3 className="font-serif text-xl text-stone-100 group-hover:text-amber-200 transition">
-                Tái Cấu Trúc Nhận Thức (Mind Recomposition)
+                Tái Thiết Lập Nhịp Điệu (Rhythm & Energy Reset)
               </h3>
               <p className="text-stone-300 text-xs sm:text-sm font-sans leading-relaxed">
-                Giải phóng tâm trí khỏi trạng thái căng thẳng và quá tải số liệu. Sử dụng thang đo năng lượng Q6 Scale để tái cân bằng nhịp sinh học tiền bạc.
+                Giải phóng tâm trí khỏi trạng thái quá tải thông tin và deadline dồn dập. Tái cân bằng năng lượng sinh hoạt để tìm lại sự thảnh thơi nội tại.
               </p>
             </div>
             <div className="pt-6 mt-6 border-t border-white/5 flex items-center justify-between">
-              <span className="text-xs text-amber-200/70 font-serif">Thang đo: 1 — 10</span>
+              <span className="text-xs text-amber-200/70 font-serif">Thang đo: Năng lượng 1 — 10</span>
               <span className="text-xs text-amber-300 font-semibold group-hover:translate-x-1 transition flex items-center gap-1">
-                Khai mở <ArrowRight className="w-3.5 h-3.5" />
+                Khám phá <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </div>
           </div>
 
-          {/* Card 3: 7-Day Micro Fast */}
+          {/* Card 3: 7-Day Boundary Practice */}
           <div className="p-6 rounded-3xl bg-stone-900/60 border border-white/10 hover:border-amber-400/40 transition duration-300 flex flex-col justify-between group">
             <div className="space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-400/30 flex items-center justify-center text-emerald-300 group-hover:scale-110 transition">
@@ -301,16 +301,16 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
               </div>
               <span className="text-[10px] font-mono tracking-widest uppercase text-emerald-300/80">THÍ NGHIỆM 03</span>
               <h3 className="font-serif text-xl text-stone-100 group-hover:text-amber-200 transition">
-                7 Ngày Tĩnh Lặng Chi Tiêu (7-Day Financial Fast)
+                7 Ngày Thiết Lập Ranh Giới (7-Day Boundary Practice)
               </h3>
               <p className="text-stone-300 text-xs sm:text-sm font-sans leading-relaxed">
-                Thực hành 7 ngày không chi tiêu ngoài dự định. Tận hưởng cảm giác tự do khi làm chủ mọi quyết định mua sắm của chính mình.
+                Thực hành bảo vệ không gian riêng: ngắt kết nối công việc sau giờ làm, học cách từ chối những đòi hỏi quá tải để chăm sóc sức khỏe của chính mình.
               </p>
             </div>
             <div className="pt-6 mt-6 border-t border-white/5 flex items-center justify-between">
-              <span className="text-xs text-amber-200/70 font-serif">Hành trình: 7 Ngày</span>
+              <span className="text-xs text-amber-200/70 font-serif">Hành trình: 7 Ngày Nhẹ Nhàng</span>
               <span className="text-xs text-amber-300 font-semibold group-hover:translate-x-1 transition flex items-center gap-1">
-                Khai mở <ArrowRight className="w-3.5 h-3.5" />
+                Khám phá <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </div>
           </div>
@@ -323,16 +323,16 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
               </div>
               <span className="text-[10px] font-mono tracking-widest uppercase text-rose-300/80">THÍ NGHIỆM 04</span>
               <h3 className="font-serif text-xl text-stone-100 group-hover:text-amber-200 transition">
-                Giải Mã Khoảng Cách (The Gap Bridge)
+                Giải Mã Khoảng Cách (The Value Gap Bridge)
               </h3>
               <p className="text-stone-300 text-xs sm:text-sm font-sans leading-relaxed">
-                Thấy rõ độ lệch sâu sắc giữa những giá trị bạn tuyên bố coi trọng (Gia đình, Sức khỏe) và nơi tiền bạc của bạn thực sự chảy vào.
+                Nhìn rõ khoảng cách giữa những điều bạn thực sự trân trọng (sức khỏe, sự bình an, gia đình) và nơi thời gian cùng năng lượng của bạn đang thực sự bị cuốn đi.
               </p>
             </div>
             <div className="pt-6 mt-6 border-t border-white/5 flex items-center justify-between">
-              <span className="text-xs text-amber-200/70 font-serif">Độ lệch: Real vs Claim</span>
+              <span className="text-xs text-amber-200/70 font-serif">Trọng tâm: Lý Tưởng vs Thực Tế</span>
               <span className="text-xs text-amber-300 font-semibold group-hover:translate-x-1 transition flex items-center gap-1">
-                Khai mở <ArrowRight className="w-3.5 h-3.5" />
+                Khám phá <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </div>
           </div>
@@ -341,13 +341,13 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
           <div className="md:col-span-2 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-amber-950/30 via-stone-900/70 to-purple-950/30 border border-amber-300/30 flex flex-col sm:flex-row gap-6 items-center justify-between">
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-400/10 text-amber-300 text-[10px] font-mono tracking-widest uppercase">
-                THÍ NGHIỆM 05 • ĐỈNH CAO
+                THÍ NGHIỆM 05 • TRỌNG TÂM
               </div>
               <h3 className="font-serif text-2xl text-amber-200">
-                Kiến Tạo Vùng Đệm An Tâm (Safe Haven Immersion)
+                Kiến Tạo Vùng Đệm Bình Tâm (Safe Haven Immersion)
               </h3>
               <p className="text-stone-300 text-xs sm:text-sm leading-relaxed max-w-xl">
-                Tách rời hoàn toàn cảm giác sinh tồn khỏi số dư ngân hàng. Thiết lập vùng đệm tài chính tâm lý để luôn đưa ra quyết định với tâm thế vững vàng của người chiến thắng.
+                Tách rời cảm giác giá trị bản thân khỏi áp lực thành tích hay kỳ vọng của người khác. Thiết lập vùng đệm tinh thần vững chãi để luôn chủ động đưa ra lựa chọn bình thản.
               </p>
             </div>
             <button

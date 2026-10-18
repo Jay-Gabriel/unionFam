@@ -142,7 +142,7 @@ export const ExperimentModal: React.FC<ExperimentModalProps> = ({ isOpen, onClos
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
               <div className="p-3 bg-red-950/20 border border-red-500/30 rounded-xl">
                 <span className="text-red-300 font-bold block mb-1">Kỳ Vọng Bên Ngoài (Áp lực):</span>
-                <p className="text-stone-300">Phải luôn bận rộn, chứng tỏ thành công tài chính, làm hài lòng tất cả mọi người.</p>
+                <p className="text-stone-300">Phải luôn bận rộn, đáp ứng kỳ vọng của người khác, gồng mình làm hài lòng xung quanh.</p>
               </div>
               <div className="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl">
                 <span className="text-emerald-300 font-bold block mb-1">Nhu Cầu Bên Trong (Bản chất):</span>
