@@ -24,6 +24,7 @@ import confetti from 'canvas-confetti';
 import { getStoredGeminiKey, saveStoredGeminiKey, clearStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
 import { BETA_CONFIG, SessionOutcomeType } from '../../config/betaFlags';
 import { saveConversationToCloud, loadConversationFromCloud, saveMemoryToCloud } from '../../services/supabaseService';
+import { createExperimentFromSession } from '../../services/experimentService';
 
 interface CosmicStoryRoadProps {
   onBackToArches: () => void;
@@ -314,10 +315,23 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
       ? 'Đã lưu đúc kết vào bộ nhớ an toàn của bạn cho các phiên sau.'
       : 'Đã hoàn tất phiên không lưu (No Memory). Dữ liệu này không được ghi dài hạn.';
 
+    // Tự động chuyển giao sang Cổng 2 (Thực Nghiệm Đời Sống)
+    const isExperiment = selectedOutcome === 'LIFE_EXPERIMENT' || selectedOutcome === 'MEANINGFUL_NEXT_STEP';
+    if (isExperiment || checkpointNote) {
+      createExperimentFromSession(
+        checkpointNote || outcomeText,
+        `Bước hành động kiểm chứng vi mô đúc kết từ phiên trò chuyện ngày ${new Date().toLocaleDateString('vi-VN')}.`
+      );
+    }
+
+    const experimentNotice = isExperiment || checkpointNote
+      ? '\n\n🧪 *Đã chuyển giao sang Cổng 2*: Bạn có thể mở Cổng 2 (Phòng Thí Nghiệm) bất cứ lúc nào để theo dõi và điểm danh 7 ngày hành động này.'
+      : '';
+
     const outcomeMsg: Message = {
       id: Date.now().toString(),
       sender: 'ai',
-      text: `✨ **Đúc kết phiên đã ghi nhận**: ${outcomeText}${checkpointNote ? `\n\n*Chi tiết*: "${checkpointNote}"` : ''}\n\n🛡️ *Trạng thái bộ nhớ*: ${memoryNote}`,
+      text: `✨ **Đúc kết phiên đã ghi nhận**: ${outcomeText}${checkpointNote ? `\n\n*Chi tiết*: "${checkpointNote}"` : ''}${experimentNotice}\n\n🛡️ *Trạng thái bộ nhớ*: ${memoryNote}`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 

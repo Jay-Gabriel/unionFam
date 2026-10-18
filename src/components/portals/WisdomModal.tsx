@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Award, ShieldAlert, Sparkles, BookOpen, CheckCircle2, RotateCcw, Plus, Feather, Flame, HeartHandshake } from 'lucide-react';
 import { saveMemoryToCloud, loadMemoriesFromCloud } from '../../services/supabaseService';
+import { getClarityGemsProgress } from '../../services/experimentService';
 
 interface WisdomModalProps {
   isOpen: boolean;
@@ -44,6 +45,15 @@ export const WisdomModal: React.FC<WisdomModalProps> = ({
           setMemories(items);
         }
       });
+
+      const progress = getClarityGemsProgress();
+      setGems(prev => [
+        { ...prev[0], unlocked: progress.gem1 },
+        { ...prev[1], unlocked: progress.gem2 },
+        { ...prev[2], unlocked: progress.gem3 },
+        { ...prev[3], unlocked: progress.gem4 },
+        { ...prev[4], unlocked: progress.gem5 },
+      ]);
     }
   }, [isOpen]);
 
