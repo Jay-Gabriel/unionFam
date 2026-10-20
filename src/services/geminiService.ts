@@ -1,4 +1,4 @@
-// Life Lab Companion Service (Product Brief V1.0 & Master V8.7.2 Beta Profile)
+// Life Lab Companion Service (V8.7.5 Verified Implementation Standard & Decision Mode V1.0)
 // Dedicated for young professionals (23-35) balancing work, life, and personal agency
 
 export const DEFAULT_ENCODED_KEY = 'QVEuQWI4Uk42TFk1V1RBaTAtVGFacGlMTnB1OEJ0WjVDb1FPY0d5MjltdTl6TW81VncxeHc=';
@@ -59,6 +59,7 @@ export interface GeminiResponseResult {
   source: 'gemini' | 'sanctuary_engine';
   errorDetail?: string;
   isUserStop?: boolean;
+  suggestDecisionCard?: boolean;
 }
 
 export const callGeminiCompanionAPI = async (
@@ -83,19 +84,23 @@ export const callGeminiCompanionAPI = async (
     return {
       text: generateDynamicSanctuaryReply(userMessage, history),
       source: 'sanctuary_engine',
+      suggestDecisionCard: checkShouldSuggestCard(userMessage),
     };
   }
 
-  const systemInstruction = `Bạn là Life Lab Companion (Product Brief V1.0 & Master V8.7.2).
+  const systemInstruction = `Bạn là Life Lab Companion (Chuẩn V8.7.5 Verified Implementation Standard & Decision Mode V1.0).
 MỤC TIÊU SẢN PHẨM:
-Hệ thống đồng hành phản chiếu giúp người đi làm trẻ (23–35 tuổi) đang mắc kẹt giữa công việc và cuộc sống nhìn rõ điều đang diễn ra, xác định điều quan trọng, nhìn rõ lựa chọn và học từ trải nghiệm thật. Life Lab KHÔNG quyết định thay người dùng.
+Hệ thống đồng hành phản chiếu giúp người đi làm trẻ (23–35 tuổi) đang mắc kẹt giữa công việc và cuộc sống nhìn rõ điều đang diễn ra, xác định điều quan trọng, tự đưa ra quyết định và học từ trải nghiệm thật. Life Lab KHÔNG quyết định thay người dùng.
 
-QUY TẮC BẮT BUỘC (CONVERSATION RUNTIME CONTRACT):
+THỨ TỰ ƯU TIÊN BẤT BIẾN:
+CRISIS_SAFETY > USER_STOP > PERMISSION_AND_PRIVACY > CANONICAL_RUNTIME > DECISION_MODE
+
+QUY TẮC BẮT BUỘC (V8.7.5 RUNTIME CONTRACT):
 1. NGÔN TỪ NHẸ NHÀNG, KHÔNG KHẲNG ĐỊNH QUÁ ĐÀ:
    - Dùng Hypothesis Language: "Có vẻ...", "Theo trải nghiệm của bạn...", "Dường như...".
    - Tuyệt đối không phán xét, không suy diễn quá xa từ dữ liệu ít (không bảo môi trường là "cỗ máy", không khen "dũng cảm", không kết luận "bản chất triệt tiêu không gian sống").
 2. PHẢN CHIẾU VÀ XÁC NHẬN (REFLECT & VERIFY):
-   - Phản chiếu 1–2 câu tóm tắt điều người dùng vừa nói.
+   - Phản chiếu tối đa 1 câu ngắn gọn về điều người dùng vừa nói.
    - Luôn mời xác nhận: "Tôi hiểu như vậy có đúng không, hay còn điều gì khác?".
 3. REPAIR KHI NGƯỜI DÙNG SỬA ("Không hẳn", "Không phải", "Chưa đúng"):
    - Cảm ơn người dùng đã đính chính.
@@ -103,12 +108,26 @@ QUY TẮC BẮT BUỘC (CONVERSATION RUNTIME CONTRACT):
    - Tóm tắt lại theo đúng ý mới và mời xác nhận lại.
 4. QUESTION BUDGET:
    - TUYỆT ĐỐI KHÔNG hỏi 2 câu dồn dập trong một lượt. Tối đa chỉ 1 câu hỏi mở hoặc câu xác nhận.
-5. KHÔNG KHÓA VÀO TÀI CHÍNH:
-   - Không tự động kéo về tiền bạc/vùng đệm nếu người dùng đang nói về công việc, thời gian hay năng lượng.
-6. KHÔNG GIẢ VỜ LÀ CON NGƯỜI:
-   - Không nói "mình luôn ngồi đây chờ bạn". Giữ sự bình an, tôn trọng ranh giới và nâng đỡ.
-7. ĐỘ DÀI:
-   - Ngắn gọn, súc tích trong 2–4 câu. Tôn trọng quyền không hành động của người dùng.`;
+   - Tối đa 2 lượt làm rõ liên tiếp, sau đó phải phản chiếu, tóm tắt hoặc tạo khoảng dừng.
+5. ACTION OUTPUT CONTRACT (MANDATORY KHI CÓ YÊU CẦU HÀNH ĐỘNG):
+   - Khi người dùng dùng các động từ hành động: "so sánh", "thiết kế", "đặt ngưỡng", "tạo phương án", "cho tôi vài hướng", "cần biết gì", "thử thế nào", "lập kế hoạch", "tóm tắt":
+   - Phản chiếu tối đa 1 câu ngắn.
+   - BẮT BUỘC cung cấp ngay cấu trúc hành động sử dụng được:
+     * Nếu 'so sánh': Liệt kê 3-5 tiêu chí và so sánh các hướng đi khả thi.
+     * Nếu 'đặt ngưỡng': Nêu rõ ngưỡng tối thiểu (minimum), mong muốn (desired), và không chấp nhận (unacceptable).
+     * Nếu 'tạo phương án': Đưa ra 2–4 phương án khác biệt nhau về chiến lược và mức cam kết.
+     * Nếu 'cần biết gì': Xác định tối đa 3 điều chưa biết quan trọng nhất và cách kiểm chứng.
+     * Nếu 'thử thế nào': Thiết kế 1 thử nghiệm nhỏ 7 ngày (câu hỏi học tập, hành động, thời hạn, điều quan sát, stop rule).
+   - Đưa lời nhắc tinh tế: "Bạn có thể mở Decision Card (Bản nháp) để xem và chỉnh sửa trực tiếp các mục này."
+6. CHỐNG LẶP (ANTI-REPETITION TAXONOMY):
+   - Tuyệt đối không lặp lại cùng một kiểu phản chiếu ở 2 lượt liên tiếp.
+   - Đa dạng hóa phản chiếu: Cảm xúc (Emotion), Giá trị (Value), Xung đột nhu cầu (Tension), Quyền tự chủ (Agency), Điều chưa biết (Uncertainty), hoặc Khoảng lặng (Space/Pause).
+7. ENERGY MODE:
+   - Nếu người dùng thể hiện năng lượng thấp (nói mệt, trả lời ngắn dưới 5 từ): Trả lời cực kỳ ngắn gọn (1–2 câu), đưa ra tối đa 2 lựa chọn, không ép mở card dài hay bắt làm bài tập.
+8. KHÔNG KHÓA VÀO TÀI CHÍNH:
+   - Không tự động kéo về tiền bạc nếu người dùng đang nói về công việc, thời gian, sự gắn kết hay năng lượng.
+9. KHÔNG GIẢ VỜ LÀ CON NGƯỜI:
+   - Không nói "mình luôn ngồi đây chờ bạn". Giữ sự bình an, tôn trọng ranh giới và nâng đỡ.`;
 
   const historyParts: ChatHistoryItem[] = history.slice(-4).map(m => ({
     role: m.sender === 'user' ? 'user' : 'model',
@@ -153,6 +172,7 @@ QUY TẮC BẮT BUỘC (CONVERSATION RUNTIME CONTRACT):
           return {
             text: candidate.text.trim(),
             source: 'gemini',
+            suggestDecisionCard: checkShouldSuggestCard(userMessage),
           };
         }
       } else {
@@ -185,6 +205,7 @@ QUY TẮC BẮT BUỘC (CONVERSATION RUNTIME CONTRACT):
             return {
               text: candidate.text.trim(),
               source: 'gemini',
+              suggestDecisionCard: checkShouldSuggestCard(userMessage),
             };
           }
         }
@@ -198,10 +219,29 @@ QUY TẮC BẮT BUỘC (CONVERSATION RUNTIME CONTRACT):
     text: generateDynamicSanctuaryReply(userMessage, history),
     source: 'sanctuary_engine',
     errorDetail: lastError,
+    suggestDecisionCard: checkShouldSuggestCard(userMessage),
   };
 };
 
-// Comprehensive, hypothesis-based Life Lab dialogue engine matching Product Brief V1.0
+/**
+ * Kiểm tra xem tin nhắn có mang ý định hành động cần mở Decision Card không
+ */
+export const checkShouldSuggestCard = (userMessage: string): boolean => {
+  const text = userMessage.toLowerCase();
+  return (
+    text.includes('quyết định') ||
+    text.includes('phương án') ||
+    text.includes('lựa chọn') ||
+    text.includes('so sánh') ||
+    text.includes('đặt ngưỡng') ||
+    text.includes('thử thế nào') ||
+    text.includes('bước thử') ||
+    text.includes('decision card') ||
+    text.includes('tóm tắt')
+  );
+};
+
+// Comprehensive, hypothesis-based Life Lab dialogue engine matching V8.7.5 & Decision Mode V1.0
 export const generateDynamicSanctuaryReply = (
   rawInput: string,
   history?: { sender: 'ai' | 'user'; text: string }[]
@@ -209,7 +249,7 @@ export const generateDynamicSanctuaryReply = (
   const text = rawInput.toLowerCase().trim();
 
   // 1. User Stop (P0-01)
-  if (/^(dừng|dừng lại|thôi|thôi nhé|stop|dừng ở đây|không muốn nói nữa|nghỉ thôi)$/i.test(text)) {
+  if (/^(dừng|dừng lại|thôi|thôi nhé|stop|dừng ở đây|không muốn nói nữa|nghỉ thôi|hết rồi)$/i.test(text)) {
     return 'Được, chúng ta dừng ở đây nhé. Bạn không cần nói thêm hoặc quyết định gì lúc này. Chúc bạn có một khoảng thời gian nghỉ ngơi yên bình.';
   }
 
@@ -231,7 +271,62 @@ export const generateDynamicSanctuaryReply = (
     return `Cảm ơn bạn đã sửa. Tôi xin phép ghi nhận lại theo đúng ý bạn: "${rawInput}". Tôi hiểu như vậy đã đúng với điều bạn đang trải nghiệm chưa?`;
   }
 
-  // 3. User just wants to be heard / no exercises / no decision pressure
+  // 3. ACTION OUTPUT CONTRACT: Action Requests (Section 6 & 8 in V8.7.5)
+  // 3.1: So sánh các lựa chọn (Compare Options)
+  if (text.includes('so sánh') || text.includes('so sánh các lựa chọn')) {
+    return `Nhìn vào băn khoăn của bạn, chúng ta có thể đặt các lựa chọn lên cùng một bộ tiêu chí để dễ cân nhắc:
+
+• **Tiêu chí 1 (Sức khỏe & Nhịp sống)**: Đâu là hướng giúp bạn giữ được ít nhất 3 buổi tối cho bản thân và gia đình?
+• **Tiêu chí 2 (Sự ổn định)**: Mức độ rủi ro ngắn hạn và khả năng duy trì nguồn thu nhập.
+• **Tiêu chí 3 (Khả năng đảo ngược)**: Nếu thử trong 1–2 tuần, hướng nào cho phép bạn rút lui an toàn nếu thấy không phù hợp?
+
+📋 *Bạn có thể bấm vào **Decision Card (Bản nháp)** ở góc trên để xem bảng so sánh và chỉnh sửa trực tiếp.*`;
+  }
+
+  // 3.2: Tạo phương án (Generate Options)
+  if (text.includes('tạo phương án') || text.includes('cho tôi vài hướng') || text.includes('các phương án') || text.includes('hướng đi nào')) {
+    return `Để không bị kẹt vào thế "hoặc là tiếp tục chịu đựng, hoặc là bỏ ngay", có 3 hướng khác biệt để bạn cân nhắc:
+
+1. **Điều chỉnh hiện trạng (Thương lượng ranh giới)**: Giữ nguyên vị trí nhưng đề xuất phân bổ lại đầu việc và giới hạn giờ làm tối đa 50h/tuần.
+2. **Chuẩn bị song song**: Duy trì công việc hiện tại để bảo toàn thu nhập, đồng thời dành 2–3 tiếng mỗi tuần rà soát cơ hội mới.
+3. **Thực nghiệm 7 ngày**: Giữ ranh giới nghiêm ngặt trong 1 tuần để quan sát phản ứng thực tế trước khi đưa ra quyết định lớn.
+
+📋 *Các hướng này đã được chuẩn bị sẵn trên **Decision Card**, bạn có thể mở lên để tùy chỉnh theo ý mình.*`;
+  }
+
+  // 3.3: Đặt ngưỡng (Define Thresholds)
+  if (text.includes('đặt ngưỡng') || text.includes('giới hạn') || text.includes('ngưỡng tối thiểu')) {
+    return `Để một quyết định không làm bạn kiệt sức, chúng ta có thể định hình 3 tầng ngưỡng rõ ràng:
+
+• **Ngưỡng không thể chấp nhận (Red line)**: Làm quá 50 giờ/tuần liên tục hoặc nhận việc khẩn sau 20h không báo trước.
+• **Ngưỡng tối thiểu (Minimum)**: Giữ ít nhất 3 buổi tối trọn vẹn mỗi tuần cho bản thân và giữ mức thu nhập cơ bản.
+• **Ngưỡng mong muốn (Desired)**: Có không gian phát triển chuyên môn và được tôn trọng nhịp làm việc.
+
+Tôi hiểu những ngưỡng này đã sát với điều bạn muốn bảo vệ chưa?`;
+  }
+
+  // 3.4: Thử thế nào / Bước thử (Design Experiment)
+  if (text.includes('thử thế nào') || text.includes('thử nghiệm') || text.includes('bước thử') || text.includes('hành động nhỏ')) {
+    return `Một bước thử nhỏ tốt là bước có thể đảo ngược và giúp bạn thu thập thông tin thật mà không phải đánh cược lớn:
+
+• **Hành động vi mô (7 ngày)**: Khi nhận 2 đầu việc mới, chủ động trao đổi với quản lý: "Với 2 việc này, em nên ưu tiên việc nào trước để đảm bảo tiến độ?".
+• **Điều cần quan sát**: Phản ứng của đối phương (sẵn sàng điều chỉnh hay tiếp tục ép tải) và cảm giác bình tâm trong bạn.
+• **Quy tắc dừng**: Nếu đối phương ghi nhận, tiếp tục duy trì cách trao đổi này. Nếu sau 1 tuần vẫn bị phớt lờ, bạn sẽ có dữ liệu rõ ràng để cân nhắc phương án tiếp theo.`;
+  }
+
+  // 4. LOW Energy Mode: User is exhausted / very short response
+  if (
+    text.includes('mệt quá') ||
+    text.includes('đuối quá') ||
+    text.includes('nói ngắn thôi') ||
+    text.includes('không có sức') ||
+    text === 'mệt' ||
+    text === 'buồn'
+  ) {
+    return 'Lúc này có vẻ bạn đang rất mệt mỏi. Chúng ta không cần phân tích hay làm bài tập nào cả. Bạn muốn tạm dừng nghỉ ngơi ở đây, hay chỉ muốn gửi lại đôi dòng ngắn ngủi rồi dừng?';
+  }
+
+  // 5. User just wants to be heard / no decision pressure
   if (
     text.includes('chỉ muốn được lắng nghe') ||
     text.includes('chưa muốn quyết định') ||
@@ -241,7 +336,7 @@ export const generateDynamicSanctuaryReply = (
     return 'Được, lúc này chúng ta không cần đưa ra quyết định hay làm bài tập nào cả. Bạn có thể chia sẻ theo nhịp điệu thoải mái nhất của mình; hoặc bất cứ lúc nào muốn dừng lại nghỉ ngơi, bạn chỉ cần nói nhé.';
   }
 
-  // 4. Initial Option 1: Work taking too much time/energy
+  // 6. Initial Options from Landing
   if (
     text.includes('công việc đang lấy quá nhiều thời gian') ||
     text.includes('quá nhiều thời gian') ||
@@ -250,7 +345,6 @@ export const generateDynamicSanctuaryReply = (
     return 'Có vẻ công việc hiện tại đang đòi hỏi nhiều thời gian và năng lượng hơn mức bạn mong muốn, khiến các khoảng không gian khác trong cuộc sống bị thu hẹp lại. Tôi hiểu như vậy có đúng với trải nghiệm của bạn không, hay còn khía cạnh nào khác đang diễn ra?';
   }
 
-  // 5. Initial Option 2: Considering a change
   if (
     text.includes('cân nhắc một thay đổi') ||
     text.includes('nghỉ việc') ||
@@ -260,7 +354,6 @@ export const generateDynamicSanctuaryReply = (
     return 'Đứng trước một sự thay đổi thường mang lại nhiều băn khoăn xen lẫn sự thận trọng. Lúc này, điều gì đang khiến bạn nghĩ về sự thay đổi đó nhiều nhất?';
   }
 
-  // 6. Initial Option 3: Don't know yet, just want to talk
   if (
     text.includes('chưa biết') ||
     text.includes('chỉ muốn bắt đầu nói') ||

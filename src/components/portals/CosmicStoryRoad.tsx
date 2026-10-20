@@ -18,13 +18,15 @@ import {
   BookmarkCheck,
   Check,
   X,
-  ArrowRight
+  ArrowRight,
+  Layers
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getStoredGeminiKey, saveStoredGeminiKey, clearStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
 import { BETA_CONFIG, SessionOutcomeType } from '../../config/betaFlags';
 import { saveConversationToCloud, loadConversationFromCloud, saveMemoryToCloud } from '../../services/supabaseService';
 import { createExperimentFromSession } from '../../services/experimentService';
+import { DecisionCardModal } from '../decision/DecisionCardModal';
 
 interface CosmicStoryRoadProps {
   onBackToArches: () => void;
@@ -78,6 +80,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
   const [memoryConsent, setMemoryConsent] = useState<'granted' | 'declined' | null>(null);
   const [isSessionClosed, setIsSessionClosed] = useState(false);
   const [checkpointNote, setCheckpointNote] = useState('');
+  const [showDecisionCard, setShowDecisionCard] = useState(false);
   const [conversationId, setConversationId] = useState<string>(() => Date.now().toString());
 
   // Tải lại hội thoại đã lưu (từ Supabase khi đã đăng nhập Google hoặc LocalStorage)
@@ -464,6 +467,16 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
               </span>
             </button>
 
+            {/* Decision Card Button (V8.7.5 & V1.0) */}
+            <button
+              onClick={() => setShowDecisionCard(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-400/40 bg-stone-900/80 hover:bg-stone-800 text-amber-200 text-xs font-serif transition shadow-[0_0_12px_rgba(245,158,11,0.15)] hover:scale-105 cursor-pointer"
+              title="Mở Decision Card (Bản nháp 7 mục)"
+            >
+              <Layers className="w-3.5 h-3.5 text-amber-400" />
+              <span>Decision Card</span>
+            </button>
+
             {onGoToExperiments && (
               <button
                 onClick={onGoToExperiments}
@@ -646,6 +659,16 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Decision Card Button */}
+                  <button
+                    onClick={() => setShowDecisionCard(true)}
+                    className="text-[11px] text-amber-200 font-serif bg-amber-400/15 hover:bg-amber-400/25 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
+                    title="Mở Decision Card (Bản nháp 7 mục)"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Decision Card</span>
+                  </button>
+
                   {/* P0-06 Session Outcome Checkpoint Button */}
                   <button
                     onClick={() => setShowCheckpointModal(true)}
@@ -695,6 +718,20 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                       }`}
                     >
                       {msg.text}
+
+                      {msg.sender === 'ai' && (msg.text.includes('Decision Card') || msg.text.includes('Decision Card (Bản nháp)')) && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => setShowDecisionCard(true)}
+                            className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/25 to-amber-600/25 hover:from-amber-500/35 hover:to-amber-600/35 border border-amber-400/50 text-amber-200 text-xs font-serif transition shadow-sm hover:scale-[1.02] cursor-pointer"
+                          >
+                            <Layers className="w-3.5 h-3.5 text-amber-300" />
+                            <span>Mở Decision Card (Bản nháp 7 mục)</span>
+                            <ArrowRight className="w-3 h-3 text-amber-300" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <span className="text-[10px] text-stone-400 mt-1 font-mono px-1">
                       {msg.timestamp}
@@ -916,6 +953,13 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             </div>
           </div>
         )}
+
+        {/* Decision Card Modal (V8.7.5 & V1.0) */}
+        <DecisionCardModal
+          isOpen={showDecisionCard}
+          onClose={() => setShowDecisionCard(false)}
+          onGoToExperiment={onGoToExperiments}
+        />
 
       </div>
 
