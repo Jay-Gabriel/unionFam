@@ -229,13 +229,15 @@ export const DecisionCardModal: React.FC<DecisionCardModalProps> = ({
           <div className="space-y-2 pb-1 border-b border-white/5">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-wider text-amber-300/80">
-                CHỌN NHANH THEO 3 TÌNH HUỐNG THỰC TẾ (KHÔNG DÙNG MẶC ĐỊNH):
+                CHỌN NHANH ĐỊNH HƯỚNG THEO 3 TÌNH HUỐNG THỰC TẾ:
               </span>
-              {messages.length > 0 && (
-                <span className="text-[10px] text-emerald-400 font-mono">
-                  {messages.filter(m => m.sender === 'user').length} tin nhắn hội thoại
-                </span>
-              )}
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                messages.filter(m => m.sender === 'user').length > 0
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                  : 'bg-stone-800 text-stone-400'
+              }`}>
+                {messages.filter(m => m.sender === 'user').length} tin nhắn từ bạn
+              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -247,9 +249,9 @@ export const DecisionCardModal: React.FC<DecisionCardModalProps> = ({
                     type="button"
                     onClick={() => handleExtractFromChat(sc.id)}
                     disabled={isExtracting}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-amber-400/15 border-amber-400/70 text-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                        ? 'bg-amber-400/20 border-amber-300 text-amber-100 shadow-[0_0_15px_rgba(245,158,11,0.25)]'
                         : 'bg-stone-900/60 border-stone-800 text-stone-300 hover:bg-stone-800/80 hover:border-stone-700'
                     }`}
                   >
@@ -269,38 +271,59 @@ export const DecisionCardModal: React.FC<DecisionCardModalProps> = ({
           </div>
 
           {/* Dynamic Connection & AI Extraction Status Banner */}
-          <div className="p-3 rounded-2xl bg-gradient-to-r from-[#171d3a] to-[#12162e] border border-amber-300/30 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300">
-                <Sparkles className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-serif text-xs font-semibold text-stone-100">
-                    {card.source === 'conversation_extracted'
-                      ? 'Đã kết nối trực tiếp với cuộc hội thoại thực tế'
-                      : 'Đang dùng khung tình huống có thể tinh chỉnh'}
-                  </span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-400/30 font-mono">
-                    KHÔNG ĐỂ MẶC ĐỊNH
-                  </span>
+          {messages.filter(m => m.sender === 'user').length === 0 ? (
+            <div className="p-3.5 rounded-2xl bg-[#1c1813] border border-amber-400/40 flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shrink-0">
+                  <HelpCircle className="w-4 h-4" />
                 </div>
-                <p className="text-[11px] text-stone-400 mt-0.5 line-clamp-1">
-                  {card.sourceSnippet || 'Mọi trường thông tin đều có thể chỉnh sửa tự do hoặc đồng bộ từ hội thoại.'}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-serif text-xs font-semibold text-amber-200">
+                      Chưa có chia sẻ từ bạn trong cuộc trò chuyện
+                    </span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 font-mono">
+                      CHỜ HỘI THOẠI
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-300 mt-0.5 leading-snug">
+                    Hãy nhắn vài câu vào khung chat bên ngoài. AI sẽ lập tức lắng nghe và <strong>tự động đúc kết toàn bộ thẻ này theo đúng câu chuyện thật của bạn</strong>, không dùng chữ cứng mặc định!
+                  </p>
+                </div>
               </div>
             </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#142338] to-[#101b2c] border border-emerald-400/40 flex flex-wrap items-center justify-between gap-3 animate-fadeIn shadow-lg">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-emerald-400/20 border border-emerald-400/50 flex items-center justify-center text-emerald-300 shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-serif text-xs font-semibold text-emerald-100">
+                      Đã đúc kết trực tiếp từ cuộc hội thoại thực tế
+                    </span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-mono">
+                      {messages.filter(m => m.sender === 'user').length} CÂU CHIA SẺ
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-300 mt-0.5 line-clamp-1">
+                    {card.sourceSnippet || `Nội dung thẻ đã được cá nhân hóa hoàn toàn theo lời chia sẻ của bạn.`}
+                  </p>
+                </div>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => handleExtractFromChat(card.scenarioCategory || 'work_life')}
-              disabled={isExtracting}
-              className="px-3 py-1.5 rounded-xl bg-amber-400/15 hover:bg-amber-400/25 border border-amber-300/40 text-amber-200 text-xs font-serif flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3 h-3 text-amber-300 ${isExtracting ? 'animate-spin' : ''}`} />
-              <span>{isExtracting ? 'Đang trích xuất...' : 'Đồng bộ từ hội thoại'}</span>
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => handleExtractFromChat(card.scenarioCategory || 'work_life')}
+                disabled={isExtracting}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-serif flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 text-emerald-300 ${isExtracting ? 'animate-spin' : ''}`} />
+                <span>{isExtracting ? 'Đang trích xuất...' : 'Cập nhật lại từ chat'}</span>
+              </button>
+            </div>
+          )}
 
           {/* Receipt banner if confirmed */}
           {receipt && (

@@ -31,16 +31,16 @@ export const CORE_PROBLEM_SCENARIOS: ProblemScenario[] = [
       decisionQuestion: 'Công việc hiện tại có thể điều chỉnh để tôi lấy lại năng lượng sống hay tôi cần chuẩn bị chuyển hướng?',
       scenarioCategory: 'work_life',
       source: 'scenario_template',
-      sourceSnippet: 'Khởi tạo từ tình huống: Công việc lấy mất cuộc sống',
+      sourceSnippet: 'Định hình theo khung tình huống: Công việc lấy mất cuộc sống',
       criteria: [
-        'Bảo toàn sức khỏe và năng lượng tinh thần mỗi ngày',
-        'Có ít nhất 3 buổi tối trọn vẹn mỗi tuần cho gia đình và bản thân',
+        'Bảo toàn sức khỏe và phục hồi năng lượng tinh thần',
+        'Lấy lại các buổi tối thảnh thơi cho bản thân và gia đình',
         'Đảm bảo mức thu nhập ổn định để trang trải cuộc sống',
-        'Môi trường làm việc tôn trọng ranh giới ngoài giờ',
+        'Môi trường làm việc tôn trọng ranh giới cá nhân',
       ],
       hardConstraints: [
-        'Không làm việc quá 50 giờ/tuần kéo dài liên tục',
-        'Không xử lý tin nhắn hoặc việc phát sinh sau 20h nếu không báo trước',
+        'Không tiếp tục làm việc ngoài giờ đến mức kiệt sức kéo dài',
+        'Không để công việc xâm lấn thời gian chăm sóc sức khỏe và gia đình',
       ],
       options: [
         {
@@ -51,7 +51,7 @@ export const CORE_PROBLEM_SCENARIOS: ProblemScenario[] = [
         {
           id: 'opt_2',
           name: 'Chuẩn bị kế hoạch chuyển việc song song',
-          description: 'Duy trì công việc hiện tại để bảo toàn thu nhập, đồng thời rà soát cơ hội mới trong 2-3 tháng.',
+          description: 'Duy trì công việc hiện tại để bảo toàn thu nhập, đồng thời rà soát cơ hội mới.',
         },
         {
           id: 'opt_3',
@@ -68,8 +68,8 @@ export const CORE_PROBLEM_SCENARIOS: ProblemScenario[] = [
         },
       ],
       experiment: {
-        learningQuestion: 'Khi tôi chủ động hỏi thứ tự ưu tiên và đặt ranh giới lúc 18h30, phản ứng của nhóm và cảm giác của mình ra sao?',
-        action: 'Với các việc mới giao sau 18h, nhẹ nhàng báo sẽ xử lý vào sáng hôm sau và quan sát kết quả.',
+        learningQuestion: 'Khi tôi chủ động hỏi thứ tự ưu tiên và đặt ranh giới giờ làm, phản ứng của nhóm và cảm giác của mình ra sao?',
+        action: 'Với các việc mới giao sau giờ tan làm, nhẹ nhàng báo sẽ xử lý vào sáng hôm sau và quan sát kết quả.',
         durationDays: 7,
         observations: 'Ghi lại cảm giác lo âu trong bản thân và thái độ thực tế của đồng nghiệp trong 3 ngày đầu.',
       },
@@ -268,7 +268,7 @@ export async function extractDecisionCardFromConversation(
 
   // 1. Xác định scenario phù hợp nhất từ hội thoại
   let matchedScenario = CORE_PROBLEM_SCENARIOS[0]; // default work_life
-  if (preferredScenarioId) {
+  if (preferredScenarioId && preferredScenarioId !== 'custom') {
     const found = CORE_PROBLEM_SCENARIOS.find(s => s.id === preferredScenarioId);
     if (found) matchedScenario = found;
   } else if (
@@ -289,9 +289,69 @@ export async function extractDecisionCardFromConversation(
     matchedScenario = CORE_PROBLEM_SCENARIOS[2]; // major_decision
   }
 
-  // 2. Thử gọi Gemini AI nếu có key để trích xuất ngữ cảnh chính xác của người dùng
+  // 2. KHI CHƯA CÓ TIN NHẮN TỪ NGƯỜI DÙNG: TRẢ VỀ TRẠNG THÁI CHỜ HỘI THOẠI (KHÔNG GIẢ LẬP TEXT)
+  if (userMessages.length === 0) {
+    const waitingCard: DecisionCardData = {
+      id: `dec_${Date.now()}`,
+      version: 1,
+      status: 'DRAFT',
+      title: preferredScenarioId ? `Định Hướng: ${matchedScenario.title}` : 'Thẻ Quyết Định Của Bạn',
+      scenarioCategory: matchedScenario.id,
+      source: 'scenario_template',
+      sourceSnippet: preferredScenarioId
+        ? `Đã chọn định hướng: "${matchedScenario.title}". Đang chờ bạn chia sẻ thêm ở khung chat để AI tự động đúc kết.`
+        : 'Chưa có tin nhắn trong cuộc trò chuyện. Hãy gõ chia sẻ vào khung chat để hệ thống tự động bóc tách.',
+      decisionQuestion: preferredScenarioId
+        ? `Trong tình huống "${matchedScenario.title.toLowerCase()}", điều gì đang làm bạn trăn trở nhất?`
+        : 'Điều gì đang chiếm nhiều suy nghĩ hoặc năng lượng nhất của bạn lúc này?',
+      criteria: [
+        'Bảo toàn năng lượng sống và sức khỏe tinh thần',
+        'Đảm bảo sự an toàn và ổn định tài chính',
+        'Có không gian cho bản thân và người thân yêu',
+      ],
+      hardConstraints: [
+        'Không đưa ra quyết định vội vàng khi chưa nhìn rõ rủi ro và phương án an toàn',
+      ],
+      options: [
+        {
+          id: 'opt_1',
+          name: 'Phương án 1: Thử điều chỉnh & đặt lại ranh giới hiện tại',
+          description: 'Lắng nghe nhu cầu bản thân và thử thay đổi cách tương tác với hoàn cảnh hiện tại.',
+        },
+        {
+          id: 'opt_2',
+          name: 'Phương án 2: Chuẩn bị phương án thay thế song song',
+          description: 'Duy trì sự ổn định hiện tại đồng thời rà soát cơ hội mới.',
+        },
+        {
+          id: 'opt_3',
+          name: 'Phương án 3: Thực nghiệm vi mô 7 ngày an toàn',
+          description: 'Giữ giới hạn trong 1 tuần để quan sát phản ứng thực tế trước khi quyết định lớn.',
+        },
+      ],
+      uncertainties: [
+        {
+          id: 'unc_1',
+          question: 'Điều gì là rào cản lớn nhất ngăn bạn thực hiện thay đổi lúc này?',
+          verificationMethod: 'Quan sát phản ứng thực tế khi bạn thử đặt một ranh giới nhỏ trong tuần này.',
+        },
+      ],
+      experiment: {
+        learningQuestion: 'Khi tôi bắt đầu tạo một khoảng lặng nhỏ mỗi ngày, năng lượng sống có chuyển biến không?',
+        action: 'Dành 15 phút mỗi ngày làm điều bản thân thực sự muốn và quan sát cảm giác.',
+        durationDays: 7,
+      },
+      reviewDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    saveActiveDecisionCard(waitingCard);
+    return waitingCard;
+  }
+
+  // 3. NẾU CÓ KEY GEMINI VÀ CÓ TIN NHẮN TỪ NGƯỜI DÙNG -> GỌI GEMINI ĐỂ BÓC TÁCH NGỮ CẢNH CHÍNH XÁC:
   const apiKey = getStoredGeminiKey();
-  if (apiKey && userMessages.length > 0) {
+  if (apiKey) {
     try {
       const extractedAi = await callGeminiToExtractCard(apiKey, messages, matchedScenario);
       if (extractedAi) {
@@ -303,50 +363,63 @@ export async function extractDecisionCardFromConversation(
     }
   }
 
-  // 3. Contextual Heuristic Extractor: Kết nối trực tiếp các câu nói của người dùng vào thẻ
-  const lastUserMsg = userMessages[userMessages.length - 1] || matchedScenario.starterPrompt;
-  const firstUserMsg = userMessages[0] || matchedScenario.painPoint;
+  // 4. CONTEXTUAL HEURISTIC BUILDER DỰA 100% TRÊN CÂU NÓI THẬT CỦA NGƯỜI DÙNG:
+  const lastUserMsg = userMessages[userMessages.length - 1];
+  const firstUserMsg = userMessages[0];
+  const snippet = lastUserMsg.length > 70 ? lastUserMsg.slice(0, 70) + '...' : lastUserMsg;
 
-  // Trích xuất vấn đề nan đề từ câu người dùng
-  let extractedQuestion = matchedScenario.defaultCardData.decisionQuestion;
-  if (userMessages.length > 0) {
-    extractedQuestion = `Dựa trên trăn trở của bạn: "${lastUserMsg.length > 80 ? lastUserMsg.slice(0, 80) + '...' : lastUserMsg}", đâu là hướng đi phù hợp nhất?`;
+  // Nan đề dựa trên câu nói thật của người dùng
+  const extractedQuestion = `Làm thế nào để bạn giải quyết trăn trở: "${snippet}"?`;
+
+  // Tiêu chí tự động sinh theo từ khóa thật của người dùng
+  const dynamicCriteria: string[] = [];
+  if (lowerText.includes('mệt') || lowerText.includes('kiệt sức') || lowerText.includes('stress') || lowerText.includes('đuối')) {
+    dynamicCriteria.push('Phục hồi năng lượng sống và bảo vệ sức khỏe tinh thần');
+  }
+  if (lowerText.includes('thời gian') || lowerText.includes('tăng ca') || lowerText.includes('đêm') || lowerText.includes('muộn') || lowerText.includes('quá giờ')) {
+    dynamicCriteria.push('Lấy lại thời gian cá nhân và không để công việc lấn át toàn bộ ngày sống');
+  }
+  if (lowerText.includes('tiền') || lowerText.includes('lương') || lowerText.includes('tài chính') || lowerText.includes('thu nhập')) {
+    dynamicCriteria.push('Bảo toàn nguồn thu nhập và giữ sự an toàn tài chính');
+  }
+  if (lowerText.includes('sếp') || lowerText.includes('quản lý') || lowerText.includes('đồng nghiệp') || lowerText.includes('công ty')) {
+    dynamicCriteria.push('Xác lập sự tôn trọng và ranh giới rõ ràng với quản lý/đồng nghiệp');
+  }
+  if (lowerText.includes('gia đình') || lowerText.includes('con') || lowerText.includes('vợ') || lowerText.includes('chồng') || lowerText.includes('bố mẹ')) {
+    dynamicCriteria.push('Bảo vệ thời gian và sự gắn kết với gia đình');
+  }
+  if (lowerText.includes('mất phương hướng') || lowerText.includes('ý nghĩa') || lowerText.includes('chán') || lowerText.includes('không biết muốn gì')) {
+    dynamicCriteria.push('Tìm lại cảm giác có ý nghĩa và phương hướng phù hợp với giá trị bản thân');
   }
 
-  // Trích xuất criteria từ các khía cạnh người dùng quan tâm
-  const dynamicCriteria = [...matchedScenario.defaultCardData.criteria];
-  if (lowerText.includes('tiền') || lowerText.includes('lương') || lowerText.includes('tài chính')) {
-    dynamicCriteria[0] = 'Bảo toàn mức thu nhập và an toàn tài chính';
-  }
-  if (lowerText.includes('sếp') || lowerText.includes('quản lý') || lowerText.includes('đồng nghiệp')) {
-    dynamicCriteria.push('Mối quan hệ và sự rõ ràng với người quản lý/đồng nghiệp');
-  }
-  if (lowerText.includes('gia đình') || lowerText.includes('con') || lowerText.includes('bố mẹ')) {
-    dynamicCriteria[1] = 'Bảo vệ thời gian và sự gắn kết với gia đình';
+  if (dynamicCriteria.length === 0) {
+    dynamicCriteria.push('Bảo toàn năng lượng sống và sức khỏe tinh thần');
+    dynamicCriteria.push('Giữ sự ổn định và không đánh cược rủi ro mù quáng');
+    dynamicCriteria.push('Được tôn trọng ranh giới và nhịp điệu cá nhân');
   }
 
-  // Trích xuất hard constraints
-  const dynamicConstraints = [...matchedScenario.defaultCardData.hardConstraints];
-  if (lowerText.includes('mệt') || lowerText.includes('kiệt sức') || lowerText.includes('stress')) {
-    dynamicConstraints[0] = 'Không tiếp tục đẩy bản thân đến trạng thái kiệt sức (burnout)';
-  }
+  // Ranh giới đỏ gắn liền với câu nói người dùng
+  const dynamicConstraints: string[] = [
+    `Không tiếp tục để tình trạng "${firstUserMsg.length > 50 ? firstUserMsg.slice(0, 50) + '...' : firstUserMsg}" bào mòn sức lực kéo dài`,
+    'Không đưa ra quyết định bốc đồng khi chưa có phương án an toàn',
+  ];
 
-  // Tạo các phương án linh hoạt dựa trên chia sẻ
+  // Các phương án gắn liền với câu nói người dùng
   const dynamicOptions: DecisionOption[] = [
     {
       id: 'opt_1',
-      name: 'Phương án 1: Thử điều chỉnh & trao đổi lại',
-      description: `Đặt ranh giới rõ ràng về: "${firstUserMsg.slice(0, 60)}..." để bảo vệ không gian cá nhân.`,
+      name: 'Phương án 1: Thử đối thoại & tái thiết lập ranh giới',
+      description: `Chủ động trao đổi hoặc đặt lại ranh giới trực tiếp về việc: "${snippet}".`,
     },
     {
       id: 'opt_2',
       name: 'Phương án 2: Chuẩn bị phương án thay thế song song',
-      description: 'Duy trì công việc hiện tại đồng thời rà soát các cơ hội mới trong 2–3 tháng.',
+      description: 'Duy trì công việc hiện tại để bảo toàn thu nhập, đồng thời rà soát cơ hội mới.',
     },
     {
       id: 'opt_3',
-      name: 'Phương án 3: Thử nghiệm vi mô 7 ngày an toàn',
-      description: 'Giữ giới hạn nghiêm ngặt trong 1 tuần để quan sát phản ứng thực tế trước khi chốt quyết định lớn.',
+      name: 'Phương án 3: Thực nghiệm vi mô 7 ngày an toàn',
+      description: 'Giữ giới hạn nghiêm ngặt trong 1 tuần để quan sát phản ứng thực tế trước khi quyết định lớn.',
     },
   ];
 
@@ -362,12 +435,19 @@ export async function extractDecisionCardFromConversation(
     criteria: dynamicCriteria.slice(0, 4),
     hardConstraints: dynamicConstraints,
     options: dynamicOptions,
-    uncertainties: matchedScenario.defaultCardData.uncertainties,
+    uncertainties: [
+      {
+        id: 'unc_1',
+        question: `Liệu khi tôi bắt đầu thay đổi cách ứng xử với vấn đề "${snippet}", phản ứng xung quanh sẽ ra sao?`,
+        verificationMethod: 'Thử đặt một ranh giới nhỏ trong 3-5 ngày tới và quan sát thái độ thực tế.',
+        stopRule: 'Nếu phản ứng tiêu cực vượt quá ngưỡng chịu đựng, kích hoạt phương án dự phòng 2.',
+      },
+    ],
     experiment: {
-      learningQuestion: `Khi tôi chủ động điều chỉnh hành vi theo chia sẻ vừa rồi, phản ứng xung quanh và cảm giác của bản thân ra sao?`,
-      action: `Thực hiện một hành động cụ thể để giải tỏa áp lực: "${lastUserMsg.slice(0, 50)}..." trong 7 ngày tới.`,
+      learningQuestion: `Khi tôi chủ động điều chỉnh hành vi với việc "${snippet}", cảm giác của bản thân và phản ứng xung quanh ra sao?`,
+      action: `Thực hiện 1 hành động vi mô trong 7 ngày tới để giải tỏa áp lực này và ghi nhận kết quả.`,
       durationDays: 7,
-      observations: 'Ghi lại cảm giác lo âu trong bản thân và phản ứng thực tế của những người liên quan.',
+      observations: 'Ghi lại cảm giác lo âu trong bản thân và thái độ thực tế của những người liên quan.',
     },
     reviewDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
     createdAt: new Date().toISOString(),
