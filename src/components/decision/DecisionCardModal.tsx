@@ -12,7 +12,10 @@ import {
   Layers,
   ArrowRight,
   BookmarkCheck,
-  FlaskConical
+  FlaskConical,
+  RefreshCw,
+  Compass,
+  Zap
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -23,22 +26,27 @@ import {
 import {
   getActiveDecisionCard,
   saveActiveDecisionCard,
-  saveDecisionCardWithPermissions
+  saveDecisionCardWithPermissions,
+  extractDecisionCardFromConversation,
+  CORE_PROBLEM_SCENARIOS
 } from '../../services/decisionService';
 
 interface DecisionCardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onGoToExperiment?: () => void;
+  messages?: { sender: 'ai' | 'user'; text: string }[];
 }
 
 export const DecisionCardModal: React.FC<DecisionCardModalProps> = ({
   isOpen,
   onClose,
   onGoToExperiment,
+  messages = [],
 }) => {
   const [card, setCard] = useState<DecisionCardData>(getActiveDecisionCard);
   const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
 
   // Editable drafts
   const [editQuestion, setEditQuestion] = useState('');
@@ -83,6 +91,25 @@ export const DecisionCardModal: React.FC<DecisionCardModalProps> = ({
       setReceipt(null);
     }
   }, [isOpen]);
+
+  const handleExtractFromChat = async (scenarioId?: 'work_life' | 'purpose' | 'major_decision' | 'custom') => {
+    setIsExtracting(true);
+    try {
+      const extracted = await extractDecisionCardFromConversation(messages, scenarioId);
+      setCard(extracted);
+      setEditQuestion(extracted.decisionQuestion);
+      setEditCriteria(extracted.criteria.join('\n'));
+      setEditConstraints(extracted.hardConstraints.join('\n'));
+      setEditOptions([...extracted.options]);
+      setEditUncertainty(extracted.uncertainties[0]?.question || '');
+      setEditExperiment(extracted.experiment?.action || '');
+      setEditReviewDate(extracted.reviewDate || '27/10/2026');
+      setEditingSection(null);
+      confetti({ particleCount: 40, spread: 60 });
+    } finally {
+      setIsExtracting(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -198,6 +225,83 @@ export const DecisionCardModal: React.FC<DecisionCardModalProps> = ({
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 font-sans text-xs">
           
+          {/* 3 Core Problem Scenarios Quick Selector */}
+          <div className="space-y-2 pb-1 border-b border-white/5">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-amber-300/80">
+                CHỌN NHANH THEO 3 TÌNH HUỐNG THỰC TẾ (KHÔNG DÙNG MẶC ĐỊNH):
+              </span>
+              {messages.length > 0 && (
+                <span className="text-[10px] text-emerald-400 font-mono">
+                  {messages.filter(m => m.sender === 'user').length} tin nhắn hội thoại
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {CORE_PROBLEM_SCENARIOS.map(sc => {
+                const isSelected = card.scenarioCategory === sc.id;
+                return (
+                  <button
+                    key={sc.id}
+                    type="button"
+                    onClick={() => handleExtractFromChat(sc.id)}
+                    disabled={isExtracting}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      isSelected
+                        ? 'bg-amber-400/15 border-amber-400/70 text-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                        : 'bg-stone-900/60 border-stone-800 text-stone-300 hover:bg-stone-800/80 hover:border-stone-700'
+                    }`}
+                  >
+                    <span className="text-[9px] font-mono text-amber-400 font-bold block mb-0.5">
+                      {sc.badge}
+                    </span>
+                    <span className="font-serif text-xs font-semibold block line-clamp-1">
+                      {sc.title}
+                    </span>
+                    <span className="text-[10px] text-stone-400 block line-clamp-1 mt-0.5">
+                      {sc.subtitle}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dynamic Connection & AI Extraction Status Banner */}
+          <div className="p-3 rounded-2xl bg-gradient-to-r from-[#171d3a] to-[#12162e] border border-amber-300/30 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-full bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300">
+                <Sparkles className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-serif text-xs font-semibold text-stone-100">
+                    {card.source === 'conversation_extracted'
+                      ? 'Đã kết nối trực tiếp với cuộc hội thoại thực tế'
+                      : 'Đang dùng khung tình huống có thể tinh chỉnh'}
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-400/30 font-mono">
+                    KHÔNG ĐỂ MẶC ĐỊNH
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-400 mt-0.5 line-clamp-1">
+                  {card.sourceSnippet || 'Mọi trường thông tin đều có thể chỉnh sửa tự do hoặc đồng bộ từ hội thoại.'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleExtractFromChat(card.scenarioCategory || 'work_life')}
+              disabled={isExtracting}
+              className="px-3 py-1.5 rounded-xl bg-amber-400/15 hover:bg-amber-400/25 border border-amber-300/40 text-amber-200 text-xs font-serif flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3 h-3 text-amber-300 ${isExtracting ? 'animate-spin' : ''}`} />
+              <span>{isExtracting ? 'Đang trích xuất...' : 'Đồng bộ từ hội thoại'}</span>
+            </button>
+          </div>
+
           {/* Receipt banner if confirmed */}
           {receipt && (
             <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-400/40 text-emerald-200 space-y-2 animate-fadeIn">

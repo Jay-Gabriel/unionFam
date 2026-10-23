@@ -11,6 +11,10 @@ export interface BetaFeatureFlags {
   enableSafety: boolean;
   enableMemoryPermission: boolean;
   enableSessionOutcomeCheckpoint: boolean;
+  enableDecisionMode: boolean; // Có khả năng bật/tắt Decision Mode
+  enableMemory: boolean;       // Có khả năng bật/tắt Memory
+  cohortMin: number;           // 30
+  cohortMax: number;           // 50
 
   // --- TẠM ẨN TRONG BETA (Thu hẹp trải nghiệm, không xóa khỏi code) ---
   showProgressGame: boolean;
@@ -34,6 +38,10 @@ export const BETA_CONFIG: BetaFeatureFlags = {
   enableSafety: true,
   enableMemoryPermission: true,
   enableSessionOutcomeCheckpoint: true,
+  enableDecisionMode: true,
+  enableMemory: true,
+  cohortMin: 30,
+  cohortMax: 50,
 
   // Soft-hidden capabilities for beta
   showProgressGame: false,
@@ -46,6 +54,48 @@ export const BETA_CONFIG: BetaFeatureFlags = {
   showProactiveNotifications: false,
   showMockDemoUserData: false,
 };
+
+// Runtime flag getters and setters for Limited Beta Cohort
+const BETA_RUNTIME_KEY = 'unionfam_beta_runtime_flags';
+
+export function getBetaRuntimeFlags(): {
+  enableDecisionMode: boolean;
+  enableMemory: boolean;
+  cohortCount: number;
+} {
+  try {
+    const raw = localStorage.getItem(BETA_RUNTIME_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        enableDecisionMode: parsed.enableDecisionMode ?? true,
+        enableMemory: parsed.enableMemory ?? true,
+        cohortCount: parsed.cohortCount ?? 38,
+      };
+    }
+  } catch {
+    // ignore
+  }
+  return {
+    enableDecisionMode: BETA_CONFIG.enableDecisionMode,
+    enableMemory: BETA_CONFIG.enableMemory,
+    cohortCount: 38,
+  };
+}
+
+export function setBetaRuntimeFlags(flags: {
+  enableDecisionMode?: boolean;
+  enableMemory?: boolean;
+  cohortCount?: number;
+}): void {
+  try {
+    const current = getBetaRuntimeFlags();
+    const updated = { ...current, ...flags };
+    localStorage.setItem(BETA_RUNTIME_KEY, JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
 
 // Valid Session Outcomes defined in Master V8.7.2
 export type SessionOutcomeType =

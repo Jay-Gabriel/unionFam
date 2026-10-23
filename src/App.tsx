@@ -5,11 +5,15 @@ import { PortalContentSections } from './components/sections/PortalContentSectio
 import { CosmicStoryRoad } from './components/portals/CosmicStoryRoad';
 import { ExperimentModal } from './components/portals/ExperimentModal';
 import { WisdomModal } from './components/portals/WisdomModal';
-import { Volume2, VolumeX } from 'lucide-react';
+import { IncidentReportModal } from './components/beta/IncidentReportModal';
+import { BetaDashboardModal } from './components/beta/BetaDashboardModal';
+import { Volume2, VolumeX, AlertTriangle, Activity } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activePortal, setActivePortal] = useState<'none' | 'story_chat' | 'experiment' | 'wisdom'>('none');
   const [ambientSound, setAmbientSound] = useState(false);
+  const [showIncidentModal, setShowIncidentModal] = useState(false);
+  const [showBetaDashboard, setShowBetaDashboard] = useState(false);
   const contentSectionRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToContent = () => {
@@ -63,8 +67,30 @@ export const App: React.FC = () => {
         <SacredWaterCanvas />
       </div>
 
-      {/* Top Floating Ambient Sound Control */}
-      <div className="fixed top-6 right-6 z-40 flex items-center gap-3">
+      {/* Top Floating Controls: Ambient Sound, Báo Lỗi, Beta Dashboard */}
+      <div className="fixed top-6 right-6 z-40 flex items-center gap-2.5">
+        
+        {/* Nút Báo Lỗi (Limited Beta Incident Report) */}
+        <button
+          onClick={() => setShowIncidentModal(true)}
+          title="Báo cáo lỗi / Góp ý sự cố (Limited Beta)"
+          className="h-10 px-3 rounded-full bg-stone-900/60 hover:bg-stone-800/90 border border-rose-400/40 backdrop-blur-md flex items-center gap-1.5 text-rose-300 text-xs font-serif transition shadow-lg hover:scale-105 cursor-pointer"
+        >
+          <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+          <span className="hidden sm:inline">Báo lỗi</span>
+        </button>
+
+        {/* Nút Beta Dashboard Giám Sát */}
+        <button
+          onClick={() => setShowBetaDashboard(true)}
+          title="Mở Dashboard Giám Sát Tối Thiểu (30-50 users)"
+          className="h-10 px-3 rounded-full bg-stone-900/60 hover:bg-stone-800/90 border border-indigo-400/40 backdrop-blur-md flex items-center gap-1.5 text-indigo-300 text-xs font-serif transition shadow-lg hover:scale-105 cursor-pointer"
+        >
+          <Activity className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="hidden sm:inline">Beta Dashboard</span>
+        </button>
+
+        {/* Sound toggle */}
         <button
           onClick={toggleAudio}
           title={ambientSound ? 'Tắt âm thanh tĩnh tại' : 'Bật tần số thư giãn 174Hz'}
@@ -101,6 +127,18 @@ export const App: React.FC = () => {
         isOpen={activePortal === 'wisdom'}
         onClose={() => setActivePortal('none')}
         onBackToArches={() => setActivePortal('none')}
+      />
+
+      {/* Limited Beta Incident Report Modal */}
+      <IncidentReportModal
+        isOpen={showIncidentModal}
+        onClose={() => setShowIncidentModal(false)}
+      />
+
+      {/* Limited Beta Telemetry Dashboard Modal */}
+      <BetaDashboardModal
+        isOpen={showBetaDashboard}
+        onClose={() => setShowBetaDashboard(false)}
       />
 
     </div>

@@ -19,7 +19,9 @@ import {
   Check,
   X,
   ArrowRight,
-  Layers
+  Layers,
+  AlertTriangle,
+  Activity
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getStoredGeminiKey, saveStoredGeminiKey, clearStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
@@ -27,6 +29,9 @@ import { BETA_CONFIG, SessionOutcomeType } from '../../config/betaFlags';
 import { saveConversationToCloud, loadConversationFromCloud, saveMemoryToCloud } from '../../services/supabaseService';
 import { createExperimentFromSession } from '../../services/experimentService';
 import { DecisionCardModal } from '../decision/DecisionCardModal';
+import { IncidentReportModal } from '../beta/IncidentReportModal';
+import { BetaDashboardModal } from '../beta/BetaDashboardModal';
+import { CORE_PROBLEM_SCENARIOS, extractDecisionCardFromConversation, ProblemScenario } from '../../services/decisionService';
 
 interface CosmicStoryRoadProps {
   onBackToArches: () => void;
@@ -81,7 +86,20 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
   const [isSessionClosed, setIsSessionClosed] = useState(false);
   const [checkpointNote, setCheckpointNote] = useState('');
   const [showDecisionCard, setShowDecisionCard] = useState(false);
+  const [showIncidentModal, setShowIncidentModal] = useState(false);
+  const [showBetaDashboard, setShowBetaDashboard] = useState(false);
+  const [activeScenarioId, setActiveScenarioId] = useState<'work_life' | 'purpose' | 'major_decision' | null>(null);
   const [conversationId, setConversationId] = useState<string>(() => Date.now().toString());
+
+  const handleSelectScenario = async (scenario: ProblemScenario) => {
+    setActiveScenarioId(scenario.id);
+    submitMessage(scenario.starterPrompt);
+    // Tự động kết nối cuộc trò chuyện với Decision Card ngay lập tức (không để mặc định)
+    extractDecisionCardFromConversation(
+      [{ sender: 'user', text: scenario.starterPrompt }],
+      scenario.id
+    );
+  };
 
   // Tải lại hội thoại đã lưu (từ Supabase khi đã đăng nhập Google hoặc LocalStorage)
   useEffect(() => {
@@ -467,20 +485,41 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
               </span>
             </button>
 
-            {/* Decision Card Button (V8.7.5 & V1.0) */}
+            {/* Decision Card Button (V8.7.5 & V1.0 - Connected with conversation) */}
             <button
               onClick={() => setShowDecisionCard(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-400/40 bg-stone-900/80 hover:bg-stone-800 text-amber-200 text-xs font-serif transition shadow-[0_0_12px_rgba(245,158,11,0.15)] hover:scale-105 cursor-pointer"
-              title="Mở Decision Card (Bản nháp 7 mục)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-400/50 bg-[#151a32] hover:bg-[#1d2344] text-amber-200 text-xs font-serif transition shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:scale-105 cursor-pointer"
+              title="Mở Decision Card (Đã kết nối với hội thoại thực tế)"
             >
               <Layers className="w-3.5 h-3.5 text-amber-400" />
               <span>Decision Card</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title="Đang kết nối hội thoại" />
+            </button>
+
+            {/* Limited Beta: Nút Báo Lỗi (Report Incident) */}
+            <button
+              onClick={() => setShowIncidentModal(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-rose-400/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-serif transition cursor-pointer"
+              title="Báo cáo lỗi / Sự cố kỹ thuật (Limited Beta)"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden sm:inline">Báo lỗi</span>
+            </button>
+
+            {/* Limited Beta: Dashboard Tối Thiểu */}
+            <button
+              onClick={() => setShowBetaDashboard(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-indigo-400/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-serif transition cursor-pointer"
+              title="Mở Dashboard Giám Sát Tối Thiểu (30-50 users)"
+            >
+              <Activity className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">Beta Dashboard</span>
             </button>
 
             {onGoToExperiments && (
               <button
                 onClick={onGoToExperiments}
-                className="px-4 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/50 text-amber-200 text-xs font-serif transition flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/50 text-amber-200 text-xs font-serif transition flex items-center gap-1.5"
               >
                 <span>Sang Cổng 2</span>
                 <span>→</span>
@@ -751,35 +790,40 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                 <div ref={chatEndRef} className="h-2 w-full" />
               </div>
 
-              {/* Quick Reflection Prompts (Product Brief V1.0 - Launch Beta Profile) */}
-              <div className="px-5 py-2.5 bg-stone-900/60 border-t border-white/5 flex gap-2 overflow-x-auto text-[11px] font-serif items-center">
-                <span className="text-[10px] text-stone-400 font-mono flex items-center pr-1 uppercase tracking-wider shrink-0">
-                  Lựa chọn mở đầu:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => submitMessage('Công việc đang lấy quá nhiều thời gian.')}
-                  disabled={isSessionClosed}
-                  className="px-3 py-1.5 rounded-full bg-amber-400/15 hover:bg-amber-400/30 text-amber-200 border border-amber-400/30 transition whitespace-nowrap shrink-0 hover:scale-105"
-                >
-                  "Công việc đang lấy quá nhiều thời gian."
-                </button>
-                <button
-                  type="button"
-                  onClick={() => submitMessage('Tôi đang cân nhắc một thay đổi.')}
-                  disabled={isSessionClosed}
-                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-amber-400/20 text-stone-300 hover:text-amber-200 border border-white/10 transition whitespace-nowrap shrink-0 hover:scale-105"
-                >
-                  "Tôi đang cân nhắc một thay đổi."
-                </button>
-                <button
-                  type="button"
-                  onClick={() => submitMessage('Tôi chưa biết, chỉ muốn bắt đầu nói.')}
-                  disabled={isSessionClosed}
-                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-amber-400/20 text-stone-300 hover:text-amber-200 border border-white/10 transition whitespace-nowrap shrink-0 hover:scale-105"
-                >
-                  "Tôi chưa biết, chỉ muốn bắt đầu nói."
-                </button>
+              {/* 3 Core Problem Scenarios (Limited Beta - Product Brief V1.0) */}
+              <div className="px-4 py-2.5 bg-[#101426] border-t border-white/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-amber-300/80 font-mono flex items-center pr-1 uppercase tracking-wider shrink-0">
+                    3 TÌNH HUỐNG TRỌNG TÂM (KẾT NỐI VÀO CARD):
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowDecisionCard(true)}
+                    className="text-[10px] font-mono text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Xem Thẻ Quyết Định</span>
+                  </button>
+                </div>
+
+                <div className="flex gap-2 overflow-x-auto pb-1 text-[11px] font-serif items-center scrollbar-none">
+                  {CORE_PROBLEM_SCENARIOS.map(sc => (
+                    <button
+                      key={sc.id}
+                      type="button"
+                      onClick={() => handleSelectScenario(sc)}
+                      disabled={isSessionClosed}
+                      className={`px-3 py-1.5 rounded-full border transition whitespace-nowrap shrink-0 hover:scale-105 flex items-center gap-1.5 cursor-pointer ${
+                        activeScenarioId === sc.id
+                          ? 'bg-amber-400/25 border-amber-300 text-amber-100 font-semibold shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                          : 'bg-stone-900/80 border-stone-700/80 text-stone-300 hover:text-amber-200 hover:border-amber-400/40'
+                      }`}
+                    >
+                      <span className="text-[9px] font-mono font-bold text-amber-400">{sc.badge}:</span>
+                      <span>{sc.title}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Input Box */}
@@ -954,11 +998,25 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
           </div>
         )}
 
-        {/* Decision Card Modal (V8.7.5 & V1.0) */}
+        {/* Decision Card Modal (V8.7.5 & V1.0 - Connected with live conversation messages) */}
         <DecisionCardModal
           isOpen={showDecisionCard}
           onClose={() => setShowDecisionCard(false)}
           onGoToExperiment={onGoToExperiments}
+          messages={messages}
+        />
+
+        {/* Limited Beta: Báo cáo sự cố / Lỗi (Incident Report Modal) */}
+        <IncidentReportModal
+          isOpen={showIncidentModal}
+          onClose={() => setShowIncidentModal(false)}
+          contextSnippet={messages.filter(m => m.sender === 'user').slice(-1)[0]?.text}
+        />
+
+        {/* Limited Beta: Dashboard Giám Sát Tối Thiểu (Quality, Safety, Experience, Operations) */}
+        <BetaDashboardModal
+          isOpen={showBetaDashboard}
+          onClose={() => setShowBetaDashboard(false)}
         />
 
       </div>

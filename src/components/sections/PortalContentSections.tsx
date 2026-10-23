@@ -19,6 +19,7 @@ import {
 import confetti from 'canvas-confetti';
 import { getStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
 import { BETA_CONFIG } from '../../config/betaFlags';
+import { CORE_PROBLEM_SCENARIOS, extractDecisionCardFromConversation } from '../../services/decisionService';
 
 interface PortalContentSectionsProps {
   onOpenPortalModal: (portal: 'story_chat' | 'experiment' | 'wisdom') => void;
@@ -81,6 +82,73 @@ export const PortalContentSections: React.FC<PortalContentSectionsProps> = ({ on
   return (
     <div className="w-full bg-[#0a0814] text-stone-100 relative z-20 py-20 px-4 sm:px-6 lg:px-12 space-y-36 border-t border-amber-300/30">
       
+      {/* =========================================================================
+          3 TÌNH HUỐNG TRỌNG TÂM — ĐỒNG BỘ TRỰC TIẾP VỚI THẺ QUYẾT ĐỊNH
+          (Công việc quá tải • Mất phương hướng • Mắc kẹt ngã rẽ)
+         ========================================================================= */}
+      <section className="max-w-6xl mx-auto space-y-8">
+        <div className="text-center space-y-3 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-mono uppercase tracking-widest">
+            <Layers className="w-3.5 h-3.5" />
+            <span>3 TÌNH HUỐNG TRỌNG TÂM • KẾT NỐI VÀO CARD</span>
+          </div>
+          <h2 className="font-playfair text-3xl sm:text-5xl text-amber-100 leading-tight">
+            Bạn Đang Đối Diện Với Điều Gì Lúc Này?
+          </h2>
+          <p className="font-sans text-stone-300 text-sm sm:text-base leading-relaxed">
+            Mỗi tình huống đều kết nối trực tiếp với <strong>Thẻ Quyết Định</strong> và <strong>Bước Thử 7 Ngày</strong> riêng biệt. Bạn có thể chọn ngay để bắt đầu đối thoại:
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {CORE_PROBLEM_SCENARIOS.map(sc => (
+            <div
+              key={sc.id}
+              className="p-6 rounded-3xl bg-[#12162a]/90 border border-amber-300/30 hover:border-amber-400/70 transition-all duration-300 flex flex-col justify-between space-y-5 shadow-lg group hover:-translate-y-1"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                    {sc.badge}
+                  </span>
+                  <span className="text-[10px] text-stone-400 font-mono">Decision Mode</span>
+                </div>
+
+                <h3 className="font-serif text-lg font-bold text-stone-100 group-hover:text-amber-200 transition">
+                  {sc.title}
+                </h3>
+
+                <p className="text-xs text-stone-300 font-sans leading-relaxed">
+                  {sc.painPoint}
+                </p>
+
+                <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-400/20 text-xs text-amber-200 space-y-1">
+                  <span className="font-serif font-semibold block text-[11px] text-amber-300 uppercase tracking-wider">
+                    Life Lab giúp bạn:
+                  </span>
+                  <p className="leading-snug text-stone-200">{sc.solutionHelp.replace('Life Lab giúp bạn: ', '')}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  extractDecisionCardFromConversation(
+                    [{ sender: 'user', text: sc.starterPrompt }],
+                    sc.id
+                  );
+                  onOpenPortalModal('story_chat');
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-serif font-semibold text-xs transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
+              >
+                <span>Bắt đầu đối thoại & Mở Card</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* =========================================================================
           SECTION 1: CỔNG THỨ NHẤT — CÂU CHUYỆN THỨC TỈNH & KHUNG CHAT ĐỐI THOẠI
           (Tương ứng About / Storytelling / Reflective Conversation)

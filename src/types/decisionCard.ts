@@ -28,6 +28,9 @@ export interface DecisionCardData {
   version: number;
   status: 'DRAFT' | 'USER_REVIEW' | 'CONFIRMED' | 'PAUSED' | 'CLOSED';
   title: string;
+  source?: 'conversation_extracted' | 'scenario_template' | 'user_created';
+  sourceSnippet?: string;
+  scenarioCategory?: 'work_life' | 'purpose' | 'major_decision' | 'custom';
   // 1. Tôi đang quyết định điều gì?
   decisionQuestion: string;
   // 2. Điều quan trọng với tôi (3-5 criteria)
