@@ -559,7 +559,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   className="text-[10px] text-amber-400/90 hover:underline flex items-center gap-1"
                 >
                   <RefreshCw className="w-3 h-3" />
-                  <span>Dùng Key Mặc Định</span>
+                  <span>Dùng Biến Môi Trường (.env)</span>
                 </button>
                 <div className="flex gap-2">
                   <button

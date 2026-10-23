@@ -1,9 +1,14 @@
 // Life Lab Companion Service (V8.7.5 Verified Implementation Standard & Decision Mode V1.0)
 // Dedicated for young professionals (23-35) balancing work, life, and personal agency
 
-export const DEFAULT_ENCODED_KEY = 'QVEuQWI4Uk42TFk1V1RBaTAtVGFacGlMTnB1OEJ0WjVDb1FPY0d5MjltdTl6TW81VncxeHc=';
-
 export const getStoredGeminiKey = (): string => {
+  // 1. Kiểm tra biến môi trường an toàn (Vite .env hoặc Vercel Environment Variables)
+  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  if (envKey && envKey.trim().length > 10) {
+    return envKey.trim();
+  }
+
+  // 2. Kiểm tra key do người dùng tự nhập trong phiên trình duyệt (LocalStorage)
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('life_lab_gemini_key');
@@ -13,20 +18,6 @@ export const getStoredGeminiKey = (): string => {
     } catch {
       // Ignore localStorage errors
     }
-  }
-
-  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
-  if (envKey && envKey.trim().length > 10) {
-    return envKey.trim();
-  }
-
-  try {
-    const decoded = atob(DEFAULT_ENCODED_KEY);
-    if (decoded && decoded.trim().length > 10) {
-      return decoded.trim();
-    }
-  } catch {
-    // decode fallback
   }
 
   return '';
