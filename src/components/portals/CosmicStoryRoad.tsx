@@ -472,7 +472,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   ? apiKey.startsWith('AIzaSy')
                     ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/30'
                     : 'bg-sky-500/20 border-sky-400/60 text-sky-200 hover:bg-sky-500/30'
-                  : 'bg-amber-500/20 border-amber-300/50 text-amber-200 hover:bg-amber-500/30'
+                  : 'bg-amber-500/20 border-amber-400/60 text-amber-300 hover:bg-amber-500/30 animate-pulse'
               }`}
             >
               <Key className="w-3.5 h-3.5" />
@@ -481,7 +481,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   ? apiKey.startsWith('AIzaSy')
                     ? 'Gemini AI: Sẵn Sàng (AI Studio)'
                     : 'Gemini Token: Đã Nhận'
-                  : 'Sanctuary Dialog Engine'}
+                  : 'Chế độ Ngoại tuyến (Chưa có Key)'}
               </span>
             </button>
 
@@ -738,6 +738,23 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   </button>
                 </div>
               </div>
+
+              {/* Thông báo minh bạch khi chưa có Gemini API Key trên hosting */}
+              {!apiKey && (
+                <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between text-[11px] text-amber-200/90 font-serif">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Hệ thống đang chạy Bộ phản chiếu Ngoại tuyến (chưa nhận API Key trên Vercel).</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowKeyInput(true)}
+                    className="underline hover:text-amber-100 font-semibold cursor-pointer shrink-0 ml-2"
+                  >
+                    Dán Key Gemini
+                  </button>
+                </div>
+              )}
 
               {/* Messages Flow Area with Dedicated Ref and Auto-Scroll */}
               <div
