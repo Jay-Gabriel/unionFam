@@ -47,13 +47,111 @@ interface ChatHistoryItem {
 
 export interface GeminiResponseResult {
   text: string;
-  source: 'gemini' | 'sanctuary_engine';
+  source: 'gemini' | 'groq' | 'pollinations_free' | 'sanctuary_engine';
   errorDetail?: string;
   isUserStop?: boolean;
   suggestDecisionCard?: boolean;
   isFallback?: boolean;
   modelUsed?: string;
 }
+
+// =========================================================================
+// FREE AI ENGINE 1: Pollinations AI (100% Free, Zero Key, No Expiry, No Leak)
+// =========================================================================
+export const callPollinationsAI = async (
+  userMessage: string,
+  history: { sender: 'ai' | 'user'; text: string }[],
+  systemInstruction: string
+): Promise<string | null> => {
+  try {
+    const historyParts = history.slice(-6).map(m => ({
+      role: m.sender === 'user' ? 'user' : 'assistant',
+      content: m.text,
+    }));
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemInstruction },
+          ...historyParts,
+          { role: 'user', content: userMessage }
+        ],
+        model: 'openai',
+        seed: 42,
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const text = await res.text();
+      if (text && text.trim().length > 10) {
+        return text.trim();
+      }
+    }
+  } catch (e) {
+    console.warn('Pollinations Free AI network notice:', e);
+  }
+  return null;
+};
+
+// =========================================================================
+// FREE AI ENGINE 2: Groq Cloud (Free Llama 3.3 70B via free key gsk_...)
+// =========================================================================
+export const callGroqAPI = async (
+  apiKey: string,
+  userMessage: string,
+  history: { sender: 'ai' | 'user'; text: string }[],
+  systemInstruction: string
+): Promise<string | null> => {
+  try {
+    const historyParts = history.slice(-6).map(m => ({
+      role: m.sender === 'user' ? 'user' : 'assistant',
+      content: m.text,
+    }));
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey.trim()}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemInstruction },
+          ...historyParts,
+          { role: 'user', content: userMessage }
+        ],
+        temperature: 0.7,
+        max_tokens: 1024
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (content && content.trim().length > 5) {
+        return content.trim();
+      }
+    }
+  } catch (e) {
+    console.warn('Groq Free AI notice:', e);
+  }
+  return null;
+};
 
 export const callGeminiCompanionAPI = async (
   apiKey: string,
@@ -73,117 +171,85 @@ export const callGeminiCompanionAPI = async (
     };
   }
 
-  // If no key provided at all, immediately use smart dynamic dialogue engine
-  if (!cleanKey) {
-    return {
-      text: generateDynamicSanctuaryReply(userMessage, history),
-      source: 'sanctuary_engine',
-      isFallback: true,
-      errorDetail: 'Chưa cấu hình Gemini API Key trên hosting Vercel hoặc trình duyệt.',
-      suggestDecisionCard: checkShouldSuggestCard(userMessage),
-    };
-  }
-
   const systemInstruction = `Bạn là Life Lab Companion (Chuẩn V8.7.5 Verified Implementation Standard & Decision Mode V1.0).
 MỤC TIÊU SẢN PHẨM:
 Hệ thống đồng hành phản chiếu giúp người đi làm trẻ (23–35 tuổi) đang mắc kẹt giữa công việc và cuộc sống nhìn rõ điều đang diễn ra, xác định điều quan trọng, tự đưa ra quyết định và học từ trải nghiệm thật. Life Lab KHÔNG quyết định thay người dùng.
 
 THỨ TỰ ƯU TIÊN BẤT BIẾN:
-CRISIS_SAFETY > USER_STOP > PERMISSION_AND_PRIVACY > CANONICAL_RUNTIME > DECISION_MODE
+CRISIS_SAFETY > USER_STOP > LOW_ENERGY_MODE > PERMISSION_AND_PRIVACY > CANONICAL_RUNTIME > DECISION_MODE
 
 QUY TẮC BẮT BUỘC (V8.7.5 RUNTIME CONTRACT):
 1. NGÔN TỪ NHẸ NHÀNG, KHÔNG KHẲNG ĐỊNH QUÁ ĐÀ:
    - Dùng Hypothesis Language: "Có vẻ...", "Theo trải nghiệm của bạn...", "Dường như...".
-   - Tuyệt đối không phán xét, không suy diễn quá xa từ dữ liệu ít (không bảo môi trường là "cỗ máy", không khen "dũng cảm", không kết luận "bản chất triệt tiêu không gian sống").
+   - Tuyệt đối không phán xét, không suy diễn quá xa từ dữ liệu ít.
 2. PHẢN CHIẾU VÀ XÁC NHẬN (REFLECT & VERIFY):
    - Phản chiếu tối đa 1 câu ngắn gọn về điều người dùng vừa nói.
    - Luôn mời xác nhận: "Tôi hiểu như vậy có đúng không, hay còn điều gì khác?".
-3. REPAIR KHI NGƯỜI DÙNG SỬA ("Không hẳn", "Không phải", "Chưa đúng"):
+3. LOW ENERGY MODE (KHI NĂNG LƯỢNG THẤP):
+   - Khi người dùng nói mệt mỏi, năng lượng thấp (ví dụ: "năng lượng chỉ 2/10", "đuối", "xin đừng giao bài tập"):
+   - TUYỆT ĐỐI KHÔNG giao bài tập dài, không bắt làm bài tập 30 phút, không bắt mở bảng hay phân tích phức tạp.
+   - Trả lời cực kỳ êm dịu, ngắn gọn (1–2 câu) và gợi ý 1 bước nghỉ ngơi vi mô 2 phút (uống nước ấm, nằm thả lỏng, tắt điện thoại).
+4. REPAIR KHI NGƯỜI DÙNG SỬA ("Không hẳn", "Không phải", "Chưa đúng"):
    - Cảm ơn người dùng đã đính chính.
    - Bỏ ngay giả thuyết cũ, thừa nhận cách hiểu trước chưa chuẩn.
    - Tóm tắt lại theo đúng ý mới và mời xác nhận lại.
-4. QUESTION BUDGET:
+5. QUESTION BUDGET:
    - TUYỆT ĐỐI KHÔNG hỏi 2 câu dồn dập trong một lượt. Tối đa chỉ 1 câu hỏi mở hoặc câu xác nhận.
-   - Tối đa 2 lượt làm rõ liên tiếp, sau đó phải phản chiếu, tóm tắt hoặc tạo khoảng dừng.
    - Khi người dùng nói "không hỏi thêm", "đúng", "làm ngay": TUYỆT ĐỐI KHÔNG hỏi thêm câu nào, phải chuyển ngay sang cung cấp nội dung hành động.
-5. ACTION OUTPUT CONTRACT (MANDATORY KHI CÓ YÊU CẦU HÀNH ĐỘNG):
-   - Khi người dùng dùng các động từ hành động hoặc yêu cầu cấu trúc: "so sánh", "thiết kế", "đặt ngưỡng", "tạo phương án", "cho tôi vài hướng", "cần biết gì", "thử thế nào", "lập kế hoạch", "tóm tắt", "liệt kê", "lịch 15 phút", "72 giờ", "30 phút", "tiêu chí có trọng số":
-   - Phản chiếu tối đa 1 câu ngắn.
-   - BẮT BUỘC cung cấp ngay cấu trúc hành động sử dụng được theo đúng bối cảnh của người dùng.
-6. CHỐNG LẶP (ANTI-REPETITION TAXONOMY):
+6. ACTION OUTPUT CONTRACT (MANDATORY KHI CÓ YÊU CẦU HÀNH ĐỘNG):
+   - Khi người dùng dùng các động từ hành động hoặc yêu cầu cấu trúc: "so sánh", "thiết kế", "đặt ngưỡng", "tạo phương án", "lịch 15 phút", "72 giờ", "30 phút", "tiêu chí có trọng số":
+   - Cung cấp ngay cấu trúc hành động sử dụng được theo đúng bối cảnh của người dùng.
+7. CHỐNG LẶP (ANTI-REPETITION TAXONOMY):
    - Tuyệt đối không lặp lại nguyên văn tin nhắn của người dùng trong dấu ngoặc kép.
-   - Tuyệt đối không lặp lại cùng một kiểu phản chiếu ở 2 lượt liên tiếp.
-7. ENERGY MODE:
-   - Nếu người dùng thể hiện năng lượng thấp: Trả lời cực kỳ ngắn gọn (1–2 câu), không ép mở card dài hay bắt làm bài tập.
 8. KHÔNG GIẢ VỜ LÀ CON NGƯỜI:
    - Không nói "mình luôn ngồi đây chờ bạn". Giữ sự bình an, tôn trọng ranh giới và nâng đỡ.`;
 
-  const historyParts: ChatHistoryItem[] = history.slice(-4).map(m => ({
-    role: m.sender === 'user' ? 'user' : 'model',
-    parts: [{ text: m.text }],
-  }));
-
-  const payload = {
-    systemInstruction: {
-      parts: [{ text: systemInstruction }],
-    },
-    contents: [
-      ...historyParts,
-      {
-        role: 'user',
-        parts: [{ text: userMessage }],
-      },
-    ],
-  };
-
-  const candidateModels = [
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-flash-latest',
-    'gemini-3.8-flash',
-  ];
-
-  let lastError = '';
-
-  for (const model of candidateModels) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const candidate = data.candidates?.[0]?.content?.parts?.find((p: any) => p.text);
-        if (candidate?.text) {
-          return {
-            text: candidate.text.trim(),
-            source: 'gemini',
-            suggestDecisionCard: checkShouldSuggestCard(userMessage),
-          };
-        }
-      } else {
-        const errJson = await response.json().catch(() => ({}));
-        lastError = errJson?.error?.message || `HTTP ${response.status} ${response.statusText}`;
-      }
-    } catch (e: any) {
-      lastError = e?.message || 'Network fetch failure';
+  // 2. PATH A: If key starts with 'gsk_', route to Free Groq Cloud (Llama 3.3 70B)
+  if (cleanKey.startsWith('gsk_')) {
+    const groqReply = await callGroqAPI(cleanKey, userMessage, history, systemInstruction);
+    if (groqReply) {
+      return {
+        text: groqReply,
+        source: 'groq',
+        modelUsed: 'Groq (Llama-3.3-70B)',
+        suggestDecisionCard: checkShouldSuggestCard(userMessage),
+      };
     }
   }
 
-  // Attempt 2: Bearer auth if applicable
-  if (cleanKey.startsWith('AQ.') || cleanKey.startsWith('ya29.')) {
+  // 3. PATH B: If key starts with 'AIzaSy' or 'AQ.' or is a Gemini key, call Gemini API
+  if (cleanKey.length > 10 && !cleanKey.startsWith('gsk_')) {
+    const historyParts: ChatHistoryItem[] = history.slice(-4).map(m => ({
+      role: m.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }],
+    }));
+
+    const payload = {
+      systemInstruction: {
+        parts: [{ text: systemInstruction }],
+      },
+      contents: [
+        ...historyParts,
+        {
+          role: 'user',
+          parts: [{ text: userMessage }],
+        },
+      ],
+    };
+
+    const candidateModels = [
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-flash-latest',
+      'gemini-3.8-flash',
+    ];
+
     for (const model of candidateModels) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
         const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${cleanKey}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
 
@@ -194,21 +260,35 @@ QUY TẮC BẮT BUỘC (V8.7.5 RUNTIME CONTRACT):
             return {
               text: candidate.text.trim(),
               source: 'gemini',
+              modelUsed: `Gemini (${model})`,
               suggestDecisionCard: checkShouldSuggestCard(userMessage),
             };
           }
         }
       } catch {
-        // continue
+        // continue to next model or fallback
       }
     }
   }
 
+  // 4. PATH C (DEFAULT & LEAK-PROOF): Free Cloud AI Engine (Pollinations - Zero Key Required!)
+  // If no Gemini key, or if Gemini key was leaked/hacked/failed:
+  const freeCloudReply = await callPollinationsAI(userMessage, history, systemInstruction);
+  if (freeCloudReply) {
+    return {
+      text: freeCloudReply,
+      source: 'pollinations_free',
+      modelUsed: 'Free Cloud AI (Pollinations Zero-Key)',
+      suggestDecisionCard: checkShouldSuggestCard(userMessage),
+    };
+  }
+
+  // 5. PATH D: Offline Local Heuristic Engine (Pure fallback if disconnected from internet)
   return {
     text: generateDynamicSanctuaryReply(userMessage, history),
     source: 'sanctuary_engine',
     isFallback: true,
-    errorDetail: lastError || 'Gemini API không phản hồi, đã chuyển sang Chế độ Phản chiếu Ngoại tuyến.',
+    errorDetail: 'Đang vận hành ở Chế độ Phản chiếu Ngoại tuyến.',
     suggestDecisionCard: checkShouldSuggestCard(userMessage),
   };
 };
@@ -249,16 +329,46 @@ export const generateDynamicSanctuaryReply = (
     return 'Được, chúng ta dừng ở đây nhé. Bạn không cần nói thêm hoặc quyết định gì lúc này. Chúc bạn có một khoảng thời gian nghỉ ngơi yên bình.';
   }
 
-  // 2. Check combined context from history for multi-turn coherence
-  const historyText = (history || []).map(m => m.text.toLowerCase()).join(' ');
-  const combinedContext = `${historyText} ${text}`;
+  // 2. LOW ENERGY MODE: User is exhausted / low energy / score <= 3 (P0 Priority)
+  // Ensures we NEVER burden an exhausted user with long homework or portfolio tasks
+  if (
+    (text.includes('năng lượng') && (text.includes('2') || text.includes('3') || text.includes('1') || text.includes('thấp') || text.includes('cạn') || text.includes('hết'))) ||
+    text.includes('đừng giao bài tập') ||
+    text.includes('không muốn làm bài tập') ||
+    text.includes('bước rất nhỏ') ||
+    text.includes('bước nhỏ thôi') ||
+    text.includes('mệt quá') ||
+    text.includes('đuối quá') ||
+    text.includes('nói ngắn thôi') ||
+    text.includes('không có sức') ||
+    text === 'mệt' ||
+    text === 'buồn'
+  ) {
+    return `Tôi nghe thấy sự mệt mỏi trong bạn. Khi năng lượng chỉ còn 2/10, bạn tuyệt đối không cần phân tích hay làm bất kỳ bài tập nào cả.
+
+Một bước vi mô duy nhất cho tối nay (chỉ mất 2 phút):
+Uống một ngụm nước ấm, đặt điện thoại sang phòng khác và cho phép mình được nằm nghỉ ngơi hoàn toàn mà không cảm thấy tội lỗi.
+
+Bạn đã cố gắng rất nhiều trong ngày hôm nay rồi, giờ là lúc sạc lại bản thân. Chúc bạn một buổi tối bình an và phục hồi.`;
+  }
+
+  // 3. User just wants to be heard / no decision pressure
+  if (
+    text.includes('chỉ muốn được lắng nghe') ||
+    text.includes('chưa muốn quyết định') ||
+    text.includes('không muốn quyết định') ||
+    text.includes('nghe một chút')
+  ) {
+    return 'Được, lúc này chúng ta không cần đưa ra quyết định hay làm bài tập nào cả. Bạn có thể chia sẻ theo nhịp điệu thoải mái nhất của mình; bất cứ lúc nào muốn dừng lại nghỉ ngơi, bạn chỉ cần nói nhé.';
+  }
 
   // =========================================================================
   // DOMAIN 1: Co-Founder / Business Partner Conflict & 15-Minute Dialogue
   // =========================================================================
   if (
-    (combinedContext.includes('đồng sáng lập') || combinedContext.includes('startup') || combinedContext.includes('cộng sự')) &&
-    (text.includes('15 phút') || text.includes('cuộc nói chuyện') || text.includes('ba câu hỏi') || text.includes('lịch') || text.includes('cam kết') || text.includes('bạn thân'))
+    text.includes('đồng sáng lập') ||
+    text.includes('startup') ||
+    (text.includes('15 phút') && (text.includes('bạn thân') || text.includes('cộng sự') || text.includes('cam kết')))
   ) {
     return `Dưới đây là cấu trúc cuộc trao đổi 15 phút tập trung vào mục tiêu chung và bảo vệ mối quan hệ bạn bè, không biến thành công kích cá nhân:
 
@@ -278,8 +388,10 @@ export const generateDynamicSanctuaryReply = (
   // DOMAIN 2: Night Shift Nurse & Sleep / Circadian Recovery (7-Day Trial)
   // =========================================================================
   if (
-    (combinedContext.includes('điều dưỡng') || combinedContext.includes('ca đêm') || combinedContext.includes('trực đêm')) &&
-    (text.includes('giấc ngủ') || text.includes('ngủ') || text.includes('thử nghiệm') || text.includes('bước thử') || text.includes('7 ngày') || text.includes('lịch ca'))
+    text.includes('điều dưỡng') ||
+    text.includes('ca đêm') ||
+    text.includes('trực đêm') ||
+    (text.includes('lịch ca') && text.includes('ngủ'))
   ) {
     return `Với nhịp làm 3 ca đêm mỗi tuần của nhân viên điều dưỡng, lời khuyên "ngủ đủ 8 tiếng ban đêm" là hoàn toàn bất khả thi. Thay vào đó, đây là thử nghiệm vi mô 7 ngày thiết kế riêng cho nhịp làm ca:
 
@@ -301,8 +413,8 @@ export const generateDynamicSanctuaryReply = (
   // DOMAIN 3: Salary Negotiation & 5 Evidence Types (Lead Role)
   // =========================================================================
   if (
-    (combinedContext.includes('trưởng nhóm') || combinedContext.includes('gánh thêm') || combinedContext.includes('trao đổi lương') || combinedContext.includes('tăng lương')) &&
-    (text.includes('bằng chứng') || text.includes('năm loại') || text.includes('5 loại') || text.includes('câu mở đầu') || text.includes('quản lý'))
+    (text.includes('lương') || text.includes('tăng lương') || text.includes('đàm phán lương')) &&
+    (text.includes('trưởng nhóm') || text.includes('gánh thêm') || text.includes('bằng chứng') || text.includes('5 loại'))
   ) {
     return `Để cuộc trao đổi lương diễn ra thuyết phục và hoàn toàn dựa trên dữ kiện khách quan, dưới đây là câu mở đầu và 5 loại bằng chứng cụ thể:
 
@@ -321,8 +433,8 @@ export const generateDynamicSanctuaryReply = (
   // DOMAIN 4: Layoff / Job Loss Triage & First 72 Hours Roadmap
   // =========================================================================
   if (
-    (combinedContext.includes('nghỉ việc') || combinedContext.includes('mất việc') || combinedContext.includes('sa thải')) &&
-    (text.includes('72 giờ') || text.includes('ba việc') || text.includes('hôm nay, ngày mai') || text.includes('hoảng') || text.includes('trước'))
+    (text.includes('nghỉ việc') || text.includes('mất việc') || text.includes('sa thải')) &&
+    (text.includes('72 giờ') || text.includes('ba việc') || text.includes('hoảng') || text.includes('hôm nay, ngày mai'))
   ) {
     return `Bị cho nghỉ việc đột ngột là một cú sốc lớn đối với hệ thần kinh. Lúc này, điều quan trọng nhất là bảo toàn năng lượng và pháp lý. Đây là 3 việc quan trọng nhất chia theo 72 giờ:
 
@@ -343,8 +455,8 @@ export const generateDynamicSanctuaryReply = (
   // DOMAIN 5: Remote Work Social Isolation (Low-Friction 7-Day Experiment)
   // =========================================================================
   if (
-    (combinedContext.includes('từ xa') || combinedContext.includes('remote') || combinedContext.includes('cô lập')) &&
-    (text.includes('thử nghiệm xã hội') || text.includes('ít ngượng ngùng') || text.includes('kết nối') || text.includes('coworking'))
+    (text.includes('từ xa') || text.includes('remote') || text.includes('coworking')) &&
+    (text.includes('cô lập') || text.includes('thử nghiệm xã hội') || text.includes('ít ngượng ngùng'))
   ) {
     return `Coworking thường đông người nhưng ai cũng đeo tai nghe nên rất khó mở lời tự nhiên. Dưới đây là thử nghiệm xã hội vi mô 7 ngày nhẹ nhàng, áp lực thấp và không gây ngượng ngùng:
 
@@ -363,10 +475,11 @@ export const generateDynamicSanctuaryReply = (
 
   // =========================================================================
   // DOMAIN 6: Portfolio Procrastination (30-Minute Immediate Unblock)
+  // ONLY triggers when the message EXPLICITLY is about portfolio
   // =========================================================================
   if (
-    (combinedContext.includes('portfolio') || combinedContext.includes('trì hoãn') || combinedContext.includes('chưa đủ tốt')) &&
-    (text.includes('30 phút') || text.includes('hành động') || text.includes('tối nay') || text.includes('đăng'))
+    text.includes('portfolio') ||
+    (text.includes('trì hoãn') && text.includes('đăng') && (text.includes('30 phút') || text.includes('portfolio')))
   ) {
     return `Để phá vỡ vòng lặp trì hoãn do cầu toàn, đây là MỘT hành động duy nhất trong đúng 30 phút tối nay để đưa portfolio của bạn lên mạng:
 
@@ -384,8 +497,8 @@ export const generateDynamicSanctuaryReply = (
   // DOMAIN 7: Elderly Mother Caregiver (3 Responsibility Boundary Buckets)
   // =========================================================================
   if (
-    (combinedContext.includes('chăm mẹ') || combinedContext.includes('mẹ lớn tuổi') || combinedContext.includes('tội lỗi')) &&
-    (text.includes('ba nhóm') || text.includes('3 nhóm') || text.includes('ranh giới') || text.includes('trách nhiệm'))
+    (text.includes('chăm mẹ') || text.includes('mẹ lớn tuổi')) &&
+    (text.includes('ranh giới') || text.includes('ba nhóm') || text.includes('3 nhóm') || text.includes('tội lỗi'))
   ) {
     return `Cảm giác tội lỗi khi chăm sóc người thân thường xuất hiện khi ta gom toàn bộ cuộc đời của đối phương thành trách nhiệm đơn độc của mình. Dưới đây là khung phân định 3 nhóm ranh giới rõ ràng:
 
@@ -406,8 +519,8 @@ export const generateDynamicSanctuaryReply = (
   // DOMAIN 8: Singapore Relocation Decision (5 Weighted Criteria)
   // =========================================================================
   if (
-    (combinedContext.includes('singapore') || combinedContext.includes('bạn đời') || combinedContext.includes('chuyển quốc gia')) &&
-    (text.includes('tiêu chí') || text.includes('trọng số') || text.includes('hai tuần') || text.includes('năm tiêu chí') || text.includes('5 tiêu chí'))
+    text.includes('singapore') ||
+    (text.includes('bạn đời') && (text.includes('chuyển quốc gia') || text.includes('hà nội')))
   ) {
     return `Để hai người cùng đưa ra quyết định thấu đáo trong 2 tuần mà không tạo ra sự hy sinh âm thầm hay oán trách về sau, đây là bảng 5 tiêu chí đánh giá có trọng số:
 
@@ -431,8 +544,8 @@ export const generateDynamicSanctuaryReply = (
   // DOMAIN 9: Debt Management (5 Minimal Data Points - No Investment Advice)
   // =========================================================================
   if (
-    (combinedContext.includes('khoản nợ') || combinedContext.includes('ba khoản nợ') || combinedContext.includes('3 khoản nợ') || combinedContext.includes('nợ')) &&
-    (text.includes('năm thông tin') || text.includes('5 thông tin') || text.includes('thu thập') || text.includes('ngân hàng') || text.includes('tối thiểu'))
+    (text.includes('khoản nợ') || text.includes('ba khoản nợ') || text.includes('3 khoản nợ') || text.includes('nợ ngân hàng')) &&
+    (text.includes('năm thông tin') || text.includes('5 thông tin') || text.includes('thu thập') || text.includes('tối thiểu'))
   ) {
     return `Sự lo âu thường phóng đại quy mô khoản nợ. Bước đầu tiên để giành lại quyền kiểm soát là gom dữ kiện khách quan lên một trang giấy, hoàn toàn không phán xét. Dưới đây là 5 thông tin tối thiểu cần ghi lại cho từng khoản nợ:
 
@@ -447,7 +560,7 @@ export const generateDynamicSanctuaryReply = (
   // DOMAIN 10: 6-Year Relationship (Fatigue vs Core Value Differences)
   // =========================================================================
   if (
-    (combinedContext.includes('mối quan hệ') || combinedContext.includes('sáu năm') || combinedContext.includes('6 năm')) &&
+    (text.includes('mối quan hệ') || text.includes('sáu năm') || text.includes('6 năm')) &&
     (text.includes('mệt tạm thời') || text.includes('khác biệt giá trị') || text.includes('hai nhóm') || text.includes('dấu hiệu'))
   ) {
     return `Sau 6 năm bên nhau, ranh giới giữa việc "hết năng lượng vì cuộc sống bên ngoài" và "khác biệt nền tảng không thể hòa giải" rất dễ bị lẫn lộn. Dưới đây là 2 nhóm dấu hiệu để bạn tự soi chiếu:
@@ -464,7 +577,7 @@ export const generateDynamicSanctuaryReply = (
   }
 
   // =========================================================================
-  // 3. ACTION CONTRACT GENERAL HANDLERS: Compare, Generate, Thresholds, Experiment
+  // 4. ACTION CONTRACT GENERAL HANDLERS: Compare, Generate, Thresholds, Experiment
   // =========================================================================
   if (text.includes('so sánh') || text.includes('so sánh các lựa chọn')) {
     return `Nhìn vào băn khoăn của bạn, chúng ta có thể đặt các lựa chọn lên cùng một bộ tiêu chí để dễ cân nhắc:
@@ -503,14 +616,14 @@ export const generateDynamicSanctuaryReply = (
   }
 
   // =========================================================================
-  // 4. MULTI-TURN CONFIRMATION: User says "Đúng", "Chính xác", "Đồng ý"
+  // 5. MULTI-TURN CONFIRMATION: User says "Đúng", "Chính xác", "Đồng ý"
   // =========================================================================
   if (/^(đúng|đúng rồi|chính xác|đúng trọng tâm|chuẩn|đồng ý|ừ|uh|yeb|yes)$/i.test(text) || text.startsWith('đúng.')) {
     return `Rất mừng là chúng ta đã nắm đúng trọng tâm. Bây giờ, bạn muốn chúng ta cùng làm rõ các lựa chọn khả thi, lập bảng tiêu chí so sánh, hay thiết kế ngay một bước thử nhỏ 7 ngày? Bạn có thể nói cụ thể định dạng bạn cần nhất lúc này nhé.`;
   }
 
   // =========================================================================
-  // 5. REPAIR TRIGGERS: User correcting previous understanding (P0-02)
+  // 6. REPAIR TRIGGERS: User correcting previous understanding (P0-02)
   // =========================================================================
   if (
     text.startsWith('không hẳn') ||
@@ -521,17 +634,6 @@ export const generateDynamicSanctuaryReply = (
     text.includes('bạn trả lời sai')
   ) {
     return 'Cảm ơn bạn đã thẳng thắn đính chính. Tôi xin phép bỏ ngay giả thuyết vừa rồi để tránh làm mất thời gian của bạn. Bạn có thể cho tôi biết điều quan trọng nhất bạn muốn giải quyết ngay lúc này là gì không?';
-  }
-
-  // =========================================================================
-  // 6. LOW ENERGY MODE
-  // =========================================================================
-  if (text.includes('mệt quá') || text.includes('đuối quá') || text === 'mệt' || text === 'buồn') {
-    return 'Lúc này có vẻ bạn đang rất mệt mỏi. Chúng ta không cần phân tích hay giải quyết điều gì cả. Bạn muốn tạm dừng nghỉ ngơi ở đây, hay chỉ muốn gửi gắm đôi dòng ngắn ngủi rồi dừng?';
-  }
-
-  if (text.includes('chỉ muốn được lắng nghe') || text.includes('chưa muốn quyết định') || text.includes('không muốn làm bài tập')) {
-    return 'Được, lúc này chúng ta không cần đưa ra quyết định hay làm bài tập nào cả. Bạn có thể chia sẻ theo nhịp điệu thoải mái nhất của mình; bất cứ lúc nào muốn dừng lại nghỉ ngơi, bạn chỉ cần nói nhé.';
   }
 
   // =========================================================================

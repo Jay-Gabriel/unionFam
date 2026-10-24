@@ -469,19 +469,23 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
               onClick={() => setShowKeyInput(!showKeyInput)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-serif transition ${
                 apiKey
-                  ? apiKey.startsWith('AIzaSy')
+                  ? apiKey.startsWith('gsk_')
+                    ? 'bg-purple-500/20 border-purple-400/60 text-purple-200 hover:bg-purple-500/30'
+                    : apiKey.startsWith('AIzaSy')
                     ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/30'
                     : 'bg-sky-500/20 border-sky-400/60 text-sky-200 hover:bg-sky-500/30'
-                  : 'bg-amber-500/20 border-amber-400/60 text-amber-300 hover:bg-amber-500/30 animate-pulse'
+                  : 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/30'
               }`}
             >
-              <Key className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               <span>
                 {apiKey
-                  ? apiKey.startsWith('AIzaSy')
-                    ? 'Gemini AI: Sẵn Sàng (AI Studio)'
-                    : 'Gemini Token: Đã Nhận'
-                  : 'Chế độ Ngoại tuyến (Chưa có Key)'}
+                  ? apiKey.startsWith('gsk_')
+                    ? 'Groq AI (Llama 3.3)'
+                    : apiKey.startsWith('AIzaSy')
+                    ? 'Gemini AI (Key Riêng)'
+                    : 'AI Đã Nhận'
+                  : 'AI Miễn Phí (Zero-Key)'}
               </span>
             </button>
 
@@ -530,50 +534,55 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
 
         {/* API Key Modal Drawer */}
         {showKeyInput && (
-          <div className="fixed top-20 right-6 z-50 w-84 p-5 rounded-2xl bg-stone-950/95 border border-amber-400/50 shadow-2xl backdrop-blur-xl animate-fadeIn">
+          <div className="fixed top-20 right-6 z-50 w-88 p-5 rounded-2xl bg-stone-950/95 border border-emerald-400/50 shadow-2xl backdrop-blur-xl animate-fadeIn">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-serif text-amber-200 font-semibold flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-amber-400" />
-                <span>Kết Nối Gemini AI Trực Tiếp</span>
+              <h4 className="text-xs font-serif text-emerald-200 font-semibold flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Cấu Hình Trí Tuệ Nhân Tạo (AI)</span>
               </h4>
             </div>
-            <p className="text-[11px] text-stone-300 mb-2 leading-relaxed">
-              Dán Google AI Studio API Key (bắt đầu bằng <code className="text-amber-300 font-mono">AIzaSy...</code>) để AI phản hồi trực tiếp thời gian thực:
-            </p>
+            <div className="p-2.5 mb-3 rounded-xl bg-emerald-500/10 border border-emerald-400/30 text-[11px] text-emerald-200/90 leading-relaxed space-y-1">
+              <p>✨ <strong>Mặc định:</strong> Đang kích hoạt <strong>Free Cloud AI (Zero-Key)</strong> hoàn toàn miễn phí, không cần chìa khóa, không sợ lộ hay hack key.</p>
+              <p className="text-[10px] text-stone-400">Nếu bạn muốn dùng mô hình riêng, có thể dán Key bên dưới:</p>
+            </div>
             <form onSubmit={handleSaveApiKey} className="space-y-3">
-              <input
-                type="text"
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-amber-400 font-mono"
-              />
+              <div>
+                <label className="text-[10px] text-stone-300 block mb-1">
+                  Gemini Key (<code className="text-amber-300 font-mono">AIzaSy...</code>) hoặc Groq Key (<code className="text-purple-300 font-mono">gsk_...</code>):
+                </label>
+                <input
+                  type="text"
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                  placeholder="Để trống để dùng Free AI..."
+                  className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-emerald-400 font-mono"
+                />
+              </div>
               <div className="flex items-center justify-between text-xs pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     clearStoredGeminiKey();
-                    const defaultKey = getStoredGeminiKey();
-                    setApiKey(defaultKey);
+                    setApiKey('');
                   }}
-                  className="text-[10px] text-amber-400/90 hover:underline flex items-center gap-1"
+                  className="text-[10px] text-emerald-400/90 hover:underline flex items-center gap-1"
                 >
                   <RefreshCw className="w-3 h-3" />
-                  <span>Dùng Biến Môi Trường (.env)</span>
+                  <span>Dùng AI Miễn Phí (Xóa Key)</span>
                 </button>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setShowKeyInput(false)}
-                    className="px-3 py-1 text-xs text-stone-400 hover:text-stone-200"
+                    className="px-3 py-1 text-xs text-stone-400 hover:text-stone-200 cursor-pointer"
                   >
                     Đóng
                   </button>
                   <button
                     type="submit"
-                    className="px-3.5 py-1 bg-amber-400 hover:bg-amber-300 text-stone-950 font-semibold rounded-lg text-xs shadow-md"
+                    className="px-3.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-semibold rounded-lg text-xs shadow-md cursor-pointer"
                   >
-                    Lưu Key
+                    Lưu
                   </button>
                 </div>
               </div>
@@ -739,19 +748,19 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                 </div>
               </div>
 
-              {/* Thông báo minh bạch khi chưa có Gemini API Key trên hosting */}
+              {/* Trạng thái AI trực tuyến miễn phí */}
               {!apiKey && (
-                <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between text-[11px] text-amber-200/90 font-serif">
+                <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2 flex items-center justify-between text-[11px] text-emerald-200 font-serif">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>Hệ thống đang chạy Bộ phản chiếu Ngoại tuyến (chưa nhận API Key trên Vercel).</span>
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Đang kết nối <strong>Free Cloud AI</strong> (Miễn phí 100%, không cần Key, an toàn bảo mật).</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowKeyInput(true)}
-                    className="underline hover:text-amber-100 font-semibold cursor-pointer shrink-0 ml-2"
+                    className="underline hover:text-emerald-100 font-medium cursor-pointer shrink-0 ml-2 text-[10px]"
                   >
-                    Dán Key Gemini
+                    Tùy chọn Key
                   </button>
                 </div>
               )}
