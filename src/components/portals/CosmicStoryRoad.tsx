@@ -464,31 +464,6 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
               <span className="font-bold">{Math.round(scrollProgress * 100)}%</span>
             </div>
 
-            {/* AI Connection Status Button */}
-            <button
-              onClick={() => setShowKeyInput(!showKeyInput)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-serif transition ${
-                apiKey
-                  ? apiKey.startsWith('gsk_')
-                    ? 'bg-purple-500/20 border-purple-400/60 text-purple-200 hover:bg-purple-500/30'
-                    : apiKey.startsWith('AIzaSy')
-                    ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/30'
-                    : 'bg-sky-500/20 border-sky-400/60 text-sky-200 hover:bg-sky-500/30'
-                  : 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/30'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>
-                {apiKey
-                  ? apiKey.startsWith('gsk_')
-                    ? 'Groq AI (Llama 3.3)'
-                    : apiKey.startsWith('AIzaSy')
-                    ? 'Gemini AI (Key Riêng)'
-                    : 'AI Đã Nhận'
-                  : 'AI Miễn Phí (Zero-Key)'}
-              </span>
-            </button>
-
             {/* Decision Card Button (V8.7.5 & V1.0 - Connected with conversation) */}
             <button
               onClick={() => setShowDecisionCard(true)}
@@ -534,16 +509,16 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
 
         {/* API Key Modal Drawer */}
         {showKeyInput && (
-          <div className="fixed top-20 right-6 z-50 w-88 p-5 rounded-2xl bg-stone-950/95 border border-emerald-400/50 shadow-2xl backdrop-blur-xl animate-fadeIn">
+          <div className="fixed top-20 right-6 z-50 w-88 p-5 rounded-2xl bg-stone-950/95 border border-amber-400/30 shadow-2xl backdrop-blur-xl animate-fadeIn">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-serif text-emerald-200 font-semibold flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Cấu Hình Trí Tuệ Nhân Tạo (AI)</span>
+              <h4 className="text-xs font-serif text-amber-200 font-semibold flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5 text-amber-400" />
+                <span>Cấu Hình Khóa API (Tùy Chọn)</span>
               </h4>
             </div>
-            <div className="p-2.5 mb-3 rounded-xl bg-emerald-500/10 border border-emerald-400/30 text-[11px] text-emerald-200/90 leading-relaxed space-y-1">
-              <p>✨ <strong>Mặc định:</strong> Đang kích hoạt <strong>Free Cloud AI (Zero-Key)</strong> hoàn toàn miễn phí, không cần chìa khóa, không sợ lộ hay hack key.</p>
-              <p className="text-[10px] text-stone-400">Nếu bạn muốn dùng mô hình riêng, có thể dán Key bên dưới:</p>
+            <div className="p-2.5 mb-3 rounded-xl bg-stone-900/80 border border-white/10 text-[11px] text-stone-300 leading-relaxed space-y-1">
+              <p>Mặc định hệ thống tự động kết nối AI đồng hành phản chiếu.</p>
+              <p className="text-[10px] text-stone-400">Nếu muốn dùng chìa khóa riêng, bạn có thể dán bên dưới:</p>
             </div>
             <form onSubmit={handleSaveApiKey} className="space-y-3">
               <div>
@@ -554,8 +529,8 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   type="text"
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
-                  placeholder="Để trống để dùng Free AI..."
-                  className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-emerald-400 font-mono"
+                  placeholder="Để trống để dùng cấu hình mặc định..."
+                  className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-amber-400 font-mono"
                 />
               </div>
               <div className="flex items-center justify-between text-xs pt-1">
@@ -565,10 +540,10 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                     clearStoredGeminiKey();
                     setApiKey('');
                   }}
-                  className="text-[10px] text-emerald-400/90 hover:underline flex items-center gap-1"
+                  className="text-[10px] text-stone-400 hover:text-amber-300 flex items-center gap-1"
                 >
                   <RefreshCw className="w-3 h-3" />
-                  <span>Dùng AI Miễn Phí (Xóa Key)</span>
+                  <span>Xóa Key (Về Mặc Định)</span>
                 </button>
                 <div className="flex gap-2">
                   <button
@@ -580,7 +555,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="px-3.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-semibold rounded-lg text-xs shadow-md cursor-pointer"
+                    className="px-3.5 py-1 bg-amber-400 hover:bg-amber-300 text-stone-950 font-semibold rounded-lg text-xs shadow-md cursor-pointer"
                   >
                     Lưu
                   </button>
@@ -743,27 +718,10 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                     className="text-[11px] text-amber-300/90 font-mono bg-amber-400/10 hover:bg-amber-400/20 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1"
                   >
                     <Key className="w-3 h-3" />
-                    <span>{apiKey ? 'Đổi Key' : 'Nhập Key'}</span>
+                    <span>{apiKey ? 'Đổi Key' : 'API Key'}</span>
                   </button>
                 </div>
               </div>
-
-              {/* Trạng thái AI trực tuyến miễn phí */}
-              {!apiKey && (
-                <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2 flex items-center justify-between text-[11px] text-emerald-200 font-serif">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Đang kết nối <strong>Free Cloud AI</strong> (Miễn phí 100%, không cần Key, an toàn bảo mật).</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowKeyInput(true)}
-                    className="underline hover:text-emerald-100 font-medium cursor-pointer shrink-0 ml-2 text-[10px]"
-                  >
-                    Tùy chọn Key
-                  </button>
-                </div>
-              )}
 
               {/* Messages Flow Area with Dedicated Ref and Auto-Scroll */}
               <div
