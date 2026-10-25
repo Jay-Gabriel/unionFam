@@ -662,16 +662,17 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                       {apiKey ? (
                         apiKey.startsWith('AIzaSy') ? (
                           <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/40">
-                            Gemini Pro Active
+                            Gemini AI
                           </span>
                         ) : (
-                          <span className="text-[10px] bg-sky-500/20 text-sky-200 px-2 py-0.5 rounded-full border border-sky-400/40">
-                            Gemini Token Active
+                          <span className="text-[10px] bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded-full border border-purple-400/40">
+                            Groq AI
                           </span>
                         )
                       ) : (
-                        <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/40">
-                          Sanctuary Dialog Engine
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>AI Active</span>
                         </span>
                       )}
                     </h3>

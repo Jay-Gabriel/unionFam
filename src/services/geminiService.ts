@@ -56,47 +56,45 @@ export interface GeminiResponseResult {
 }
 
 // =========================================================================
-// FREE AI ENGINE 1: Pollinations AI (100% Free, Zero Key, No Expiry, No Leak)
+// FREE AI ENGINE: High-Speed Edge Cloud AI (Meta Llama 3.2, Zero Key, 100% Free)
 // =========================================================================
-export const callPollinationsAI = async (
+export const callFreeCloudAI = async (
   userMessage: string,
   history: { sender: 'ai' | 'user'; text: string }[],
   systemInstruction: string
 ): Promise<string | null> => {
   try {
-    const historyParts = history.slice(-6).map(m => ({
-      role: m.sender === 'user' ? 'user' : 'assistant',
-      content: m.text,
-    }));
+    const historySummary = history
+      .slice(-4)
+      .map(m => `${m.sender === 'user' ? 'Người dùng' : 'Life Lab'}: ${m.text}`)
+      .join('\n');
+
+    const fullPrompt = `${systemInstruction}
+
+${historySummary ? `[LỊCH SỬ ĐỐI THOẠI GẦN NHẤT]:\n${historySummary}\n` : ''}
+[TIN NHẮN MỚI CỦA NGƯỜI DÙNG]: ${userMessage}
+[PHẢN HỒI CỦA BẠN (LIFE LAB COMPANION - BẰNG TIẾNG VIỆT TỰ NHIÊN, ĐỒNG CẢM, ĐÚNG LUẬT)]:`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    const res = await fetch('https://text.pollinations.ai/', {
+    const res = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: systemInstruction },
-          ...historyParts,
-          { role: 'user', content: userMessage }
-        ],
-        model: 'openai',
-        seed: 42,
-      }),
+      body: JSON.stringify({ prompt: fullPrompt }),
       signal: controller.signal
     });
 
     clearTimeout(timeoutId);
 
     if (res.ok) {
-      const text = await res.text();
-      if (text && text.trim().length > 10) {
-        return text.trim();
+      const data = await res.json();
+      if (data && data.response && data.response.trim().length > 5) {
+        return data.response.trim();
       }
     }
   } catch (e) {
-    console.warn('Pollinations Free AI network notice:', e);
+    console.warn('Free Cloud AI notice:', e);
   }
   return null;
 };
@@ -271,14 +269,13 @@ QUY TẮC BẮT BUỘC (V8.7.5 RUNTIME CONTRACT):
     }
   }
 
-  // 4. PATH C (DEFAULT & LEAK-PROOF): Free Cloud AI Engine (Pollinations - Zero Key Required!)
-  // If no Gemini key, or if Gemini key was leaked/hacked/failed:
-  const freeCloudReply = await callPollinationsAI(userMessage, history, systemInstruction);
+  // 4. PATH C (DEFAULT & LEAK-PROOF): High-Speed Cloud AI Engine (Zero Key Required)
+  const freeCloudReply = await callFreeCloudAI(userMessage, history, systemInstruction);
   if (freeCloudReply) {
     return {
       text: freeCloudReply,
       source: 'pollinations_free',
-      modelUsed: 'Free Cloud AI (Pollinations Zero-Key)',
+      modelUsed: 'Llama 3.2 Cloud AI',
       suggestDecisionCard: checkShouldSuggestCard(userMessage),
     };
   }
