@@ -15,7 +15,7 @@ export const getStoredGeminiKey = (): string => {
   }
 
   // 2. Kiểm tra biến môi trường Server (Vite .env hoặc Vercel Environment Variables)
-  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  const envKey = (import.meta as any).env?.VITE_GROQ_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
   if (envKey) {
     const clean = envKey.trim();
     if (clean.startsWith('AIzaSy') || clean.startsWith('gsk_')) {
@@ -103,7 +103,7 @@ ${historySummary ? `[LỊCH SỬ ĐỐI THOẠI GẦN NHẤT]:\n${historySummary
 };
 
 // =========================================================================
-// FREE AI ENGINE 2: Groq Cloud (Free Llama 3.3 70B via free key gsk_...)
+// FREE AI ENGINE 2: Groq Cloud (Ultra-Fast Free LLMs via Groq Free Tier)
 // =========================================================================
 export const callGroqAPI = async (
   apiKey: string,
@@ -117,35 +117,47 @@ export const callGroqAPI = async (
       content: m.text,
     }));
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const candidateModels = [
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'openai/gpt-oss-20b',
+    ];
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey.trim()}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemInstruction },
-          ...historyParts,
-          { role: 'user', content: userMessage }
-        ],
-        temperature: 0.7,
-        max_tokens: 1024
-      }),
-      signal: controller.signal
-    });
+    for (const model of candidateModels) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    clearTimeout(timeoutId);
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey.trim()}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: systemInstruction },
+              ...historyParts,
+              { role: 'user', content: userMessage }
+            ],
+            temperature: 0.7,
+            max_tokens: 1024
+          }),
+          signal: controller.signal
+        });
 
-    if (res.ok) {
-      const data = await res.json();
-      const content = data.choices?.[0]?.message?.content;
-      if (content && content.trim().length > 5) {
-        return content.trim();
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content && content.trim().length > 5) {
+            return content.trim();
+          }
+        }
+      } catch {
+        // try next candidate model
       }
     }
   } catch (e) {
