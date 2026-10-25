@@ -2,21 +2,24 @@
 // Dedicated for young professionals (23-35) balancing work, life, and personal agency
 
 export const getStoredGeminiKey = (): string => {
-  // 1. Kiểm tra biến môi trường an toàn (Vite .env hoặc Vercel Environment Variables)
-  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
-  if (envKey && envKey.trim().length > 10) {
-    return envKey.trim();
-  }
-
-  // 2. Kiểm tra key do người dùng tự nhập trong phiên trình duyệt (LocalStorage)
+  // 1. Kiểm tra key do người dùng tự nhập trong phiên trình duyệt (LocalStorage)
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('life_lab_gemini_key');
-      if (saved && saved.trim().length > 10) {
+      if (saved && (saved.startsWith('AIzaSy') || saved.startsWith('gsk_'))) {
         return saved.trim();
       }
     } catch {
       // Ignore localStorage errors
+    }
+  }
+
+  // 2. Kiểm tra biến môi trường Server (Vite .env hoặc Vercel Environment Variables)
+  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  if (envKey) {
+    const clean = envKey.trim();
+    if (clean.startsWith('AIzaSy') || clean.startsWith('gsk_')) {
+      return clean;
     }
   }
 
@@ -215,8 +218,8 @@ QUY TẮC BẮT BUỘC (V8.7.5 RUNTIME CONTRACT):
     }
   }
 
-  // 3. PATH B: If key starts with 'AIzaSy' or 'AQ.' or is a Gemini key, call Gemini API
-  if (cleanKey.length > 10 && !cleanKey.startsWith('gsk_')) {
+  // 3. PATH B: If key starts with 'AIzaSy' (valid Google Gemini API key), call Gemini API
+  if (cleanKey.startsWith('AIzaSy')) {
     const historyParts: ChatHistoryItem[] = history.slice(-4).map(m => ({
       role: m.sender === 'user' ? 'user' : 'model',
       parts: [{ text: m.text }],
