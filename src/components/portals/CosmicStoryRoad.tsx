@@ -24,7 +24,7 @@ import {
   Activity
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { getStoredGeminiKey, saveStoredGeminiKey, clearStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
+import { getStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
 import { BETA_CONFIG, SessionOutcomeType } from '../../config/betaFlags';
 import { saveConversationToCloud, loadConversationFromCloud, saveMemoryToCloud } from '../../services/supabaseService';
 import { createExperimentFromSession } from '../../services/experimentService';
@@ -75,8 +75,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
   ]);
 
   const [inputText, setInputText] = useState('');
-  const [apiKey, setApiKey] = useState<string>(getStoredGeminiKey);
-  const [showKeyInput, setShowKeyInput] = useState(false);
+  const apiKey = getStoredGeminiKey();
   const [isAiTyping, setIsAiTyping] = useState(false);
 
   // Beta Master V8.7.2 Checkpoint & Memory State
@@ -379,15 +378,6 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
     confetti({ particleCount: 40, spread: 45 });
   };
 
-  const handleSaveApiKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = apiKey.trim();
-    saveStoredGeminiKey(clean);
-    setApiKey(clean);
-    setShowKeyInput(false);
-    confetti({ particleCount: 50, spread: 50 });
-  };
-
   // Helper to calculate opacity & scale for each scrollytelling step
   const getStepStyle = (start: number, peak: number, end: number) => {
     if (scrollProgress < start || scrollProgress > end) {
@@ -507,63 +497,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
           </div>
         </header>
 
-        {/* API Key Modal Drawer */}
-        {showKeyInput && (
-          <div className="fixed top-20 right-6 z-50 w-88 p-5 rounded-2xl bg-stone-950/95 border border-amber-400/30 shadow-2xl backdrop-blur-xl animate-fadeIn">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-serif text-amber-200 font-semibold flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-amber-400" />
-                <span>Cấu Hình Khóa API (Tùy Chọn)</span>
-              </h4>
-            </div>
-            <div className="p-2.5 mb-3 rounded-xl bg-stone-900/80 border border-white/10 text-[11px] text-stone-300 leading-relaxed space-y-1">
-              <p>Mặc định hệ thống tự động kết nối AI đồng hành phản chiếu.</p>
-              <p className="text-[10px] text-stone-400">Nếu muốn dùng chìa khóa riêng, bạn có thể dán bên dưới:</p>
-            </div>
-            <form onSubmit={handleSaveApiKey} className="space-y-3">
-              <div>
-                <label className="text-[10px] text-stone-300 block mb-1">
-                  Gemini Key (<code className="text-amber-300 font-mono">AIzaSy...</code>) hoặc Groq Key (<code className="text-purple-300 font-mono">gsk_...</code>):
-                </label>
-                <input
-                  type="text"
-                  value={apiKey}
-                  onChange={e => setApiKey(e.target.value)}
-                  placeholder="Để trống để dùng cấu hình mặc định..."
-                  className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-amber-400 font-mono"
-                />
-              </div>
-              <div className="flex items-center justify-between text-xs pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    clearStoredGeminiKey();
-                    setApiKey('');
-                  }}
-                  className="text-[10px] text-stone-400 hover:text-amber-300 flex items-center gap-1"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>Xóa Key (Về Mặc Định)</span>
-                </button>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowKeyInput(false)}
-                    className="px-3 py-1 text-xs text-stone-400 hover:text-stone-200 cursor-pointer"
-                  >
-                    Đóng
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-3.5 py-1 bg-amber-400 hover:bg-amber-300 text-stone-950 font-semibold rounded-lg text-xs shadow-md cursor-pointer"
-                  >
-                    Lưu
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        )}
+
 
         {/* =========================================================================
             DYNAMIC NARRATIVE QUOTES FLOATING ON THE RUNNING ROAD (BY SCROLL PROGRESS)
@@ -659,22 +593,10 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   <div>
                     <h3 className="font-serif text-base text-amber-200 font-medium flex items-center gap-2">
                       <span>Life Lab Mirror Companion</span>
-                      {apiKey ? (
-                        apiKey.startsWith('AIzaSy') ? (
-                          <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/40">
-                            Gemini AI
-                          </span>
-                        ) : (
-                          <span className="text-[10px] bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded-full border border-purple-400/40">
-                            Groq AI
-                          </span>
-                        )
-                      ) : (
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          <span>AI Active</span>
-                        </span>
-                      )}
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1.5 font-sans">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>AI Active</span>
+                      </span>
                     </h3>
                     <span className="text-[10px] text-stone-400 font-mono tracking-wider">
                       Cuối Con Đường Ánh Sáng • Lắng Nghe Không Phán Xét
@@ -696,7 +618,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   {/* P0-06 Session Outcome Checkpoint Button */}
                   <button
                     onClick={() => setShowCheckpointModal(true)}
-                    className="text-[11px] text-amber-200 font-serif bg-amber-400/15 hover:bg-amber-400/25 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1 shadow-sm"
+                    className="text-[11px] text-amber-200 font-serif bg-amber-400/15 hover:bg-amber-400/25 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
                     title="Đúc kết phiên đối thoại (Master V8.7.2 Checkpoint)"
                   >
                     <BookmarkCheck className="w-3.5 h-3.5 text-amber-300" />
@@ -707,19 +629,11 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   <button
                     onClick={handleUserStop}
                     disabled={isSessionClosed}
-                    className="text-[11px] text-stone-300 font-serif bg-white/5 hover:bg-stone-800 disabled:opacity-40 px-2.5 py-1 rounded-full border border-white/10 transition flex items-center gap-1"
+                    className="text-[11px] text-stone-300 font-serif bg-white/5 hover:bg-stone-800 disabled:opacity-40 px-2.5 py-1 rounded-full border border-white/10 transition flex items-center gap-1 cursor-pointer"
                     title="Dừng phiên trò chuyện ngay lúc này"
                   >
                     <PauseCircle className="w-3.5 h-3.5 text-stone-400" />
                     <span>{isSessionClosed ? 'Đã dừng' : 'Dừng lại'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => setShowKeyInput(true)}
-                    className="text-[11px] text-amber-300/90 font-mono bg-amber-400/10 hover:bg-amber-400/20 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1"
-                  >
-                    <Key className="w-3 h-3" />
-                    <span>{apiKey ? 'Đổi Key' : 'API Key'}</span>
                   </button>
                 </div>
               </div>
