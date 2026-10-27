@@ -24,7 +24,7 @@ import {
   Activity
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { getStoredGeminiKey, callGeminiCompanionAPI } from '../../services/geminiService';
+import { getStoredGeminiKey, callGeminiCompanionAPI, summarizeSessionInsight } from '../../services/geminiService';
 import { BETA_CONFIG, SessionOutcomeType } from '../../config/betaFlags';
 import { saveConversationToCloud, loadConversationFromCloud, saveMemoryToCloud } from '../../services/supabaseService';
 import { createExperimentFromSession } from '../../services/experimentService';
@@ -84,11 +84,41 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
   const [memoryConsent, setMemoryConsent] = useState<'granted' | 'declined' | null>(null);
   const [isSessionClosed, setIsSessionClosed] = useState(false);
   const [checkpointNote, setCheckpointNote] = useState('');
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [showDecisionCard, setShowDecisionCard] = useState(false);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showBetaDashboard, setShowBetaDashboard] = useState(false);
   const [activeScenarioId, setActiveScenarioId] = useState<'work_life' | 'purpose' | 'major_decision' | null>(null);
   const [conversationId, setConversationId] = useState<string>(() => Date.now().toString());
+
+  const handleOpenCheckpointModal = async () => {
+    setShowCheckpointModal(true);
+    if (!checkpointNote && messages.some(m => m.sender === 'user')) {
+      setIsSummarizing(true);
+      try {
+        const summary = await summarizeSessionInsight(messages);
+        setCheckpointNote(summary);
+        if (!selectedOutcome) {
+          setSelectedOutcome('CONFIRMED_INSIGHT');
+        }
+      } finally {
+        setIsSummarizing(false);
+      }
+    }
+  };
+
+  const handleManualAutoSummarize = async () => {
+    setIsSummarizing(true);
+    try {
+      const summary = await summarizeSessionInsight(messages);
+      setCheckpointNote(summary);
+      if (!selectedOutcome) {
+        setSelectedOutcome('CONFIRMED_INSIGHT');
+      }
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
 
   const handleSelectScenario = async (scenario: ProblemScenario) => {
     setActiveScenarioId(scenario.id);
@@ -617,7 +647,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
 
                   {/* P0-06 Session Outcome Checkpoint Button */}
                   <button
-                    onClick={() => setShowCheckpointModal(true)}
+                    onClick={handleOpenCheckpointModal}
                     className="text-[11px] text-amber-200 font-serif bg-amber-400/15 hover:bg-amber-400/25 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
                     title="Đúc kết phiên đối thoại (Master V8.7.2 Checkpoint)"
                   >
@@ -825,14 +855,25 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
 
               {/* Optional Snapshot Note */}
               <div className="space-y-2">
-                <label className="text-xs font-mono uppercase tracking-wider text-amber-300/80 block">
-                  2. Điều gì đọng lại rõ ràng nhất với bạn? (Tùy chọn)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono uppercase tracking-wider text-amber-300/80 block">
+                    2. Điều gì đọng lại rõ ràng nhất với bạn? (Tùy chọn)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleManualAutoSummarize}
+                    disabled={isSummarizing || messages.filter(m => m.sender === 'user').length === 0}
+                    className="text-[11px] text-amber-300 hover:text-amber-200 disabled:opacity-40 flex items-center gap-1 font-serif cursor-pointer bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/30 transition"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <span>{isSummarizing ? 'Đang đúc kết...' : 'AI Tự Động Đúc Kết'}</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={checkpointNote}
                   onChange={e => setCheckpointNote(e.target.value)}
-                  placeholder="Ví dụ: Mình nhận ra mình đang quá cầu toàn trong công việc..."
+                  placeholder={isSummarizing ? 'AI đang đọc buổi trò chuyện để đúc kết...' : 'Ví dụ: Mình nhận ra mình đang quá cầu toàn trong công việc...'}
                   className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3.5 py-2.5 text-xs text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-400"
                 />
               </div>

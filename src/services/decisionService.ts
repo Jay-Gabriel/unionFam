@@ -503,42 +503,97 @@ Cấu trúc JSON:
 CUỘC HỘI THOẠI CỦA NGƯỜI DÙNG:
 ${conversationSnippet}`;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
-      }),
+  // 1. Nếu dùng Groq Key (gsk_): gọi Groq Chat Completion JSON mode
+  if (apiKey.startsWith('gsk_')) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`
+        },
+        body: JSON.stringify({
+          model: 'qwen/qwen3.8-27b',
+          messages: [
+            { role: 'system', content: 'Bạn là hệ thống trích xuất Decision Card của Life Lab. Trả về DUY NHẤT một chuỗi JSON hợp lệ không bọc trong markdown codeblock.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.2,
+          response_format: { type: 'json_object' }
+        })
+      });
+      if (res.ok) {
+        const groqData = await res.json();
+        const content = groqData.choices?.[0]?.message?.content;
+        if (content) {
+          const parsed = JSON.parse(content);
+          return {
+            id: `dec_${Date.now()}`,
+            version: 1,
+            status: 'USER_REVIEW',
+            scenarioCategory: scenario.id,
+            source: 'conversation_extracted',
+            sourceSnippet: `Được AI trích xuất tự động từ nội dung đối thoại thực tế`,
+            title: parsed.title || `Quyết Định: ${scenario.title}`,
+            decisionQuestion: parsed.decisionQuestion || scenario.defaultCardData.decisionQuestion,
+            criteria: parsed.criteria || scenario.defaultCardData.criteria,
+            hardConstraints: parsed.hardConstraints || scenario.defaultCardData.hardConstraints,
+            options: parsed.options || scenario.defaultCardData.options,
+            uncertainties: parsed.uncertainties || scenario.defaultCardData.uncertainties,
+            experiment: parsed.experiment || scenario.defaultCardData.experiment,
+            reviewDate: parsed.reviewDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Groq card extraction failed:', err);
     }
-  );
+  }
 
-  if (!response.ok) return null;
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) return null;
+  // 2. Nếu dùng Google Gemini Key (AIzaSy)
+  if (apiKey.startsWith('AIzaSy')) {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+        }),
+      }
+    );
 
-  const parsed = JSON.parse(text);
-  return {
-    id: `dec_${Date.now()}`,
-    version: 1,
-    status: 'USER_REVIEW',
-    scenarioCategory: scenario.id,
-    source: 'conversation_extracted',
-    sourceSnippet: `Được AI trích xuất tự động từ nội dung đối thoại thực tế`,
-    title: parsed.title || `Quyết Định: ${scenario.title}`,
-    decisionQuestion: parsed.decisionQuestion || scenario.defaultCardData.decisionQuestion,
-    criteria: parsed.criteria || scenario.defaultCardData.criteria,
-    hardConstraints: parsed.hardConstraints || scenario.defaultCardData.hardConstraints,
-    options: parsed.options || scenario.defaultCardData.options,
-    uncertainties: parsed.uncertainties || scenario.defaultCardData.uncertainties,
-    experiment: parsed.experiment || scenario.defaultCardData.experiment,
-    reviewDate: parsed.reviewDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+    if (response.ok) {
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) {
+        const parsed = JSON.parse(text);
+        return {
+          id: `dec_${Date.now()}`,
+          version: 1,
+          status: 'USER_REVIEW',
+          scenarioCategory: scenario.id,
+          source: 'conversation_extracted',
+          sourceSnippet: `Được AI trích xuất tự động từ nội dung đối thoại thực tế`,
+          title: parsed.title || `Quyết Định: ${scenario.title}`,
+          decisionQuestion: parsed.decisionQuestion || scenario.defaultCardData.decisionQuestion,
+          criteria: parsed.criteria || scenario.defaultCardData.criteria,
+          hardConstraints: parsed.hardConstraints || scenario.defaultCardData.hardConstraints,
+          options: parsed.options || scenario.defaultCardData.options,
+          uncertainties: parsed.uncertainties || scenario.defaultCardData.uncertainties,
+          experiment: parsed.experiment || scenario.defaultCardData.experiment,
+          reviewDate: parsed.reviewDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+    }
+  }
+
+  return null;
 }
 
 /**

@@ -38,6 +38,57 @@ export const clearStoredGeminiKey = (): void => {
   }
 };
 
+/**
+ * Tự động đúc kết nhận thức then chốt của phiên bằng AI (1 câu dưới 20 từ)
+ */
+export const summarizeSessionInsight = async (
+  messages: { sender: 'ai' | 'user'; text: string }[]
+): Promise<string> => {
+  const userMessages = messages.filter(m => m.sender === 'user').map(m => m.text);
+  if (userMessages.length === 0) {
+    return 'Dành một khoảng lặng để nhìn lại điều quan trọng nhất.';
+  }
+
+  const key = getStoredGeminiKey();
+  if (key.startsWith('gsk_')) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key.trim()}`
+        },
+        body: JSON.stringify({
+          model: 'qwen/qwen3.8-27b',
+          messages: [
+            {
+              role: 'system',
+              content: 'Bạn là chuyên gia đúc kết Life Lab. Hãy đọc các câu chia sẻ của người dùng và tóm tắt thành đúng 1 câu duy nhất (dưới 20 từ) thể hiện nhận thức hoặc bài học quan trọng nhất đọng lại trong họ hôm nay (bắt đầu bằng "Mình nhận ra..."). Không thêm ngoặc kép, không thêm lời chào hay giải thích thừa.'
+            },
+            {
+              role: 'user',
+              content: `Các câu chia sẻ của người dùng:\n${userMessages.join('\n')}`
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 60
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content?.trim();
+        if (content && content.length > 5) {
+          return content.replace(/^["']|["']$/g, '');
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return `Mình nhận ra cần nhìn lại: "${userMessages[userMessages.length - 1].slice(0, 45)}..."`;
+};
+
 interface ChatHistoryItem {
   role: 'user' | 'model';
   parts: { text: string }[];
@@ -136,8 +187,8 @@ export const callGroqAPI = async (
               ...historyParts,
               { role: 'user', content: userMessage }
             ],
-            temperature: 0.7,
-            max_tokens: 1024
+            temperature: 0.4,
+            max_tokens: 180
           }),
           signal: controller.signal
         });
@@ -179,14 +230,27 @@ export const callGeminiCompanionAPI = async (
     };
   }
 
-  const systemInstruction = `Bạn là Life Lab Companion – một người bạn đồng hành ấm áp, sâu sắc và chân thành dành cho những người trẻ đi làm (23–35 tuổi) đang đứng giữa nhiều áp lực công việc và cuộc sống.
+  const systemInstruction = `Bạn là Life Lab Companion – người bạn đồng hành của Life Lab lắng nghe những người trẻ đi làm (23–35 tuổi).
 
-TINH THẦN VÀ PHONG CÁCH NÓI CHUYỆN:
-- Tự nhiên, gần gũi và chân thật như một người bạn tri kỷ ngồi lắng nghe bên tách trà. Nói năng có hồn, ấm áp, thấu cảm, tuyệt đối không trả lời như một cỗ máy, không đọc kịch bản mẫu, không lặp lại nguyên văn lời người khác.
-- Lắng nghe và thấu cảm: Đặt cảm xúc của người đối diện lên hàng đầu. Khi thấy họ mệt mỏi hay cạn năng lượng, hãy nâng đỡ, khuyên họ buông bớt để nghỉ ngơi, tuyệt đối không giao thêm việc hay bài tập áp lực.
-- Khi được hỏi bạn là ai, hãy trả lời tự nhiên, mộc mạc từ chính tâm thế của bạn: một nơi chốn bình yên, một khoảng lặng không phán xét để họ tự do giãi bày và nhìn rõ điều quan trọng với mình.
-- Tôn trọng và khiêm nhường: Không dạy đời, không quyết định thay. Cùng họ nhẹ nhàng bóc tách vấn đề từng chút một.
-- Nói năng gãy gọn, tinh tế, vừa đủ ấm áp, không hỏi dồn dập. Tuyệt đối không trích dẫn mã hiệu kỹ thuật hay tài liệu nội bộ.`;
+QUY TRÌNH HỘI THOẠI NHIỀU BƯỚC (CONFIRM TRƯỚC - HIỂU KHÁCH HÀNG - CHƯA VỘI RA GIẢI PHÁP):
+1. Bước 1: Confirm & Phản chiếu nhẹ nhàng (Lượt 1 - 2):
+   - Khi người dùng mới mở lời hoặc chia sẻ câu đầu tiên (ví dụ: "Tôi đang cân nhắc một sự thay đổi"), TUYỆT ĐỐI KHÔNG vội đưa ra lời khuyên, không kết luận, không dạy dỗ, không vội "ra value" hay đưa giải pháp ngay.
+   - Chỉ làm đúng 2 việc:
+     + Phản chiếu lại điều họ vừa nói một cách nhẹ nhàng, trung tính, không suy diễn (1 câu ngắn).
+     + Hỏi lại 1 câu hỏi mở, khiêm tốn để hiểu rõ bối cảnh cụ thể của họ (ví dụ: "Bạn đang nghĩ về sự thay đổi trong công việc hay một khía cạnh nào khác?", hoặc "Điều gì đang thôi thúc bạn bắt đầu nghĩ về sự thay đổi này?").
+2. Bước 2: Đi sâu làm rõ khi khách hàng chia sẻ thêm (Lượt 3 - 4):
+   - Tiếp tục lắng nghe điều họ chia sẻ, xác nhận cảm xúc và bối cảnh thực tế. Chưa áp đặt giải pháp.
+3. Bước 3: Đúc kết & Đồng thuận (Lượt 5+):
+   - Chỉ khi người dùng nói rõ họ muốn tìm giải pháp hoặc khi cả hai đã cùng hiểu rõ vấn đề, mới gợi mở bước nhỏ hoặc đúc kết vào Decision Card.
+
+TUYỆT ĐỐI KHÔNG BÓI TÂM LÝ HAY ĐÁNH GIÁ MẠNH (NON-JUDGMENTAL):
+- CẤM phân tích câu chữ của người dùng (ví dụ: cấm nói "Khi bạn dùng từ 'cân nhắc' thay vì 'lăn tăn' hay 'đau khổ'...", "bạn đã nghe đủ tiếng nói trong đầu...", "bạn đang ngừng nhìn thẳng vào con đường cũ mù quáng...").
+- Tuyệt đối không dán nhãn cảm xúc, không phán xét tâm lý, không làm "chuyên gia bóc tách tâm can".
+- Giữ giọng điệu mộc mạc, bình thản, ấm áp, khiêm nhường như một người bạn đời thường.
+
+QUY TẮC ĐỘ DÀI BẮT BUỘC (CHỐNG TRÀN MÀN HÌNH):
+- Mỗi phản hồi CHỈ DÀI TỐI ĐA 2 ĐẾN 3 CÂU NGẮN (tổng cộng dưới 60 từ).
+- Tuyệt đối không viết thành bài văn dài, không chia 3-4 đoạn dài lê thê làm tràn màn hình. Phải để lại khoảng thở cho người đối diện.`;
 
   // 2. PATH A: If key starts with 'gsk_', route to Free Groq Cloud (Llama 3.3 70B)
   if (cleanKey.startsWith('gsk_')) {

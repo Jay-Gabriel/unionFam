@@ -75,24 +75,32 @@ export const DecisionCardModal: React.FC<DecisionCardModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const active = getActiveDecisionCard();
-      setCard(active);
-      setEditQuestion(active.decisionQuestion);
-      setEditCriteria(active.criteria.join('\n'));
-      setEditConstraints(active.hardConstraints.join('\n'));
-      setEditOptions([...active.options]);
-      setEditUncertainty(
-        active.uncertainties[0]?.question || ''
-      );
-      setEditExperiment(active.experiment?.action || '');
-      setEditReviewDate(active.reviewDate || '27/10/2026');
       setEditingSection(null);
       setShowPermissionModal(false);
       setReceipt(null);
+
+      const userMsgs = messages.filter(m => m.sender === 'user');
+      if (userMsgs.length > 0) {
+        // Tự động làm mới và đúc kết trực tiếp từ cuộc hội thoại thực tế
+        handleExtractFromChat(undefined, true);
+      } else {
+        const active = getActiveDecisionCard();
+        setCard(active);
+        setEditQuestion(active.decisionQuestion);
+        setEditCriteria(active.criteria.join('\n'));
+        setEditConstraints(active.hardConstraints.join('\n'));
+        setEditOptions([...active.options]);
+        setEditUncertainty(active.uncertainties[0]?.question || '');
+        setEditExperiment(active.experiment?.action || '');
+        setEditReviewDate(active.reviewDate || '27/10/2026');
+      }
     }
   }, [isOpen]);
 
-  const handleExtractFromChat = async (scenarioId?: 'work_life' | 'purpose' | 'major_decision' | 'custom') => {
+  const handleExtractFromChat = async (
+    scenarioId?: 'work_life' | 'purpose' | 'major_decision' | 'custom',
+    skipConfetti = false
+  ) => {
     setIsExtracting(true);
     try {
       const extracted = await extractDecisionCardFromConversation(messages, scenarioId);
@@ -105,7 +113,9 @@ export const DecisionCardModal: React.FC<DecisionCardModalProps> = ({
       setEditExperiment(extracted.experiment?.action || '');
       setEditReviewDate(extracted.reviewDate || '27/10/2026');
       setEditingSection(null);
-      confetti({ particleCount: 40, spread: 60 });
+      if (!skipConfetti) {
+        confetti({ particleCount: 40, spread: 60 });
+      }
     } finally {
       setIsExtracting(false);
     }
