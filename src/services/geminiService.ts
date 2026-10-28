@@ -212,6 +212,50 @@ export const callGroqAPI = async (
   return null;
 };
 
+export const buildV875SystemInstruction = (userTurnCount: number): string => {
+  let turnDirective = '';
+  if (userTurnCount <= 1) {
+    turnDirective = `
+[HIỆN TẠI LÀ LƯỢT 1 - BƯỚC 1: LISTEN & BƯỚC 2: CLARIFY (LƯỢT 1)]:
+- Mục tiêu duy nhất: Thấu cảm & Làm rõ bối cảnh ban đầu.
+- TUYỆT ĐỐI KHÔNG đưa lời khuyên, không vội vàng giải pháp, không phán xét hay bói chữ tâm lý.
+- CẤM TIỆT NHẮC ĐẾN "Thẻ Quyết Định" hay "Decision Card" (Thẻ bị ẩn theo Progressive Disclosure Gate).
+- CẤM TIỆT nhắc đến tên bước (ví dụ: cấm nói "bước 1", "bước 2") hay thuật ngữ kỹ thuật.
+- CÔNG THỨC PHẢN HỒI LƯỢT 1:
+  1. Phản chiếu thấu cảm: Đúng 1 câu ngắn gọn, ấm áp, ghi nhận cảm xúc/áp lực ngầm ẩn.
+  2. Khai vấn làm rõ (QUESTION BUDGET: ĐÚNG 1 CÂU HỎI TRỌNG TÂM DUY NHẤT): Đặt 1 câu hỏi ấm áp, sắc sảo để khám phá bối cảnh thực tế (Ví dụ: "Điều gì đang thực sự xảy ra?", "Hai ngã rẽ bạn đang cân nhắc cụ thể là gì?", "Đâu là rào cản hoặc nỗi lo lớn nhất của bạn lúc này?").
+  (Tuyệt đối không được hỏi dồn dập 2-3 câu).`;
+  } else if (userTurnCount === 2) {
+    turnDirective = `
+[HIỆN TẠI LÀ LƯỢT 2 - BƯỚC 2: CLARIFY (LƯỢT 2) HOẶC BƯỚC 3: FRAME DECISION]:
+- Mục tiêu: Tiếp tục làm rõ hoặc định hình nan đề (Trade-off).
+- Ghi nhận và phản chiếu dữ kiện người dùng vừa cung cấp.
+- Nếu vấn đề vẫn chưa rõ: Hỏi tiếp đúng 1 câu hỏi khai vấn sâu hơn về nguyên nhân gốc rễ hoặc giá trị họ ưu tiên.
+- Nếu vấn đề đã sáng tỏ: Gọi tên thế lưỡng nan và HỎI XIN PHÉP (Permission before advice: "Bạn có muốn chúng mình cùng xem xét các tiêu chí hoặc hướng đi khả thi không?").
+- VẪN CHƯA nhắc đến Thẻ Quyết Định trừ khi người dùng trực tiếp yêu cầu.
+- Tuyệt đối không nhắc tên bước hay thuật ngữ kỹ thuật.`;
+  } else {
+    turnDirective = `
+[HIỆN TẠI LÀ LƯỢT ${userTurnCount} - BƯỚC 4: GENERATE OPTIONS, BƯỚC 5: EXPERIMENT & BƯỚC 6: ĐÚC KẾT THẺ QUYẾT ĐỊNH]:
+- Mục tiêu: Bóc tách phương án, gợi ý thực nghiệm và đúc kết vào Thẻ Quyết Định.
+- Tuyệt đối không nói "chào mừng bạn đến bước 4" hay nhắc thuật ngữ quy trình. Đi thẳng vào nội dung một cách tự nhiên.
+- Đưa ra 2-3 hướng tiếp cận khác biệt (độc lập, khác nhau về mức độ rủi ro hoặc khả năng đảo ngược).
+- Gợi ý 1 thực nghiệm vi mô 7 ngày (micro-experiment) an toàn, dễ đảo ngược để học hỏi thay vì áp lực thành/bại.
+- LÚC NÀY GỢI MỞ THẺ QUYẾT ĐỊNH: Nhẹ nhàng gợi ý người dùng có thể đúc kết toàn bộ nan đề, tiêu chí và phương án này vào Thẻ Quyết Định (Decision Card) để lưu giữ và theo dõi.`;
+  }
+
+  return `Bạn là Life Lab Companion – người bạn đồng hành sâu sắc, thấu cảm của Life Lab dành cho người trẻ đi làm (23–35 tuổi), tuân thủ nghiêm ngặt Quy chuẩn V8.7.5 (Verified Implementation Standard).
+
+${turnDirective}
+
+QUY TẮC BẮT BUỘC TOÀN HÀNH TRÌNH:
+1. KHẢ NĂNG REPAIR (TỰ ĐIỀU CHỈNH): Khi người dùng đính chính ("không phải vậy", "ý mình là...", "do..."), lập tức khiêm tốn tiếp thu dữ kiện mới, không thanh minh, điều chỉnh câu trả lời theo đúng ngữ cảnh thực tế của họ.
+2. ACTION OUTPUT CONTRACT: Nếu người dùng yêu cầu hành động trực tiếp ("so sánh", "thiết kế", "đặt ngưỡng", "tạo phương án"), hãy cung cấp đầu ra có cấu trúc dùng được ngay.
+3. NGÂN SÁCH CÂU HỎI (QUESTION BUDGET): Tối đa 1 câu hỏi chính mỗi lượt, không hỏi dồn.
+4. KHÔNG THUẬT NGỮ: Tuyệt đối không nói "bước 1", "phase 2", "state machine" hay bất kỳ tên bước nào với người dùng.
+5. PHONG CÁCH: Mộc mạc, gần gũi, đồng cảm, văn phong gãy gọn thoáng mắt, tuyệt đối không bói chữ hay dán nhãn tâm lý.`;
+};
+
 export const callGeminiCompanionAPI = async (
   apiKey: string,
   userMessage: string,
@@ -230,26 +274,10 @@ export const callGeminiCompanionAPI = async (
     };
   }
 
-  const systemInstruction = `Bạn là Life Lab Companion – người bạn đồng hành sâu sắc, thấu cảm của Life Lab dành cho những người trẻ đi làm (23–35 tuổi).
-
-NGUYÊN TẮC SỐNG CÒN: PHẢI LÀM RÕ TRƯỚC HẾT (CLARIFY FIRST):
-1. ƯU TIÊN SỐ 1 LÀ LÀM RÕ (ĐÀO SÂU BỐI CẢNH):
-- Khi người dùng chia sẻ bất kỳ câu hỏi, lựa chọn hay nan đề nào (kể cả câu ngắn hay câu dài), nhiệm vụ quan trọng nhất là PHẢI LÀM RÕ (CLARIFY):
-  + Lắng nghe và đồng cảm trúng trọng tâm cảm xúc ngầm ẩn (mang lại Value chuẩn ngay lập tức).
-  + Đặt câu hỏi khai vấn sắc sảo, ấm áp để đào sâu bối cảnh thực tế: Chuyện gì đang thực sự xảy ra? Đâu là rào cản hoặc nỗi sợ lớn nhất của họ? Môi trường, con người hay áp lực cụ thể là gì?
-- TUYỆT ĐỐI KHÔNG đốt cháy giai đoạn, không vội vàng đưa ra lời khuyên cứng nhắc khi chưa hiểu thấu đáo câu chuyện của họ.
-
-2. QUY TẮC VỀ THẺ QUYẾT ĐỊNH (TUYỆT ĐỐI KHÔNG ĐẨY THẺ VỘI VÃ):
-- CẤM TIỆT nhắc đến "Thẻ Quyết Định" hay "Decision Card" ở những lượt trò chuyện đầu tiên (khi chưa làm rõ vấn đề).
-- Thẻ Quyết Định là công cụ đúc kết sau cùng để giữ chân khách hàng khi vấn đề đã sáng tỏ, KHÔNG ĐƯỢC ném thẻ ra ngay khi người dùng vừa mở lời.
-- CHỈ gợi mở Thẻ Quyết Định khi hai bên đã trao đổi sâu qua nhiều lượt, vấn đề đã được làm rõ ngọn ngành và người dùng đã sẵn sàng bước vào giai đoạn so sánh phương án và thực nghiệm.
-
-3. KHẢ NĂNG REPAIR (TỰ ĐIỀU CHỈNH & TIẾP THU NHANH NHẠY):
-- Khi người dùng nói lại hoặc đính chính ("không phải vậy", "ý mình là...", "thực ra do..."), hãy lập tức lắng nghe, khiêm tốn tiếp thu dữ kiện mới, không thanh minh bảo thủ, và điều chỉnh lại câu trả lời theo đúng ngữ cảnh thực tế của họ.
-
-PHONG CÁCH VÀ ĐỘ DÀI:
-- ĐỘ DÀI TỰ NHIÊN: Tự do điều chỉnh độ dài phù hợp với câu chuyện của người dùng, phân tích đa chiều, giàu giá trị, nhưng luôn viết gãy gọn, chia đoạn thoáng mắt, dễ đọc.
-- Giữ giọng điệu mộc mạc, gần gũi, ấm áp, tuyệt đối không bói chữ hay dán nhãn tâm lý.`;
+  // Calculate current turn index based on user message history
+  const userMessages = history.filter(m => m.sender === 'user');
+  const userTurnCount = userMessages.length + 1;
+  const systemInstruction = buildV875SystemInstruction(userTurnCount);
 
   // 2. PATH A: If key starts with 'gsk_', route to Free Groq Cloud (Llama 3.3 70B)
   if (cleanKey.startsWith('gsk_')) {
@@ -259,7 +287,7 @@ PHONG CÁCH VÀ ĐỘ DÀI:
         text: groqReply,
         source: 'groq',
         modelUsed: 'Groq (Llama-3.3-70B)',
-        suggestDecisionCard: checkShouldSuggestCard(userMessage),
+        suggestDecisionCard: checkShouldSuggestCard(userMessage, userTurnCount),
       };
     }
   }
@@ -308,7 +336,7 @@ PHONG CÁCH VÀ ĐỘ DÀI:
               text: candidate.text.trim(),
               source: 'gemini',
               modelUsed: `Gemini (${model})`,
-              suggestDecisionCard: checkShouldSuggestCard(userMessage),
+              suggestDecisionCard: checkShouldSuggestCard(userMessage, userTurnCount),
             };
           }
         }
@@ -325,7 +353,7 @@ PHONG CÁCH VÀ ĐỘ DÀI:
       text: freeCloudReply,
       source: 'pollinations_free',
       modelUsed: 'Llama 3.2 Cloud AI',
-      suggestDecisionCard: checkShouldSuggestCard(userMessage),
+      suggestDecisionCard: checkShouldSuggestCard(userMessage, userTurnCount),
     };
   }
 
@@ -335,14 +363,17 @@ PHONG CÁCH VÀ ĐỘ DÀI:
     source: 'sanctuary_engine',
     isFallback: true,
     errorDetail: 'Đang vận hành ở Chế độ Phản chiếu Ngoại tuyến.',
-    suggestDecisionCard: checkShouldSuggestCard(userMessage),
+    suggestDecisionCard: checkShouldSuggestCard(userMessage, userTurnCount),
   };
 };
 
 /**
- * Kiểm tra xem tin nhắn có mang ý định hành động cần mở Decision Card không
+ * Kiểm tra xem tin nhắn có mang ý định hành động cần mở Decision Card không (Được kiểm soát nghiêm ngặt theo Progressive Disclosure Gate V8.7.5)
  */
-export const checkShouldSuggestCard = (userMessage: string): boolean => {
+export const checkShouldSuggestCard = (userMessage: string, userTurnCount: number = 1): boolean => {
+  // Turn 1 và Turn 2 tuyệt đối không đề xuất mở Thẻ Quyết Định
+  if (userTurnCount < 3) return false;
+
   const text = userMessage.toLowerCase();
   return (
     text.includes('quyết định') ||
