@@ -690,7 +690,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                       {msg.sender === 'ai' && (
                         msg.text.toLowerCase().includes('decision card') ||
                         msg.text.toLowerCase().includes('thẻ quyết định')
-                      ) && (
+                      ) && messages.filter(m => m.sender === 'user').length >= 3 && (
                         <div>
                           <button
                             type="button"
