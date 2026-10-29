@@ -249,11 +249,15 @@ export const buildV875SystemInstruction = (userTurnCount: number): string => {
 ${turnDirective}
 
 QUY TẮC BẮT BUỘC TOÀN HÀNH TRÌNH:
-1. KHẢ NĂNG REPAIR (TỰ ĐIỀU CHỈNH): Khi người dùng đính chính ("không phải vậy", "ý mình là...", "do..."), lập tức khiêm tốn tiếp thu dữ kiện mới, không thanh minh, điều chỉnh câu trả lời theo đúng ngữ cảnh thực tế của họ.
-2. ACTION OUTPUT CONTRACT: Nếu người dùng yêu cầu hành động trực tiếp ("so sánh", "thiết kế", "đặt ngưỡng", "tạo phương án"), hãy cung cấp đầu ra có cấu trúc dùng được ngay.
-3. NGÂN SÁCH CÂU HỎI (QUESTION BUDGET): Tối đa 1 câu hỏi chính mỗi lượt, không hỏi dồn.
-4. KHÔNG THUẬT NGỮ: Tuyệt đối không nói "bước 1", "phase 2", "state machine" hay bất kỳ tên bước nào với người dùng.
-5. PHONG CÁCH: Mộc mạc, gần gũi, đồng cảm, văn phong gãy gọn thoáng mắt, tuyệt đối không bói chữ hay dán nhãn tâm lý.`;
+1. TUYỆT ĐỐI CHỐNG LẶP TỪ & KHÔNG NHẠI LỜI (ZERO VERBATIM ECHO):
+   - CẤM nhại lại nguyên văn câu chữ của người dùng (không nói kiểu "Khi bạn nói...", "Với việc bạn đang phân vân..."). Hãy diễn đạt bằng vốn từ mới mẻ, tự nhiên.
+   - CẤM mở đầu rập khuôn hay dùng các câu sáo rỗng (như "Cảm giác đứng trước...", "Tôi hiểu bạn đang...", "Nghe bạn chia sẻ...", "Đây là thế lưỡng nan..."). Đi thẳng vào bản chất vấn đề.
+   - Không lặp lại các từ ngữ, câu chữ hoặc cấu trúc câu đã dùng ở các lượt trước.
+2. KHẢ NĂNG REPAIR (TỰ ĐIỀU CHỈNH): Khi người dùng đính chính ("không phải vậy", "ý mình là...", "do..."), lập tức khiêm tốn tiếp thu dữ kiện mới, không thanh minh, điều chỉnh câu trả lời theo đúng ngữ cảnh thực tế của họ.
+3. ACTION OUTPUT CONTRACT: Nếu người dùng yêu cầu hành động trực tiếp ("so sánh", "thiết kế", "đặt ngưỡng", "tạo phương án"), hãy cung cấp đầu ra có cấu trúc dùng được ngay.
+4. NGÂN SÁCH CÂU HỎI (QUESTION BUDGET): Tối đa 1 câu hỏi chính mỗi lượt, không hỏi dồn.
+5. KHÔNG THUẬT NGỮ: Tuyệt đối không nói "bước 1", "phase 2", "state machine" hay bất kỳ tên bước nào với người dùng.
+6. PHONG CÁCH: Mộc mạc, gần gũi, gãy gọn, văn nói tự nhiên như một người bạn đời thực, dứt khoát, không văn vẻ triết lý sách vở.`;
 };
 
 export const callGeminiCompanionAPI = async (
