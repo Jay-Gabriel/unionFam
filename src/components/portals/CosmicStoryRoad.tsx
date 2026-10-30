@@ -349,6 +349,34 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
     ]);
   };
 
+  // Reset conversation handler: Làm mới toàn bộ phiên đối thoại, xóa cache và khôi phục trạng thái ban đầu
+  const handleResetConversation = () => {
+    if (isAiTyping) return;
+    const newConvId = Date.now().toString();
+    const initialWelcome: Message = {
+      id: 'welcome_' + newConvId,
+      sender: 'ai',
+      text: 'Chào bạn. Chúng ta không cần giải quyết toàn bộ cuộc sống hôm nay. Bạn có thể bắt đầu từ điều đang chiếm nhiều suy nghĩ hoặc năng lượng. Bạn muốn bắt đầu từ đâu?',
+      timestamp: 'Ngay bây giờ',
+    };
+
+    setConversationId(newConvId);
+    setMessages([initialWelcome]);
+    setInputText('');
+    setIsSessionClosed(false);
+    setSelectedOutcome(null);
+    setCheckpointNote('');
+    setActiveScenarioId(null);
+
+    try {
+      localStorage.removeItem('unionfam_messages_cache');
+      localStorage.removeItem('unionfam_conversation_id');
+      saveConversationToCloud(newConvId, [initialWelcome]);
+    } catch (e) {
+      console.warn('Reset storage notice:', e);
+    }
+  };
+
   // P0-06 & P0-08: Session Outcome Checkpoint & Memory Permission
   const handleConfirmCheckpoint = () => {
     if (!selectedOutcome) return;
@@ -634,9 +662,22 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+                  {/* Reset Conversation Button */}
+                  <button
+                    type="button"
+                    onClick={handleResetConversation}
+                    disabled={isAiTyping}
+                    className="text-[11px] text-stone-300 hover:text-amber-200 font-serif bg-white/5 hover:bg-stone-800 disabled:opacity-40 px-2.5 py-1 rounded-full border border-white/10 transition flex items-center gap-1 cursor-pointer shadow-sm hover:scale-105"
+                    title="Làm mới cuộc trò chuyện, xóa lịch sử và bắt đầu lại từ đầu"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Làm mới</span>
+                  </button>
+
                   {/* Decision Card Button */}
                   <button
+                    type="button"
                     onClick={() => setShowDecisionCard(true)}
                     className="text-[11px] text-amber-200 font-serif bg-amber-400/15 hover:bg-amber-400/25 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
                     title="Mở Decision Card (Bản nháp 7 mục)"
@@ -647,6 +688,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
 
                   {/* P0-06 Session Outcome Checkpoint Button */}
                   <button
+                    type="button"
                     onClick={handleOpenCheckpointModal}
                     className="text-[11px] text-amber-200 font-serif bg-amber-400/15 hover:bg-amber-400/25 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
                     title="Đúc kết phiên đối thoại (Master V8.7.2 Checkpoint)"
@@ -657,6 +699,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
 
                   {/* P0-01 User Stop Button */}
                   <button
+                    type="button"
                     onClick={handleUserStop}
                     disabled={isSessionClosed}
                     className="text-[11px] text-stone-300 font-serif bg-white/5 hover:bg-stone-800 disabled:opacity-40 px-2.5 py-1 rounded-full border border-white/10 transition flex items-center gap-1 cursor-pointer"
@@ -767,19 +810,31 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   onChange={e => setInputText(e.target.value)}
                   placeholder={
                     isSessionClosed
-                      ? 'Phiên đối thoại đã khép lại. Bạn có thể nhấn Đúc kết phiên để xem hoặc tải lại trang.'
+                      ? 'Phiên đối thoại đã dừng. Bạn có thể nhấn Bắt đầu lại để trò chuyện mới.'
                       : 'Gõ chia sẻ của bạn tại không gian này (không giới hạn chủ đề)...'
                   }
                   className="flex-1 bg-stone-950/90 border border-stone-700/60 rounded-2xl px-4 py-3 text-xs sm:text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-400 transition disabled:opacity-50"
                 />
-                <button
-                  type="submit"
-                  disabled={!inputText.trim() || isAiTyping || isSessionClosed}
-                  className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 disabled:opacity-40 text-stone-950 font-serif font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.4)]"
-                >
-                  <span>Gửi</span>
-                  <Send className="w-4 h-4" />
-                </button>
+                {isSessionClosed ? (
+                  <button
+                    type="button"
+                    onClick={handleResetConversation}
+                    className="px-4 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-serif font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer"
+                    title="Bắt đầu lại cuộc trò chuyện mới"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span className="hidden sm:inline">Bắt đầu lại</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!inputText.trim() || isAiTyping}
+                    className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 disabled:opacity-40 text-stone-950 font-serif font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer"
+                  >
+                    <span>Gửi</span>
+                    <Send className="w-4 h-4" />
+                  </button>
+                )}
               </form>
 
             </div>
