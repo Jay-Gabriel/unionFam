@@ -2,19 +2,20 @@
 ## BẢN CHUẨN HÓA KIẾN TRÚC & TIẾN ĐỘ HỘI THOẠI HIỆN CÓ: V8.7.5
 > **Hệ thống Web Phản tư & Thiết kế Trải nghiệm Sống**  
 > **Chuẩn đặc tả**: Spec V8.7.5 Verified Implementation Standard + Decision Mode V1.0  
-> **Trạng thái**: Đã nghiệm thu & Hoàn thành đến ngày 28/10/2026  
+> **Trạng thái**: Đã nghiệm thu & Cập nhật mới nhất ngày 31/10/2026  
 > **Production Live**: [https://union-fam.vercel.app/](https://union-fam.vercel.app/)
 
 ---
 
 ## 1. ĐỊNH VỊ VÀ ĐẶC ĐIỂM CỐT LÕI CỦA HỆ THỐNG HỘI THOẠI HIỆN CÓ
 
-Life Lab V8.7.5 là hệ thống đối thoại phản tư và đồng hành ra quyết định dành riêng cho người trẻ đi làm (23–35 tuổi). Ứng dụng đã loại bỏ hoàn toàn các kịch bản cứng (Hardcode) để chuyển sang AI thuần động, kết hợp kiểm soát trạng thái đa tầng (Progressive Disclosure) và Thẻ Quyết Định nhằm giữ chân khách hàng:
+Life Lab V8.7.5 là hệ thống đối thoại phản tư và đồng hành ra quyết định dành riêng cho người trẻ đi làm (23–35 tuổi). Ứng dụng đã loại bỏ hoàn toàn các kịch bản cứng (Hardcode) để chuyển sang AI thuần động, kết hợp kiểm soát trạng thái đa tầng (Progressive Disclosure), Thẻ Quyết Định giữ chân khách hàng và tính năng Reset (Làm mới) phiên linh hoạt:
 
-1. **Value-First & Lắng nghe Thấu cảm**:
+1. **Value-First & Lắng nghe Thấu cảm (Ngắn gọn & Súc tích)**:
    - Lắng nghe và đồng cảm trúng trọng tâm cảm xúc ngầm ẩn ngay trong lượt đầu.
    - Mang lại giá trị được xác nhận (First Session Value) trong tối đa 3 lượt đối thoại.
-   - Không phán xét, không bói chữ tâm lý, không vội vàng áp đặt giải pháp.
+   - Không phán xét, không bói chữ tâm lý, không đưa bài giảng phân tích não bộ, không đưa giải pháp dồn dập ở lượt đầu.
+   - Phong cách phản hồi cô đọng, gãy gọn, vừa vặn trên màn hình điện thoại (Concise & Punchy).
 2. **Progressive Disclosure Gate**:
    - *Conversation First*: Hội thoại và làm rõ bối cảnh là ưu tiên số 1.
    - Thẻ Quyết Định bị ẩn hoàn toàn ở Lượt 1 và Lượt 2 để người dùng không cảm thấy bị ép làm bài tập.
@@ -23,6 +24,9 @@ Life Lab V8.7.5 là hệ thống đối thoại phản tư và đồng hành ra 
    - Đã xóa sạch toàn bộ 293 dòng kịch bản if-else tĩnh (Singapore, Nurse, Layoff...).
    - Động cơ Groq Qwen-2.5-27B suy luận siêu tốc (~0.8s) không có độ trễ.
    - Khi người dùng đính chính ("không phải vậy", "ý mình là..."), AI khiêm tốn tiếp thu và sửa ngay cách hiểu trong phiên.
+4. **Tính Năng Làm Mới (Reset Conversation)**:
+   - Nút "Làm mới" ngay trên thanh tiêu đề khung chat và nút "Bắt đầu lại" tại thanh nhập liệu.
+   - Xóa trắng cache LocalStorage và khởi động phiên mới trong 1 click mà không cần tải lại trang.
 
 ---
 
@@ -105,5 +109,5 @@ Thẻ Quyết Định đóng vai trò là mô hình đúc kết (Projection Mode
 - **Frontend**: React 18.3.1, TypeScript 5.6.3, Vite 6.4.4, Tailwind CSS, Lucide Icons, Canvas Confetti.
 - **AI Gateway**: Groq Cloud High-Speed (`qwen/qwen3.8-27b`, latency ~0.8s), Google Gemini 2.0/2.5 Flash.
 - **Production Live URL**: [https://union-fam.vercel.app/](https://union-fam.vercel.app/)
-- **Repository Git**: `github.com:Jay-Gabriel/unionFam` (Branch `main`, Commit `da14a3d`).
+- **Repository Git**: `github.com:Jay-Gabriel/unionFam` (Branch `main`, Commit `4094c09`).
 - **Khởi chạy cục bộ**: `cd /home/jay/Desktop/unionFam && npm run dev`
