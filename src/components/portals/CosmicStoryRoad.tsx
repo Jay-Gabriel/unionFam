@@ -266,10 +266,11 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
         const currentSize = p.size * (0.4 + p.z * 1.8);
         const alpha = Math.min(Math.pow(p.z, 0.8) * p.brightness * 1.2, 0.95);
 
+        const isLichen = i % 2 === 0;
         ctx.beginPath();
         ctx.arc(screenX, screenY, currentSize, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 235, 150, ${alpha})`;
-        ctx.shadowColor = 'rgba(254, 215, 170, 0.8)';
+        ctx.fillStyle = isLichen ? `rgba(198, 214, 180, ${alpha})` : `rgba(238, 213, 150, ${alpha})`;
+        ctx.shadowColor = isLichen ? 'rgba(198, 214, 180, 0.8)' : 'rgba(238, 213, 150, 0.8)';
         ctx.shadowBlur = 6 * p.z;
         ctx.fill();
       }
@@ -467,20 +468,20 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
 
   return (
     // Outer scroll container: 550vh tall to allow rich, continuous scrolling
-    <div ref={containerRef} className="relative w-full h-[550vh] bg-[#070514] text-stone-100 font-sans select-none">
+    <div ref={containerRef} className="relative w-full h-[550vh] bg-calm-forest-dusk text-calm-paper-white font-sans select-none">
       
       {/* Fixed Fullscreen Viewport Layer */}
       <div className="sticky top-0 w-full h-screen overflow-hidden flex flex-col justify-between items-center z-10">
         
-        {/* 1. Deep Cosmic Nebula & Galaxy Background */}
+        {/* 1. Deep Living Sanctuary Forest Atmosphere */}
         <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,rgba(147,51,234,0.38)_0%,rgba(67,56,202,0.28)_35%,rgba(10,8,28,0.95)_75%,#050410_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,rgba(89,106,85,0.45)_0%,rgba(38,49,40,0.6)_45%,rgba(19,27,21,0.98)_85%)]" />
           
-          {/* Luminous Green-Yellow Cosmic Ribbon / Aurora Streamer (matching screenshot 20-51-48) */}
-          <div className="absolute -top-32 left-[-15%] w-[130%] h-[550px] pointer-events-none opacity-45 blur-3xl bg-gradient-to-r from-emerald-400 via-amber-300 to-purple-600 rounded-[100%] transform -rotate-12" />
+          {/* Luminous Lichen & Pollen Ribbon */}
+          <div className="absolute -top-32 left-[-15%] w-[130%] h-[550px] pointer-events-none opacity-40 blur-3xl bg-gradient-to-r from-calm-moss via-calm-lichen to-calm-pollen rounded-[100%] transform -rotate-12" />
 
-          {/* Starfield noise texture */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.7)_1px,transparent_1px),radial-gradient(circle_at_80%_40%,rgba(255,255,255,0.7)_1px,transparent_1px),radial-gradient(circle_at_40%_70%,rgba(255,255,255,0.6)_1.5px,transparent_1.5px),radial-gradient(circle_at_70%_80%,rgba(255,234,164,0.8)_1.5px,transparent_1.5px)] bg-[size:240px_240px]" />
+          {/* Starfield / pollen dust noise */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(198,214,180,0.6)_1px,transparent_1px),radial-gradient(circle_at_80%_40%,rgba(238,213,150,0.6)_1px,transparent_1px),radial-gradient(circle_at_40%_70%,rgba(250,248,242,0.5)_1.5px,transparent_1.5px)] bg-[size:240px_240px]" />
         </div>
 
         {/* 2. Real-time 3D Moving Perspective Golden Road Canvas */}
@@ -489,36 +490,36 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
           className="absolute inset-0 w-full h-full pointer-events-none z-10"
         />
 
-        {/* 3. Top Header Navigation Bar */}
-        <header className="relative z-40 w-full px-6 py-5 flex items-center justify-between backdrop-blur-md bg-stone-950/40 border-b border-white/10">
+        {/* 3. Top Header Navigation Bar (Sylva Living Sanctuary Theme) */}
+        <header className="relative z-40 w-full px-6 py-4 flex items-center justify-between backdrop-blur-md bg-calm-deep-moss/70 border-b border-calm-lichen/20">
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToArches}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-stone-900/80 hover:bg-stone-800 border border-amber-300/40 text-amber-200 text-xs font-serif transition shadow-[0_0_15px_rgba(234,179,8,0.2)] hover:scale-105"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-calm-forest-dusk/90 hover:bg-calm-moss border border-calm-lichen/30 text-calm-fog text-xs font-sans transition shadow-soft hover:scale-105 cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-3.5 h-3.5 text-calm-lichen" />
               <span>Về 3 Cổng Vòm</span>
             </button>
-            <div className="hidden sm:flex items-center gap-2 text-stone-400 text-xs font-mono">
+            <div className="hidden sm:flex items-center gap-2 text-calm-fog/70 text-xs font-sans">
               <span>/</span>
-              <span className="text-amber-200">Cổng 1: Con Đường Thức Tỉnh (Moving Cosmic Road)</span>
+              <span className="text-calm-lichen font-medium">Cổng 1: Con Đường Thức Tỉnh (Living Sanctuary Road)</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Scroll progress indicator */}
-            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-amber-300/80 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
+            <div className="hidden md:flex items-center gap-2 text-xs font-sans text-calm-lichen bg-calm-deep-moss/80 px-3 py-1 rounded-full border border-calm-lichen/30">
               <span>Hành trình:</span>
-              <span className="font-bold">{Math.round(scrollProgress * 100)}%</span>
+              <span className="font-bold text-calm-pollen">{Math.round(scrollProgress * 100)}%</span>
             </div>
 
             {/* Decision Card Button (V8.7.5 & V1.0 - Connected with conversation) */}
             <button
               onClick={() => setShowDecisionCard(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-400/50 bg-[#151a32] hover:bg-[#1d2344] text-amber-200 text-xs font-serif transition shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:scale-105 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-calm-pollen/40 bg-calm-forest-dusk hover:bg-calm-deep-moss text-calm-pollen text-xs font-sans transition shadow-soft hover:scale-105 cursor-pointer"
               title="Mở Decision Card (Đã kết nối với hội thoại thực tế)"
             >
-              <Layers className="w-3.5 h-3.5 text-amber-400" />
+              <Layers className="w-3.5 h-3.5 text-calm-pollen" />
               <span>Decision Card</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title="Đang kết nối hội thoại" />
             </button>
@@ -526,7 +527,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             {/* Limited Beta: Nút Báo Lỗi (Report Incident) */}
             <button
               onClick={() => setShowIncidentModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-rose-400/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-serif transition cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-rose-400/40 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-xs font-sans transition cursor-pointer"
               title="Báo cáo lỗi / Sự cố kỹ thuật (Limited Beta)"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
@@ -536,7 +537,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             {/* Limited Beta: Dashboard Tối Thiểu */}
             <button
               onClick={() => setShowBetaDashboard(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-indigo-400/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-serif transition cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-indigo-400/40 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-sans transition cursor-pointer"
               title="Mở Dashboard Giám Sát Tối Thiểu (30-50 users)"
             >
               <Activity className="w-3.5 h-3.5 text-indigo-400" />
@@ -546,7 +547,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             {onGoToExperiments && (
               <button
                 onClick={onGoToExperiments}
-                className="px-3.5 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/50 text-amber-200 text-xs font-serif transition flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-full bg-calm-moss/40 hover:bg-calm-moss border border-calm-lichen/40 text-calm-paper-white text-xs font-sans transition flex items-center gap-1.5 cursor-pointer"
               >
                 <span>Sang Cổng 2</span>
                 <span>→</span>
@@ -586,15 +587,15 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
           {/* STEP 2: MILESTONE 1 (20% - 38%) */}
           <div
             style={getStepStyle(0.19, 0.28, 0.38)}
-            className="absolute text-center max-w-3xl space-y-4 p-8 sm:p-12 rounded-3xl bg-stone-950/80 border border-amber-300/40 backdrop-blur-xl shadow-[0_0_50px_rgba(245,158,11,0.25)]"
+            className="absolute text-center max-w-3xl space-y-4 p-8 sm:p-12 rounded-3xl bg-calm-deep-moss/90 border border-calm-lichen/30 backdrop-blur-xl shadow-[0_0_50px_rgba(38,49,40,0.5)]"
           >
-            <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-amber-300 block">
+            <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-calm-lichen block font-semibold">
               CHẶNG 1 • LẮNG NGHE ĐIỀU ĐANG DIỄN RA
             </span>
-            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl text-amber-100 leading-snug drop-shadow-lg">
-              "Đôi khi sự kiệt sức không đến từ việc bạn làm chưa đủ tốt,<br />Mà từ việc chưa có dịp nhìn rõ:<br /><span className="text-amber-300 font-medium italic">Điều gì đang thực sự lấy đi năng lượng của mình?</span>"
+            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl text-calm-warm-ivory leading-snug drop-shadow-lg font-light">
+              "Đôi khi sự kiệt sức không đến từ việc bạn làm chưa đủ tốt,<br />Mà từ việc chưa có dịp nhìn rõ:<br /><span className="text-calm-pollen font-medium italic">Điều gì đang thực sự lấy đi năng lượng của mình?</span>"
             </p>
-            <p className="text-stone-300 text-xs sm:text-sm font-sans max-w-xl mx-auto leading-relaxed pt-2">
+            <p className="text-calm-fog/80 text-xs sm:text-sm font-sans max-w-xl mx-auto leading-relaxed pt-2">
               Không phán xét, không áp đặt giải pháp. Hãy bắt đầu từ việc gọi tên chính xác điều bạn đang trải qua.
             </p>
           </div>
@@ -602,15 +603,15 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
           {/* STEP 3: MILESTONE 2 (40% - 58%) */}
           <div
             style={getStepStyle(0.39, 0.48, 0.58)}
-            className="absolute text-center max-w-3xl space-y-4 p-8 sm:p-12 rounded-3xl bg-stone-950/80 border border-purple-400/40 backdrop-blur-xl shadow-[0_0_50px_rgba(168,85,247,0.25)]"
+            className="absolute text-center max-w-3xl space-y-4 p-8 sm:p-12 rounded-3xl bg-calm-forest-dusk/90 border border-calm-lichen/30 backdrop-blur-xl shadow-[0_0_50px_rgba(89,106,85,0.35)]"
           >
-            <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-purple-300 block">
+            <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-calm-lichen block font-semibold">
               CHẶNG 2 • TÁCH RỜI ÁP LỰC VÀ NHU CẦU NỘI TẠI
             </span>
-            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl text-purple-100 leading-snug drop-shadow-lg">
+            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl text-calm-warm-ivory leading-snug drop-shadow-lg font-light">
               "Đâu là áp lực từ hoàn cảnh xung quanh,<br />Và đâu là điều bạn thực sự muốn dành sự ưu tiên lúc này?"
             </p>
-            <p className="text-stone-300 text-xs sm:text-sm font-sans max-w-xl mx-auto leading-relaxed pt-2">
+            <p className="text-calm-fog/80 text-xs sm:text-sm font-sans max-w-xl mx-auto leading-relaxed pt-2">
               Khi nhìn rõ ranh giới giữa kỳ vọng bên ngoài và nhịp sống của chính mình, sự bối rối sẽ dần nhường chỗ cho sự bình thản.
             </p>
           </div>
@@ -618,15 +619,15 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
           {/* STEP 4: MILESTONE 3 (60% - 78%) */}
           <div
             style={getStepStyle(0.59, 0.68, 0.78)}
-            className="absolute text-center max-w-3xl space-y-4 p-8 sm:p-12 rounded-3xl bg-stone-950/80 border border-emerald-400/40 backdrop-blur-xl shadow-[0_0_50px_rgba(16,185,129,0.25)]"
+            className="absolute text-center max-w-3xl space-y-4 p-8 sm:p-12 rounded-3xl bg-calm-deep-moss/90 border border-emerald-400/30 backdrop-blur-xl shadow-[0_0_50px_rgba(52,211,153,0.25)]"
           >
-            <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-emerald-300 block">
+            <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-emerald-300 block font-semibold">
               CHẶNG 3 • TỰ DO LỰA CHỌN CÁCH TIẾP TỤC
             </span>
-            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl text-emerald-100 leading-snug drop-shadow-lg">
+            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl text-calm-warm-ivory leading-snug drop-shadow-lg font-light">
               "Bạn không bắt buộc phải hành động hay quyết định ngay.<br />Dừng lại với một điều vừa rõ đã là một kết quả trọn vẹn."
             </p>
-            <p className="text-stone-300 text-xs sm:text-sm font-sans max-w-xl mx-auto leading-relaxed pt-2">
+            <p className="text-calm-fog/80 text-xs sm:text-sm font-sans max-w-xl mx-auto leading-relaxed pt-2">
               Giữ một câu hỏi ngẫm nghĩ, thử một bước nhỏ, hoặc đơn giản là cho phép mình dừng lại nghỉ ngơi.
             </p>
           </div>
@@ -642,22 +643,22 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
             className="absolute w-full max-w-3xl"
           >
             {/* The Main Chat Interface Box */}
-            <div className="w-full rounded-3xl bg-stone-950/95 border border-amber-300/50 backdrop-blur-2xl shadow-[0_0_70px_rgba(245,158,11,0.35)] flex flex-col h-[560px] overflow-hidden">
+            <div className="w-full rounded-3xl bg-calm-forest-dusk/95 border border-calm-lichen/30 backdrop-blur-2xl shadow-[0_0_70px_rgba(38,49,40,0.85)] flex flex-col h-[560px] overflow-hidden">
               
               {/* Header */}
-              <div className="px-6 py-4 border-b border-white/10 bg-stone-900/80 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-calm-lichen/15 bg-calm-deep-moss/80 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_#10b981]" />
+                  <span className="w-3 h-3 rounded-full bg-calm-lichen animate-pulse shadow-[0_0_10px_#C6D6B4]" />
                   <div>
-                    <h3 className="font-serif text-base text-amber-200 font-medium flex items-center gap-2">
+                    <h3 className="font-serif text-base text-calm-paper-white font-medium flex items-center gap-2">
                       <span>Life Lab Mirror Companion</span>
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1.5 font-sans">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[10px] bg-calm-moss/30 text-calm-lichen px-2.5 py-0.5 rounded-full border border-calm-lichen/40 flex items-center gap-1.5 font-sans">
+                        <span className="w-1.5 h-1.5 rounded-full bg-calm-lichen animate-pulse" />
                         <span>AI Active</span>
                       </span>
                     </h3>
-                    <span className="text-[10px] text-stone-400 font-mono tracking-wider">
-                      Cuối Con Đường Ánh Sáng • Lắng Nghe Không Phán Xét
+                    <span className="text-[10px] text-calm-fog/70 font-mono tracking-wider">
+                      Cuối Con Đường Tĩnh Lặng • Lắng Nghe Không Phán Xét
                     </span>
                   </div>
                 </div>
@@ -668,10 +669,10 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                     type="button"
                     onClick={handleResetConversation}
                     disabled={isAiTyping}
-                    className="text-[11px] text-stone-300 hover:text-amber-200 font-serif bg-white/5 hover:bg-stone-800 disabled:opacity-40 px-2.5 py-1 rounded-full border border-white/10 transition flex items-center gap-1 cursor-pointer shadow-sm hover:scale-105"
+                    className="text-[11px] text-calm-fog hover:text-white font-serif bg-calm-moss/20 hover:bg-calm-moss/40 disabled:opacity-40 px-2.5 py-1 rounded-full border border-calm-lichen/20 transition flex items-center gap-1 cursor-pointer shadow-sm hover:scale-105"
                     title="Làm mới cuộc trò chuyện, xóa lịch sử và bắt đầu lại từ đầu"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                    <RotateCcw className="w-3.5 h-3.5 text-calm-pollen" />
                     <span>Làm mới</span>
                   </button>
 
@@ -679,10 +680,10 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowDecisionCard(true)}
-                    className="text-[11px] text-amber-200 font-serif bg-amber-400/15 hover:bg-amber-400/25 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
+                    className="text-[11px] text-calm-pollen font-serif bg-calm-pollen/15 hover:bg-calm-pollen/25 px-2.5 py-1 rounded-full border border-calm-pollen/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
                     title="Mở Decision Card (Bản nháp 7 mục)"
                   >
-                    <Layers className="w-3.5 h-3.5 text-amber-300" />
+                    <Layers className="w-3.5 h-3.5 text-calm-pollen" />
                     <span>Decision Card</span>
                   </button>
 
@@ -690,10 +691,10 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   <button
                     type="button"
                     onClick={handleOpenCheckpointModal}
-                    className="text-[11px] text-amber-200 font-serif bg-amber-400/15 hover:bg-amber-400/25 px-2.5 py-1 rounded-full border border-amber-400/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
+                    className="text-[11px] text-calm-lichen font-serif bg-calm-lichen/15 hover:bg-calm-lichen/25 px-2.5 py-1 rounded-full border border-calm-lichen/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
                     title="Đúc kết phiên đối thoại (Master V8.7.2 Checkpoint)"
                   >
-                    <BookmarkCheck className="w-3.5 h-3.5 text-amber-300" />
+                    <BookmarkCheck className="w-3.5 h-3.5 text-calm-lichen" />
                     <span>Đúc Kết Phiên</span>
                   </button>
 
@@ -702,10 +703,10 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                     type="button"
                     onClick={handleUserStop}
                     disabled={isSessionClosed}
-                    className="text-[11px] text-stone-300 font-serif bg-white/5 hover:bg-stone-800 disabled:opacity-40 px-2.5 py-1 rounded-full border border-white/10 transition flex items-center gap-1 cursor-pointer"
+                    className="text-[11px] text-calm-fog font-serif bg-white/5 hover:bg-calm-forest-dusk disabled:opacity-40 px-2.5 py-1 rounded-full border border-calm-lichen/15 transition flex items-center gap-1 cursor-pointer"
                     title="Dừng phiên trò chuyện ngay lúc này"
                   >
-                    <PauseCircle className="w-3.5 h-3.5 text-stone-400" />
+                    <PauseCircle className="w-3.5 h-3.5 text-calm-fog/70" />
                     <span>{isSessionClosed ? 'Đã dừng' : 'Dừng lại'}</span>
                   </button>
                 </div>
@@ -724,8 +725,8 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                     <div
                       className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                         msg.sender === 'user'
-                          ? 'bg-amber-400 text-stone-950 font-sans font-medium rounded-br-none shadow-md'
-                          : 'bg-stone-900/95 border border-white/10 text-stone-200 font-serif rounded-bl-none shadow-lg whitespace-pre-line'
+                          ? 'bg-gradient-to-r from-amber-700/90 to-amber-600/90 text-white font-sans font-medium rounded-br-none shadow-md border border-amber-400/20'
+                          : 'bg-calm-deep-moss/95 border border-calm-lichen/20 text-calm-fog font-serif rounded-bl-none shadow-lg whitespace-pre-line'
                       }`}
                     >
                       {msg.text}
@@ -738,27 +739,27 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                           <button
                             type="button"
                             onClick={() => setShowDecisionCard(true)}
-                            className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/25 to-amber-600/25 hover:from-amber-500/35 hover:to-amber-600/35 border border-amber-400/50 text-amber-200 text-xs font-serif transition shadow-sm hover:scale-[1.02] cursor-pointer"
+                            className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-calm-moss/40 hover:bg-calm-moss/60 border border-calm-lichen/40 text-calm-pollen text-xs font-serif transition shadow-sm hover:scale-[1.02] cursor-pointer"
                           >
-                            <Layers className="w-3.5 h-3.5 text-amber-300" />
+                            <Layers className="w-3.5 h-3.5 text-calm-pollen" />
                             <span>Mở Decision Card (Bản nháp 7 mục)</span>
-                            <ArrowRight className="w-3 h-3 text-amber-300" />
+                            <ArrowRight className="w-3 h-3 text-calm-pollen" />
                           </button>
                         </div>
                       )}
                     </div>
-                    <span className="text-[10px] text-stone-400 mt-1 font-mono px-1">
+                    <span className="text-[10px] text-calm-fog/60 mt-1 font-mono px-1">
                       {msg.timestamp}
                     </span>
                   </div>
                 ))}
 
                 {isAiTyping && (
-                  <div className="flex items-center gap-2 p-4 rounded-2xl bg-stone-900/60 border border-white/5 text-amber-300 text-xs w-36 animate-fadeIn">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" />
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:0.4s]" />
-                    <span className="text-[11px] font-serif text-stone-400 ml-1">Đang suy ngẫm...</span>
+                  <div className="flex items-center gap-2 p-4 rounded-2xl bg-calm-deep-moss/80 border border-calm-lichen/15 text-calm-pollen text-xs w-36 animate-fadeIn">
+                    <span className="w-2 h-2 rounded-full bg-calm-pollen animate-bounce" />
+                    <span className="w-2 h-2 rounded-full bg-calm-pollen animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-2 h-2 rounded-full bg-calm-pollen animate-bounce [animation-delay:0.4s]" />
+                    <span className="text-[11px] font-serif text-calm-fog/70 ml-1">Đang suy ngẫm...</span>
                   </div>
                 )}
                 {/* Scroll Target Div */}
@@ -766,17 +767,17 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
               </div>
 
               {/* 3 Core Problem Scenarios (Limited Beta - Product Brief V1.0) */}
-              <div className="px-4 py-2.5 bg-[#101426] border-t border-white/5 space-y-2">
+              <div className="px-4 py-2.5 bg-calm-deep-moss/90 border-t border-calm-lichen/15 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-amber-300/80 font-mono flex items-center pr-1 uppercase tracking-wider shrink-0">
+                  <span className="text-[10px] text-calm-lichen font-mono flex items-center pr-1 uppercase tracking-wider shrink-0">
                     3 TÌNH HUỐNG TRỌNG TÂM (KẾT NỐI VÀO CARD):
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowDecisionCard(true)}
-                    className="text-[10px] font-mono text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    className="text-[10px] font-mono text-calm-pollen hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <Sparkles className="w-3 h-3" />
+                    <Sparkles className="w-3 h-3 text-calm-pollen" />
                     <span>Xem Thẻ Quyết Định</span>
                   </button>
                 </div>
@@ -790,11 +791,11 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                       disabled={isSessionClosed}
                       className={`px-3 py-1.5 rounded-full border transition whitespace-nowrap shrink-0 hover:scale-105 flex items-center gap-1.5 cursor-pointer ${
                         activeScenarioId === sc.id
-                          ? 'bg-amber-400/25 border-amber-300 text-amber-100 font-semibold shadow-[0_0_10px_rgba(245,158,11,0.25)]'
-                          : 'bg-stone-900/80 border-stone-700/80 text-stone-300 hover:text-amber-200 hover:border-amber-400/40'
+                          ? 'bg-calm-moss border-calm-lichen text-white font-semibold shadow-soft'
+                          : 'bg-calm-forest-dusk/90 border-calm-lichen/20 text-calm-fog hover:text-white hover:border-calm-lichen/50'
                       }`}
                     >
-                      <span className="text-[9px] font-mono font-bold text-amber-400">{sc.badge}:</span>
+                      <span className="text-[9px] font-mono font-bold text-calm-pollen">{sc.badge}:</span>
                       <span>{sc.title}</span>
                     </button>
                   ))}
@@ -802,7 +803,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
               </div>
 
               {/* Input Box */}
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-white/10 bg-stone-900/80 flex gap-2">
+              <form onSubmit={handleSendMessage} className="p-4 border-t border-calm-lichen/15 bg-calm-deep-moss/90 flex gap-2">
                 <input
                   type="text"
                   value={inputText}
@@ -813,13 +814,13 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                       ? 'Phiên đối thoại đã dừng. Bạn có thể nhấn Bắt đầu lại để trò chuyện mới.'
                       : 'Gõ chia sẻ của bạn tại không gian này (không giới hạn chủ đề)...'
                   }
-                  className="flex-1 bg-stone-950/90 border border-stone-700/60 rounded-2xl px-4 py-3 text-xs sm:text-sm text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-400 transition disabled:opacity-50"
+                  className="flex-1 bg-calm-forest-dusk/90 border border-calm-lichen/30 rounded-2xl px-4 py-3 text-xs sm:text-sm text-calm-paper-white placeholder-calm-fog/40 focus:outline-none focus:border-calm-lichen transition disabled:opacity-50"
                 />
                 {isSessionClosed ? (
                   <button
                     type="button"
                     onClick={handleResetConversation}
-                    className="px-4 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-serif font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer"
+                    className="px-4 py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern text-white font-serif font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer"
                     title="Bắt đầu lại cuộc trò chuyện mới"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -829,7 +830,7 @@ export const CosmicStoryRoad: React.FC<CosmicStoryRoadProps> = ({
                   <button
                     type="submit"
                     disabled={!inputText.trim() || isAiTyping}
-                    className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 disabled:opacity-40 text-stone-950 font-serif font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer"
+                    className="px-5 py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern disabled:opacity-40 text-white font-serif font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer"
                   >
                     <span>Gửi</span>
                     <Send className="w-4 h-4" />
