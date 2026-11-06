@@ -1,4 +1,10 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import {
+  supabase,
+  isSupabaseConfigured,
+  isKeyAuthenticated,
+  getSupabaseConfig,
+  KEY_AUTH_EVENT
+} from '../lib/supabaseClient';
 import { User } from '@supabase/supabase-js';
 
 export interface SyncedMessage {
@@ -23,9 +29,27 @@ const LOCAL_MESSAGES_KEY = 'unionfam_messages_cache';
 const LOCAL_MEMORIES_KEY = 'unionfam_memories_cache';
 
 /**
- * Lấy thông tin user hiện tại (nếu đã đăng nhập Google)
+ * Lấy thông tin user hiện tại (hỗ trợ cả Supabase Key Auth lẫn Google OAuth)
  */
 export async function getCurrentUser(): Promise<User | null> {
+  // 1. Kiểm tra nếu đang đăng nhập bằng Supabase Key / Secret Key
+  if (isKeyAuthenticated()) {
+    const config = getSupabaseConfig();
+    const keyPreview = config.key ? `...${config.key.slice(-8)}` : 'Key';
+    return {
+      id: 'supabase-key-user',
+      app_metadata: { provider: 'supabase_key' },
+      user_metadata: {
+        full_name: 'Quản trị Supabase',
+        key_preview: keyPreview,
+        is_key_auth: true,
+      },
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+    } as any;
+  }
+
+  // 2. Kiểm tra nếu có Google OAuth / Email session
   if (!supabase) return null;
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
@@ -40,17 +64,33 @@ export async function getCurrentUser(): Promise<User | null> {
  * Đăng ký lắng nghe thay đổi trạng thái đăng nhập
  */
 export function onAuthStateChange(callback: (user: User | null) => void) {
-  if (!supabase) {
-    callback(null);
-    return () => {};
+  const checkState = () => {
+    getCurrentUser().then(callback);
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener(KEY_AUTH_EVENT, checkState);
   }
 
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session?.user ?? null);
-  });
+  let subscription: any = null;
+  if (supabase) {
+    const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        callback(session.user);
+      } else {
+        checkState();
+      }
+    });
+    subscription = data.subscription;
+  }
 
   return () => {
-    subscription.unsubscribe();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener(KEY_AUTH_EVENT, checkState);
+    }
+    if (subscription) {
+      subscription.unsubscribe();
+    }
   };
 }
 

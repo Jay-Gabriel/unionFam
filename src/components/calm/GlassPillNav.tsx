@@ -3,8 +3,6 @@ import {
   Leaf,
   Volume2,
   VolumeX,
-  AlertTriangle,
-  Activity,
   Compass,
   FlaskConical,
   Home,
@@ -21,8 +19,8 @@ interface GlassPillNavProps {
   onGoToMemories: () => void;
   onOpenRadio: () => void;
   onOpenAuthModal: () => void;
-  onOpenIncident: () => void;
-  onOpenDashboard: () => void;
+  onOpenIncident?: () => void;
+  onOpenDashboard?: () => void;
   activeTab: 'home' | 'chat' | 'lifemap' | 'experiments' | 'memories';
   isRadioPlaying?: boolean;
 }
@@ -140,26 +138,8 @@ export function GlassPillNav({
             <span className="hidden sm:inline whitespace-nowrap">Radio</span>
           </button>
 
-          {/* Google OAuth & User Profile Button */}
+          {/* Google OAuth & Supabase Key Profile Button */}
           <UserProfileButton onOpenAuthModal={onOpenAuthModal} />
-
-          {/* Incident Report (Beta) */}
-          <button
-            onClick={onOpenIncident}
-            title="Báo cáo lỗi / Góp ý (Beta)"
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-calm-forest-dusk/60 hover:bg-rose-950/40 border border-rose-400/30 flex items-center justify-center text-rose-300 transition cursor-pointer shrink-0"
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />
-          </button>
-
-          {/* Beta Dashboard */}
-          <button
-            onClick={onOpenDashboard}
-            title="Dashboard Giám Sát Beta"
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-calm-forest-dusk/60 hover:bg-indigo-950/40 border border-indigo-400/30 flex items-center justify-center text-indigo-300 transition cursor-pointer shrink-0"
-          >
-            <Activity className="w-3.5 h-3.5" />
-          </button>
         </div>
 
       </nav>
