@@ -34,14 +34,12 @@ const LOCAL_MEMORIES_KEY = 'unionfam_memories_cache';
 export async function getCurrentUser(): Promise<User | null> {
   // 1. Kiểm tra nếu đang đăng nhập bằng Supabase Key / Secret Key
   if (isKeyAuthenticated()) {
-    const config = getSupabaseConfig();
-    const keyPreview = config.key ? `...${config.key.slice(-8)}` : 'Key';
     return {
       id: 'supabase-key-user',
       app_metadata: { provider: 'supabase_key' },
       user_metadata: {
-        full_name: 'Quản trị Supabase',
-        key_preview: keyPreview,
+        full_name: 'Quản trị viên',
+        key_preview: 'Đã mã hóa',
         is_key_auth: true,
       },
       aud: 'authenticated',

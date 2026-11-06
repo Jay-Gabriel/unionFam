@@ -202,22 +202,12 @@ export const App: React.FC = () => {
 
       {/* Pristine Minimalist Footer */}
       <footer className="py-12 border-t border-white/10 mt-20 text-center text-xs text-calm-fog/60 font-mono space-y-2">
-        <div className="flex items-center justify-center gap-4 flex-wrap">
+        <div className="flex items-center justify-center gap-4 flex-wrap text-calm-fog/70">
           <span>UnionFam · Life Lab © 2026</span>
           <span>•</span>
-          <button
-            onClick={() => setShowIncidentModal(true)}
-            className="hover:text-calm-pollen transition cursor-pointer underline-offset-2 hover:underline"
-          >
-            Góp ý & Báo lỗi (Beta)
-          </button>
+          <span>Bảo mật riêng tư 100%</span>
           <span>•</span>
-          <button
-            onClick={() => setShowBetaDashboard(true)}
-            className="hover:text-calm-pollen transition cursor-pointer underline-offset-2 hover:underline"
-          >
-            Hệ thống & Telemetry
-          </button>
+          <span>AI gợi mở. Bạn quyết định.</span>
         </div>
         <p className="text-[11px] text-calm-fog/40">
           Không gian tĩnh tại cho những quyết định quan trọng của cuộc đời.

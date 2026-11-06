@@ -39,9 +39,8 @@ export const UserProfileButton: React.FC<UserProfileButtonProps> = ({ onOpenAuth
       <button
         onClick={onOpenAuthModal}
         className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-calm-lichen/30 text-xs font-medium text-calm-paper-white transition flex items-center gap-1.5 shadow-soft cursor-pointer hover:scale-105 active:scale-95 shrink-0 whitespace-nowrap"
-        title="Đăng nhập tài khoản hoặc Khóa Supabase"
+        title="Đăng nhập tài khoản"
       >
-        <Key className="w-3.5 h-3.5 text-calm-pollen shrink-0" />
         <span className="whitespace-nowrap">Đăng nhập</span>
       </button>
     );
@@ -53,8 +52,8 @@ export const UserProfileButton: React.FC<UserProfileButtonProps> = ({ onOpenAuth
     user.user_metadata?.full_name ||
     user.user_metadata?.name ||
     user.email?.split('@')[0] ||
-    (isKeyAuth ? 'Quản trị Supabase' : 'Thành viên');
-  const email = user.email || (isKeyAuth ? `Khóa: ${user.user_metadata?.key_preview || 'Đã kích hoạt'}` : '');
+    (isKeyAuth ? 'Quản trị viên' : 'Thành viên');
+  const email = isKeyAuth ? 'Phiên bảo mật Supabase' : (user.email || '');
 
   return (
     <div className="relative shrink-0 whitespace-nowrap">

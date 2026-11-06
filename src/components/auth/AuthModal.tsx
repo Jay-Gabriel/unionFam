@@ -8,9 +8,10 @@ import {
   Lock,
   ArrowRight,
   RefreshCw,
-  Check,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import {
   signInWithGoogle,
@@ -28,14 +29,16 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'key' | 'google_email'>('key');
+  // Default to standard google/email login for privacy and clean public appearance
+  const [activeTab, setActiveTab] = useState<'google_email' | 'key'>('google_email');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Supabase Config state (Defaulted to user's secret key)
+  // Supabase Config state (Masked for privacy)
   const [supabaseUrl, setSupabaseUrl] = useState('');
   const [supabaseKey, setSupabaseKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -49,6 +52,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       const config = getSupabaseConfig();
       setSupabaseUrl(config.url || 'https://omztupgdandovalnoope.supabase.co');
       setSupabaseKey(config.key || '');
+      setShowKey(false);
       setErrorMsg(null);
       setSuccessMsg(null);
       setConnectionStatus(null);
@@ -66,7 +70,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setErrorMsg(null);
     try {
       loginWithSupabaseKey(supabaseUrl.trim(), supabaseKey.trim());
-      setSuccessMsg('Đăng nhập thành công với Khóa Supabase!');
+      setSuccessMsg('Đã kết nối thành công với Khóa Supabase!');
       setTimeout(() => {
         setLoading(false);
         onClose();
@@ -163,40 +167,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         {/* Brand & Title */}
         <div className="text-center space-y-1.5 pt-1">
           <div className="inline-flex w-11 h-11 rounded-2xl bg-calm-deep-moss border border-calm-lichen/40 items-center justify-center text-calm-pollen shadow-soft mx-auto">
-            <Key className="w-5 h-5 animate-pulse" />
+            {activeTab === 'key' ? (
+              <Key className="w-5 h-5 text-calm-pollen" />
+            ) : (
+              <Sparkles className="w-5 h-5 animate-pulse" />
+            )}
           </div>
           <h2 className="text-xl sm:text-2xl font-serif font-light text-calm-warm-ivory">
-            Đăng Nhập & Khóa Supabase
+            {activeTab === 'key' ? 'Quản Trị Khóa Supabase' : 'Đăng Nhập Tài Khoản'}
           </h2>
           <p className="text-xs text-calm-fog leading-relaxed font-light">
-            Đồng bộ an toàn dữ liệu Life Map, Thử nghiệm và Đúc kết cá nhân.
+            Lưu giữ an toàn hành trình, Bản đồ sống và Đúc kết của riêng bạn.
           </p>
-        </div>
-
-        {/* Tab Switcher */}
-        <div className="flex rounded-xl bg-black/30 p-1 border border-white/10 text-xs font-medium">
-          <button
-            onClick={() => { setActiveTab('key'); setErrorMsg(null); setSuccessMsg(null); }}
-            className={`flex-1 py-2 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 ${
-              activeTab === 'key'
-                ? 'bg-calm-moss text-white font-semibold shadow-soft'
-                : 'text-calm-fog hover:text-white'
-            }`}
-          >
-            <Key className="w-3.5 h-3.5 text-calm-pollen" />
-            <span>Khóa Supabase</span>
-          </button>
-          <button
-            onClick={() => { setActiveTab('google_email'); setErrorMsg(null); setSuccessMsg(null); }}
-            className={`flex-1 py-2 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 ${
-              activeTab === 'google_email'
-                ? 'bg-calm-moss text-white font-semibold shadow-soft'
-                : 'text-calm-fog hover:text-white'
-            }`}
-          >
-            <Lock className="w-3.5 h-3.5" />
-            <span>Google & Email</span>
-          </button>
         </div>
 
         {/* Notifications */}
@@ -212,105 +194,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </div>
         )}
 
-        {/* TAB 1: SUPABASE KEY LOGIN */}
-        {activeTab === 'key' && (
-          <div className="space-y-4">
-            <div className="p-3 rounded-xl bg-calm-deep-moss/70 border border-calm-lichen/20 text-xs text-calm-fog space-y-1">
-              <div className="font-semibold text-calm-warm-ivory flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-calm-pollen" />
-                <span>Đăng nhập trực tiếp bằng Khóa Supabase</span>
-              </div>
-              <p className="text-[11px] leading-relaxed text-calm-fog/85">
-                Nhập hoặc dán Khóa Bí Mật (Secret Key) hoặc Khóa Công Khai (Anon Key) của dự án Supabase để kích hoạt kết nối đám mây.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-mono text-calm-fog/80 mb-1">
-                Supabase Project URL
-              </label>
-              <input
-                type="text"
-                value={supabaseUrl}
-                onChange={e => setSupabaseUrl(e.target.value)}
-                placeholder="https://omztupgdandovalnoope.supabase.co"
-                className="w-full px-3 py-2 rounded-xl bg-black/40 border border-calm-lichen/30 text-xs text-white font-mono placeholder-stone-500 focus:outline-none focus:border-calm-pollen"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-mono text-calm-fog/80 mb-1">
-                Supabase Secret Key / Anon Key
-              </label>
-              <textarea
-                rows={3}
-                value={supabaseKey}
-                onChange={e => setSupabaseKey(e.target.value)}
-                placeholder="sb_secret_... hoặc sb_publishable_..."
-                className="w-full px-3 py-2 rounded-xl bg-black/40 border border-calm-lichen/30 text-xs text-white font-mono placeholder-stone-500 focus:outline-none focus:border-calm-pollen resize-none"
-              />
-            </div>
-
-            {/* Test Connection Result */}
-            {connectionStatus && (
-              <div
-                className={`p-3 rounded-xl border text-xs font-mono flex items-start gap-2 ${
-                  connectionStatus.success
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                    : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
-                }`}
-              >
-                {connectionStatus.success ? (
-                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
-                )}
-                <span>{connectionStatus.message}</span>
-              </div>
-            )}
-
-            {/* Primary Action Button */}
-            <button
-              type="button"
-              onClick={handleKeyLogin}
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-calm-moss hover:bg-calm-lichen/40 border border-calm-lichen/50 text-white font-medium text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-soft hover:scale-[1.01] active:scale-95 disabled:opacity-50"
-            >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Key className="w-4 h-4 text-calm-pollen" />
-                  <span>Đăng nhập & Kích hoạt Khóa</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-
-            {/* Utility Row: Test & Reset */}
-            <div className="flex items-center gap-2 pt-1 text-xs font-mono">
-              <button
-                type="button"
-                onClick={handleTestConnection}
-                disabled={testingConnection}
-                className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-calm-fog hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <RefreshCw className={`w-3 h-3 ${testingConnection ? 'animate-spin text-calm-pollen' : ''}`} />
-                <span>Thử kết nối</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleResetConfig}
-                className="py-1.5 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-calm-fog/70 hover:text-calm-fog transition cursor-pointer"
-              >
-                Mặc định
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: GOOGLE & EMAIL */}
+        {/* TAB 1: STANDARD AUTH (GOOGLE & EMAIL) */}
         {activeTab === 'google_email' && (
           <div className="space-y-4">
             {/* Google OAuth Button */}
@@ -349,7 +233,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             {/* Divider */}
             <div className="flex items-center gap-3 my-2 text-xs text-calm-fog/40 font-mono">
               <div className="flex-1 h-[1px] bg-white/10" />
-              <span>hoặc đăng nhập bằng email</span>
+              <span>hoặc email</span>
               <div className="flex-1 h-[1px] bg-white/10" />
             </div>
 
@@ -398,7 +282,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    <span>{isRegisterMode ? 'Đăng ký tài khoản' : 'Đăng nhập bằng Email'}</span>
+                    <span>{isRegisterMode ? 'Đăng ký tài khoản' : 'Đăng nhập'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
@@ -414,13 +298,141 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </button>
               </div>
             </form>
+
+            {/* Subtle Hidden Trigger for Admin / Supabase Key */}
+            <div className="text-center pt-3 border-t border-white/5">
+              <button
+                type="button"
+                onClick={() => { setActiveTab('key'); setErrorMsg(null); setSuccessMsg(null); }}
+                className="text-[11px] text-calm-fog/40 hover:text-calm-pollen hover:underline font-mono transition cursor-pointer"
+              >
+                Cấu hình Khóa Supabase (Nâng cao)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: SUPABASE KEY LOGIN (MASKED AND PROTECTED) */}
+        {activeTab === 'key' && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-calm-deep-moss/70 border border-calm-lichen/20 text-xs text-calm-fog space-y-1">
+              <div className="font-semibold text-calm-warm-ivory flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5 text-calm-pollen" />
+                <span>Đăng nhập an toàn bằng Khóa Supabase</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-calm-fog/85">
+                Khóa của bạn được lưu an toàn trên trình duyệt này và được mã hóa ẩn để bảo vệ quyền riêng tư.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-mono text-calm-fog/80 mb-1">
+                Supabase Project URL
+              </label>
+              <input
+                type="text"
+                value={supabaseUrl}
+                onChange={e => setSupabaseUrl(e.target.value)}
+                placeholder="https://your-project.supabase.co"
+                className="w-full px-3 py-2 rounded-xl bg-black/40 border border-calm-lichen/30 text-xs text-white font-mono placeholder-stone-600 focus:outline-none focus:border-calm-pollen"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-mono text-calm-fog/80 mb-1">
+                Supabase Key (Được bảo vệ ẩn)
+              </label>
+              <div className="relative">
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  value={supabaseKey}
+                  onChange={e => setSupabaseKey(e.target.value)}
+                  placeholder="••••••••••••••••••••••••••••••••••••"
+                  className="w-full pl-3 pr-10 py-2 rounded-xl bg-black/40 border border-calm-lichen/30 text-xs text-white font-mono placeholder-stone-600 focus:outline-none focus:border-calm-pollen"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-2.5 top-2.5 text-calm-fog/50 hover:text-white transition cursor-pointer"
+                  title={showKey ? 'Ẩn khóa' : 'Hiện khóa'}
+                >
+                  {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Test Connection Result */}
+            {connectionStatus && (
+              <div
+                className={`p-3 rounded-xl border text-xs font-mono flex items-start gap-2 ${
+                  connectionStatus.success
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                    : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                }`}
+              >
+                {connectionStatus.success ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+                )}
+                <span>{connectionStatus.message}</span>
+              </div>
+            )}
+
+            {/* Primary Action Button */}
+            <button
+              type="button"
+              onClick={handleKeyLogin}
+              disabled={loading}
+              className="w-full py-2.5 rounded-xl bg-calm-moss hover:bg-calm-lichen/40 border border-calm-lichen/50 text-white font-medium text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-soft hover:scale-[1.01] active:scale-95 disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Key className="w-3.5 h-3.5 text-calm-pollen" />
+                  <span>Kích hoạt & Lưu Khóa</span>
+                </>
+              )}
+            </button>
+
+            {/* Utility Row: Test, Reset & Back */}
+            <div className="flex items-center gap-2 pt-1 text-xs font-mono">
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                disabled={testingConnection}
+                className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-calm-fog hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className={`w-3 h-3 ${testingConnection ? 'animate-spin text-calm-pollen' : ''}`} />
+                <span>Thử kết nối</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetConfig}
+                className="py-1.5 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-calm-fog/70 hover:text-calm-fog transition cursor-pointer"
+              >
+                Mặc định
+              </button>
+            </div>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => { setActiveTab('google_email'); setErrorMsg(null); setSuccessMsg(null); }}
+                className="text-xs text-calm-pollen hover:underline cursor-pointer font-mono"
+              >
+                ← Quay lại đăng nhập thông thường
+              </button>
+            </div>
           </div>
         )}
 
         {/* Security badge */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] text-calm-fog/60 font-mono pt-1 border-t border-white/10">
           <ShieldCheck className="w-3.5 h-3.5 text-calm-lichen" />
-          <span>Mã hóa bảo vệ tiêu chuẩn OAuth 2.0 & Supabase Auth</span>
+          <span>Mã hóa bảo vệ tiêu chuẩn OAuth 2.0 & Supabase</span>
         </div>
 
       </div>
