@@ -99,10 +99,59 @@ export interface GeminiResponseResult {
   source: 'gemini' | 'groq' | 'pollinations_free' | 'sanctuary_engine';
   errorDetail?: string;
   isUserStop?: boolean;
+  isCrisis?: boolean;
   suggestDecisionCard?: boolean;
   isFallback?: boolean;
   modelUsed?: string;
 }
+
+/**
+ * Kiểm tra xem tin nhắn có mang ý định tự hại / tự tử hoặc khủng hoảng tính mạng khẩn cấp không
+ */
+export const isCrisisIntent = (text: string): boolean => {
+  const normalized = text.toLowerCase().trim();
+  const crisisRegex = /(tự sát|tự tử|muốn chết|muốn tự vẫn|kết thúc cuộc sống|kết thúc cuộc đời|tự hại|không muốn sống nữa|chán sống|cắt cổ tay|tự kết liễu|nhảy lầu|uống thuốc tự tử|chết quách|muốn biến mất|suicide|kill myself|end my life|self harm)/i;
+  return crisisRegex.test(normalized);
+};
+
+/**
+ * Kiểm tra xem phản hồi của AI có chứa số điện thoại đường dây nóng khẩn cấp không
+ */
+export const isCrisisResponse = (text: string): boolean => {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('1900 6235') ||
+    lower.includes('19006235') ||
+    lower.includes('hỗ trợ tự tử') ||
+    lower.includes('hỗ trợ tự sát') ||
+    (lower.includes('115') && (lower.includes('cấp cứu') || lower.includes('đường dây nóng') || lower.includes('tâm lý')))
+  );
+};
+
+/**
+ * Làm sạch phản hồi khẩn cấp: loại bỏ câu hỏi gợi chuyện kéo dài, thêm chỉ báo đóng phiên vì an toàn
+ */
+export const sanitizeCrisisResponse = (rawText: string): string => {
+  let sanitized = rawText
+    .replace(/(Bạn có thể chia sẻ thêm[^\n]*\?*|Hãy chia sẻ với tôi[^\n]*\?*|Bạn có muốn nói thêm[^\n]*\?*|Bạn có muốn chia sẻ[^\n]*\?*)/gi, '')
+    .trim();
+
+  if (!sanitized.includes('tạm ngưng') && !sanitized.includes('đóng lại')) {
+    sanitized += '\n\n🛡️ *Phiên trò chuyện đã tạm ngưng và đóng lại để ưu tiên bạn liên hệ các đường dây nóng hỗ trợ khẩn cấp.*';
+  }
+  return sanitized;
+};
+
+export const CRISIS_HOTLINE_MESSAGE = `Tôi rất lo lắng khi nghe bạn chia sẻ điều này. Bạn đang phải chịu đựng một nỗi đau quá lớn, và tôi hiểu lúc này mọi thứ có thể đang vô cùng nặng nề với bạn.
+
+Vì sự an toàn tính mạng của bạn là trên hết, tôi là trợ lý AI và không thể thay thế sự can thiệp y tế hay chuyên gia tâm lý trực tiếp. Phiên trò chuyện này sẽ tạm ngưng và đóng lại tại đây để bạn có thể kết nối ngay với sự hỗ trợ khẩn cấp.
+
+Vui lòng liên hệ ngay lập tức với các đường dây nóng hỗ trợ khẩn cấp tại Việt Nam:
+• **1900 6235** — Trung tâm Tư vấn Tâm lý & Hỗ trợ Khủng hoảng (Hội Tâm lý học Việt Nam)
+• **115** — Cấp cứu Y tế Khẩn cấp
+• Hoặc hãy gọi ngay cho một người thân, bạn bè đáng tin cậy bên cạnh bạn lúc này.
+
+Bạn rất quý giá. Hãy cho bản thân cơ hội được các chuyên gia y tế và người thân nâng đỡ bạn vượt qua thời khắc này.`;
 
 // =========================================================================
 // FREE AI ENGINE: High-Speed Edge Cloud AI (Meta Llama 3.2, Zero Key, 100% Free)
@@ -263,7 +312,12 @@ QUY TẮC BẮT BUỘC TOÀN HÀNH TRÌNH:
 4. ACTION OUTPUT CONTRACT (CHỈ KHI YÊU CẦU RÕ RÀNG): Chỉ khi người dùng yêu cầu hành động trực tiếp ("hãy so sánh giúp tôi", "hãy đặt ngưỡng giúp tôi"), mới cung cấp bảng cấu trúc; nếu người dùng chỉ chia sẻ khó khăn/tâm sự thì tuân thủ đúng bước hội thoại, không tự tiện ném giải pháp.
 5. NGÂN SÁCH CÂU HỎI (QUESTION BUDGET): Tối đa 1 câu hỏi chính mỗi lượt, không hỏi dồn.
 6. KHÔNG THUẬT NGỮ: Tuyệt đối không nói "bước 1", "phase 2", "state machine" hay bất kỳ tên bước nào với người dùng.
-7. PHONG CÁCH: Mộc mạc, gần gũi, gãy gọn, văn nói tự nhiên như một người bạn đời thực, dứt khoát, không văn vẻ triết lý sách vở.`;
+7. PHONG CÁCH: Mộc mạc, gần gũi, gãy gọn, văn nói tự nhiên như một người bạn đời thực, dứt khoát, không văn vẻ triết lý sách vở.
+8. QUY TẮC AN TOÀN TUYỆT ĐỐI (CRISIS & HOTLINE SAFETY):
+   - Nếu phát hiện người dùng có ý định tự tử, tự sát, tự hại hoặc khủng hoảng tính mạng nguy kịch:
+     + Lập tức cung cấp đường dây nóng: 1900 6235 (Trung tâm Tư vấn Tâm lý - Hội Tâm lý học Việt Nam) và 115 (Cấp cứu Y tế).
+     + Nêu rõ AI không thể thay thế chuyên gia y tế và phiên đối thoại này sẽ ngưng đóng lại tại đây để ưu tiên an toàn.
+     + TUYỆT ĐỐI CẤM hỏi thêm câu hỏi gợi chuyện ("Bạn có thể chia sẻ thêm...", "Hãy nói cho tôi biết...") để người dùng không tiếp tục kéo dài với AI.`;
 };
 
 export const callGeminiCompanionAPI = async (
@@ -273,6 +327,17 @@ export const callGeminiCompanionAPI = async (
 ): Promise<GeminiResponseResult> => {
   const cleanKey = apiKey.trim();
   const trimmed = userMessage.trim().toLowerCase();
+
+  // 0. FAST PATH: CRISIS SAFETY GATE - Intercept self-harm / suicide intent immediately
+  if (isCrisisIntent(userMessage)) {
+    return {
+      text: CRISIS_HOTLINE_MESSAGE,
+      source: 'sanctuary_engine',
+      isCrisis: true,
+      isUserStop: true,
+      isFallback: false,
+    };
+  }
 
   // 1. FAST PATH: Check User Stop intent (P0-01)
   if (/^(dừng|dừng lại|thôi|thôi nhé|stop|dừng ở đây|không muốn nói nữa|nghỉ thôi|hết rồi)$/i.test(trimmed)) {
@@ -293,11 +358,14 @@ export const callGeminiCompanionAPI = async (
   if (cleanKey.startsWith('gsk_')) {
     const groqReply = await callGroqAPI(cleanKey, userMessage, history, systemInstruction);
     if (groqReply) {
+      const isCrisis = isCrisisResponse(groqReply);
       return {
-        text: groqReply,
+        text: isCrisis ? sanitizeCrisisResponse(groqReply) : groqReply,
         source: 'groq',
+        isCrisis,
+        isUserStop: isCrisis ? true : undefined,
         modelUsed: 'Groq (Llama-3.3-70B)',
-        suggestDecisionCard: checkShouldSuggestCard(userMessage, userTurnCount),
+        suggestDecisionCard: isCrisis ? false : checkShouldSuggestCard(userMessage, userTurnCount),
       };
     }
   }
@@ -342,11 +410,15 @@ export const callGeminiCompanionAPI = async (
           const data = await response.json();
           const candidate = data.candidates?.[0]?.content?.parts?.find((p: any) => p.text);
           if (candidate?.text) {
+            const rawText = candidate.text.trim();
+            const isCrisis = isCrisisResponse(rawText);
             return {
-              text: candidate.text.trim(),
+              text: isCrisis ? sanitizeCrisisResponse(rawText) : rawText,
               source: 'gemini',
+              isCrisis,
+              isUserStop: isCrisis ? true : undefined,
               modelUsed: `Gemini (${model})`,
-              suggestDecisionCard: checkShouldSuggestCard(userMessage, userTurnCount),
+              suggestDecisionCard: isCrisis ? false : checkShouldSuggestCard(userMessage, userTurnCount),
             };
           }
         }
@@ -359,21 +431,28 @@ export const callGeminiCompanionAPI = async (
   // 4. PATH C (DEFAULT & LEAK-PROOF): High-Speed Cloud AI Engine (Zero Key Required)
   const freeCloudReply = await callFreeCloudAI(userMessage, history, systemInstruction);
   if (freeCloudReply) {
+    const isCrisis = isCrisisResponse(freeCloudReply);
     return {
-      text: freeCloudReply,
+      text: isCrisis ? sanitizeCrisisResponse(freeCloudReply) : freeCloudReply,
       source: 'pollinations_free',
+      isCrisis,
+      isUserStop: isCrisis ? true : undefined,
       modelUsed: 'Llama 3.2 Cloud AI',
-      suggestDecisionCard: checkShouldSuggestCard(userMessage, userTurnCount),
+      suggestDecisionCard: isCrisis ? false : checkShouldSuggestCard(userMessage, userTurnCount),
     };
   }
 
   // 5. PATH D: Offline Local Heuristic Engine (Pure fallback if disconnected from internet)
+  const fallbackText = generateDynamicSanctuaryReply(userMessage, history);
+  const isFallbackCrisis = isCrisisResponse(fallbackText);
   return {
-    text: generateDynamicSanctuaryReply(userMessage, history),
+    text: isFallbackCrisis ? sanitizeCrisisResponse(fallbackText) : fallbackText,
     source: 'sanctuary_engine',
+    isCrisis: isFallbackCrisis,
+    isUserStop: isFallbackCrisis ? true : undefined,
     isFallback: true,
     errorDetail: 'Đang vận hành ở Chế độ Phản chiếu Ngoại tuyến.',
-    suggestDecisionCard: checkShouldSuggestCard(userMessage, userTurnCount),
+    suggestDecisionCard: isFallbackCrisis ? false : checkShouldSuggestCard(userMessage, userTurnCount),
   };
 };
 
@@ -410,6 +489,11 @@ export const generateDynamicSanctuaryReply = (
   history?: { sender: 'ai' | 'user'; text: string }[]
 ): string => {
   const text = rawInput.toLowerCase().trim();
+
+  // 0. FAST PATH: CRISIS SAFETY GATE - Intercept self-harm / suicide intent immediately
+  if (isCrisisIntent(rawInput)) {
+    return CRISIS_HOTLINE_MESSAGE;
+  }
 
   // 1. FAST PATH: User Stop (P0-01) - Absolute priority
   if (/^(dừng|dừng lại|thôi|thôi nhé|stop|dừng ở đây|không muốn nói nữa|nghỉ thôi|hết rồi)$/i.test(text)) {

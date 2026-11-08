@@ -129,7 +129,7 @@ export const App: React.FC = () => {
                   Đồng bộ Google & Supabase
                 </span>
                 <span>•</span>
-                <span>Bảo mật riêng tư 100%</span>
+                <span>Bảo mật riêng tư</span>
                 <span>•</span>
                 <span>Tự do quyết định</span>
               </div>
@@ -205,7 +205,7 @@ export const App: React.FC = () => {
         <div className="flex items-center justify-center gap-4 flex-wrap text-calm-fog/70">
           <span>UnionFam · Life Lab © 2026</span>
           <span>•</span>
-          <span>Bảo mật riêng tư 100%</span>
+          <span>Bảo mật riêng tư</span>
           <span>•</span>
           <span>AI gợi mở. Bạn quyết định.</span>
         </div>
