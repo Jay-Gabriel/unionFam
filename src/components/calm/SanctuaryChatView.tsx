@@ -35,6 +35,7 @@ import { BetaDashboardModal } from '../beta/BetaDashboardModal';
 import {
   CORE_PROBLEM_SCENARIOS,
   extractDecisionCardFromConversation,
+  extractLiveCardOptimistic,
   getActiveDecisionCard,
   saveActiveDecisionCard,
   ProblemScenario
@@ -77,6 +78,7 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
   // Decision Card Canvas State (Live Studio)
   const [decisionCard, setDecisionCard] = useState<DecisionCardData>(getActiveDecisionCard);
   const [isExtractingCard, setIsExtractingCard] = useState(false);
+  const [isLiveSyncing, setIsLiveSyncing] = useState(false);
   const [cardUpdatedNotice, setCardUpdatedNotice] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<'dialogue' | 'studio'>('dialogue');
 
@@ -197,6 +199,14 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
     setInputText('');
     setIsAiTyping(true);
 
+    // ⚡ CẬP NHẬT TỨC THÌ (INSTANT LIVE SYNC < 50ms):
+    // Bóc tách ngay lập tức nan đề, tiêu chí và phương án theo câu người dùng vừa gửi
+    const liveOptimisticCard = extractLiveCardOptimistic(trimmed, decisionCard, activeScenarioId || undefined);
+    setDecisionCard(liveOptimisticCard);
+    saveActiveDecisionCard(liveOptimisticCard);
+    setIsLiveSyncing(true);
+    setCardUpdatedNotice(true);
+
     try {
       const activeKey = apiKey.trim() || getStoredGeminiKey();
       const result = await callGeminiCompanionAPI(activeKey, trimmed, messages);
@@ -214,16 +224,23 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
       if (result.isCrisis || isCrisisResponse(result.text)) {
         setIsSessionClosed(true);
         setIsCrisisLocked(true);
+        setIsLiveSyncing(false);
       } else if (result.isUserStop) {
         setIsSessionClosed(true);
+        setIsLiveSyncing(false);
       } else {
-        // Tự động kết tinh và cập nhật Thẻ Quyết Định theo hội thoại
-        extractDecisionCardFromConversation(updatedWithAi, activeScenarioId || undefined).then(cardData => {
-          setDecisionCard(cardData);
-          saveActiveDecisionCard(cardData);
-          setCardUpdatedNotice(true);
-          setTimeout(() => setCardUpdatedNotice(false), 3500);
-        });
+        // Tự động kết tinh sâu bằng AI (Groq / Gemini) và hoàn tất cập nhật Thẻ Quyết Định
+        extractDecisionCardFromConversation(updatedWithAi, activeScenarioId || undefined)
+          .then(cardData => {
+            setDecisionCard(cardData);
+            saveActiveDecisionCard(cardData);
+            setIsLiveSyncing(false);
+            setCardUpdatedNotice(true);
+            setTimeout(() => setCardUpdatedNotice(false), 3500);
+          })
+          .catch(() => {
+            setIsLiveSyncing(false);
+          });
       }
     } catch {
       const fallbackMsg: Message = {
@@ -278,10 +295,49 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
     setSelectedOutcome(null);
     setCheckpointNote('');
     setActiveScenarioId(null);
+    setIsLiveSyncing(false);
+
+    // Reset Decision Card về trạng thái lắng nghe trong trẻo ban đầu
+    const freshListeningCard: DecisionCardData = {
+      id: 'dec_' + newConvId,
+      version: 1,
+      status: 'DRAFT',
+      title: 'Thẻ Quyết Định Của Bạn',
+      source: 'conversation_extracted',
+      sourceSnippet: 'Đang lắng nghe để tự động bóc tách theo dòng đối thoại',
+      decisionQuestion: 'Đang lắng nghe để kết tinh nan đề cốt lõi của bạn...',
+      criteria: [
+        'Bảo toàn năng lượng sống và sức khỏe tinh thần',
+        'Đảm bảo sự an toàn và ổn định thực tế',
+        'Tôn trọng giá trị và nhịp điệu riêng của bạn'
+      ],
+      hardConstraints: [
+        'Chưa xác lập ranh giới đỏ (Sẽ tự động cập nhật khi bạn chia sẻ trong chat)'
+      ],
+      options: [
+        { id: 'opt_1', name: 'Hướng A: Đang lắng nghe...', description: 'Sẽ tự động bóc tách theo dòng đối thoại của bạn.' },
+        { id: 'opt_2', name: 'Hướng B: Đang lắng nghe...', description: 'Sẽ tự động so sánh theo chia sẻ của bạn.' },
+        { id: 'opt_3', name: 'Hướng C: Bước thử an toàn', description: 'Gợi ý vi hành động thử nghiệm an toàn.' }
+      ],
+      uncertainties: [
+        { id: 'unc_1', question: 'Ẩn số quan trọng nhất sẽ được nhận diện khi bạn chia sẻ câu chuyện.' }
+      ],
+      experiment: {
+        learningQuestion: 'Thử nghiệm vi mô 7 ngày sẽ xuất hiện tại đây khi nan đề rõ ràng.',
+        action: 'Dành 15 phút mỗi ngày lắng nghe bản thân.',
+        durationDays: 7
+      },
+      reviewDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setDecisionCard(freshListeningCard);
+    saveActiveDecisionCard(freshListeningCard);
 
     try {
       localStorage.removeItem('unionfam_messages_cache');
       localStorage.removeItem('unionfam_conversation_id');
+      localStorage.removeItem('unionfam_active_decision_card');
       saveConversationToCloud(newConvId, [initialWelcome]);
     } catch (e) {
       console.warn('Reset storage notice:', e);
@@ -643,6 +699,7 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
               onRefreshFromChat={handleRefreshCanvasFromChat}
               onSelectScenario={handleSelectScenario}
               isExtracting={isExtractingCard}
+              isLiveSyncing={isLiveSyncing}
               userMessageCount={messages.filter(m => m.sender === 'user').length}
               onGoToExperiments={onGoToExperiments}
               onSaveToMemories={handleOpenCheckpointModal}

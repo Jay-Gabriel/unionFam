@@ -256,6 +256,134 @@ export function updateDecisionCardField<K extends keyof DecisionCardData>(
 }
 
 /**
+ * TRÍCH XUẤT TỨC THÌ (INSTANT LIVE OPTIMISTIC):
+ * Đồng bộ ngay lập tức (<50ms) Thẻ Quyết Định khi người dùng vừa gửi tin nhắn,
+ * không cần chờ AI suy ngẫm hay mạng chập chờn.
+ */
+export function extractLiveCardOptimistic(
+  latestMessage: string,
+  previousCard: DecisionCardData,
+  scenarioId?: 'work_life' | 'purpose' | 'major_decision' | 'custom'
+): DecisionCardData {
+  const clean = latestMessage.trim();
+  const lower = clean.toLowerCase();
+
+  // 1. Nhận diện nan đề / câu hỏi cốt lõi
+  let dynamicQuestion = previousCard.decisionQuestion;
+  if (
+    dynamicQuestion.includes('Đang lắng nghe') ||
+    dynamicQuestion.includes('Điều gì đang chiếm nhiều') ||
+    dynamicQuestion.includes('Trong tình huống') ||
+    clean.length > 8
+  ) {
+    if (lower.includes('nghỉ việc') || lower.includes('chuyển việc') || lower.includes('đổi nghề')) {
+      dynamicQuestion = 'Nên tiếp tục công việc hiện tại để bảo toàn thu nhập hay chuẩn bị chuyển hướng nghề nghiệp?';
+    } else if (lower.includes('cà phê') || lower.includes('quán') || lower.includes('kinh doanh') || lower.includes('mở') || lower.includes('startup')) {
+      dynamicQuestion = 'Cân nhắc ngã rẽ: Tiếp tục công việc ổn định hay dồn nguồn lực để khởi sự kinh doanh?';
+    } else if (lower.includes('quá tải') || lower.includes('kiệt sức') || lower.includes('stress') || lower.includes('mệt') || lower.includes('tăng ca')) {
+      dynamicQuestion = 'Làm thế nào để tái đàm phán ranh giới công việc và lấy lại năng lượng sống trước khi kiệt quệ?';
+    } else if (lower.includes('mất phương hướng') || lower.includes('chán') || lower.includes('không biết muốn gì') || lower.includes('ý nghĩa')) {
+      dynamicQuestion = 'Điều gì đang thực sự phù hợp với giá trị sống cốt lõi mà bạn muốn theo đuổi lúc này?';
+    } else if (lower.includes('phân vân') || lower.includes('lựa chọn') || lower.includes('giữa') || lower.includes('đắn đo')) {
+      dynamicQuestion = 'Đứng trước lựa chọn: Làm sao để ra quyết định thấu đáo mà không phải hối tiếc?';
+    } else {
+      const summaryText = clean.length > 60 ? clean.slice(0, 60) + '...' : clean;
+      dynamicQuestion = `Làm thế nào để giải quyết trăn trở: "${summaryText}" mà vẫn giữ sự an toàn?`;
+    }
+  }
+
+  // 2. Tiêu chí ưu tiên động theo từ khóa thật
+  const dynamicCriteria: string[] = [];
+  if (lower.includes('tiền') || lower.includes('lương') || lower.includes('tài chính') || lower.includes('thu nhập') || lower.includes('ngân hàng')) {
+    dynamicCriteria.push('Bảo toàn nguồn thu nhập và độ ổn định dòng tiền');
+  }
+  if (lower.includes('mệt') || lower.includes('kiệt sức') || lower.includes('stress') || lower.includes('sức khỏe')) {
+    dynamicCriteria.push('Bảo vệ sức khỏe tinh thần và phục hồi thể lực');
+  }
+  if (lower.includes('thời gian') || lower.includes('tăng ca') || lower.includes('đêm') || lower.includes('quá giờ') || lower.includes('bận')) {
+    dynamicCriteria.push('Lấy lại buổi tối thảnh thơi và thời gian cá nhân');
+  }
+  if (lower.includes('gia đình') || lower.includes('vợ') || lower.includes('chồng') || lower.includes('con') || lower.includes('bố mẹ')) {
+    dynamicCriteria.push('Bảo đảm thời gian chất lượng và sự gắn kết với gia đình');
+  }
+  if (lower.includes('đam mê') || lower.includes('ý nghĩa') || lower.includes('thích') || lower.includes('hứng thú') || lower.includes('chán')) {
+    dynamicCriteria.push('Được làm việc phù hợp với đam mê và giá trị bản thân');
+  }
+  if (lower.includes('sếp') || lower.includes('quản lý') || lower.includes('đồng nghiệp') || lower.includes('áp lực')) {
+    dynamicCriteria.push('Môi trường làm việc tôn trọng ranh giới và công bằng');
+  }
+
+  if (dynamicCriteria.length === 0) {
+    dynamicCriteria.push(...(previousCard.criteria && previousCard.criteria.length > 0 ? previousCard.criteria : [
+      'Bảo toàn năng lượng sống và sức khỏe tinh thần',
+      'Đảm bảo sự an toàn và ổn định tài chính',
+      'Được tôn trọng ranh giới cá nhân'
+    ]));
+  }
+
+  // 3. Ranh giới đỏ (Hard constraints) động
+  const dynamicConstraints: string[] = [];
+  if (lower.includes('tiền') || lower.includes('lương') || lower.includes('ngân sách') || lower.includes('nợ')) {
+    dynamicConstraints.push('Không mạo hiểm đánh đổi nguồn thu nhập chính khi chưa có dòng tiền dự phòng');
+  }
+  if (lower.includes('mệt') || lower.includes('kiệt sức') || lower.includes('stress')) {
+    dynamicConstraints.push('Không tiếp tục làm việc ngoài giờ đến mức kiệt quệ kéo dài');
+  }
+  if (dynamicConstraints.length === 0) {
+    dynamicConstraints.push(
+      'Không đưa ra quyết định bốc đồng khi chưa nhìn rõ các rủi ro có thể đảo ngược',
+      'Giữ sự an toàn và không gây xáo trộn quá lớn đến đời sống gia đình'
+    );
+  }
+
+  // 4. Các phương án A / B / C động
+  const dynamicOptions: DecisionOption[] = [
+    {
+      id: 'opt_1',
+      name: lower.includes('cà phê') || lower.includes('kinh doanh') ? 'Tiếp tục công việc ổn định hiện tại' : 'Phương án 1: Giữ nhịp độ & thiết lập ranh giới',
+      description: 'Duy trì công việc hiện tại để bảo toàn thu nhập, chủ động giảm tải áp lực không cần thiết.'
+    },
+    {
+      id: 'opt_2',
+      name: lower.includes('cà phê') || lower.includes('kinh doanh') ? 'Chuẩn bị bước đệm kinh doanh song song' : 'Phương án 2: Chuẩn bị phương án thay thế song song',
+      description: 'Dành các khoảng thời gian rảnh để khảo sát, học hỏi và chuẩn bị phương án mới mà chưa cần nghỉ việc ngay.'
+    },
+    {
+      id: 'opt_3',
+      name: 'Phương án 3: Thử nghiệm vi mô 7 ngày an toàn',
+      description: 'Thực hiện 1 bước thử nhỏ trong 1 tuần để kiểm chứng cảm xúc và khả thi trước khi quyết định lớn.'
+    }
+  ];
+
+  // 5. Thử nghiệm vi mô 7 ngày động
+  const experimentAction = lower.includes('cà phê') || lower.includes('kinh doanh')
+    ? 'Dành 7 ngày khảo sát 3 mô hình kinh doanh tương tự và tính toán chi phí vận hành tối thiểu.'
+    : clean.length > 15
+    ? `Thử đặt 1 ranh giới nhỏ trong 7 ngày tới liên quan đến: "${clean.slice(0, 45)}..." và quan sát cảm xúc.`
+    : previousCard.experiment?.action || 'Dành 15 phút mỗi ngày làm điều bản thân thực sự muốn và quan sát cảm giác.';
+
+  return {
+    ...previousCard,
+    version: previousCard.version + 1,
+    status: 'USER_REVIEW',
+    source: 'conversation_extracted',
+    sourceSnippet: `Đồng bộ trực tiếp theo dòng chat`,
+    decisionQuestion: dynamicQuestion,
+    criteria: Array.from(new Set(dynamicCriteria)).slice(0, 4),
+    hardConstraints: dynamicConstraints,
+    options: dynamicOptions,
+    experiment: {
+      learningQuestion: 'Bước thử nhỏ này mang lại cảm giác nhẹ nhõm hay gia tăng lo âu?',
+      action: experimentAction,
+      durationDays: 7,
+      observations: 'Ghi lại trạng thái năng lượng vào cuối mỗi ngày.',
+    },
+    reviewDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
  * Trích xuất Thẻ Quyết Định THỰC TẾ trực tiếp từ cuộc hội thoại (KHÔNG DÙNG MẶC ĐỊNH)
  */
 export async function extractDecisionCardFromConversation(
@@ -555,7 +683,7 @@ ${conversationSnippet}`;
   // 2. Nếu dùng Google Gemini Key (AIzaSy)
   if (apiKey.startsWith('AIzaSy')) {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

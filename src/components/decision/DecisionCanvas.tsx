@@ -28,6 +28,7 @@ interface DecisionCanvasProps {
   onRefreshFromChat?: () => void;
   onSelectScenario?: (scenario: ProblemScenario) => void;
   isExtracting?: boolean;
+  isLiveSyncing?: boolean;
   userMessageCount: number;
   onGoToExperiments?: () => void;
   onSaveToMemories?: () => void;
@@ -39,6 +40,7 @@ export const DecisionCanvas: React.FC<DecisionCanvasProps> = ({
   onRefreshFromChat,
   onSelectScenario,
   isExtracting = false,
+  isLiveSyncing = false,
   userMessageCount,
   onGoToExperiments,
   onSaveToMemories,
@@ -149,10 +151,17 @@ export const DecisionCanvas: React.FC<DecisionCanvasProps> = ({
               <span className="font-serif font-semibold text-sm sm:text-base text-calm-warm-ivory tracking-wide">
                 THẺ QUYẾT ĐỊNH
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono tracking-wider font-semibold uppercase bg-calm-moss/60 border border-calm-lichen/40 text-calm-pollen flex items-center gap-1 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-calm-pollen animate-pulse" />
-                <span>LIVE STUDIO</span>
-              </span>
+              {isLiveSyncing || isExtracting ? (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-wider font-semibold uppercase bg-amber-500/25 border border-amber-400/50 text-amber-300 flex items-center gap-1.5 shadow-sm animate-pulse">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                  <span>ĐANG KẾT TINH LIVE...</span>
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono tracking-wider font-semibold uppercase bg-calm-moss/60 border border-calm-lichen/40 text-calm-pollen flex items-center gap-1 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>ĐỒNG BỘ REAL-TIME</span>
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-calm-fog/70 font-sans mt-0.5">
               Đúc kết 7 mục chuẩn hóa • Tự động kết tinh theo dòng đối thoại
