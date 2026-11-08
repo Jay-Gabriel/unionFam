@@ -110,7 +110,7 @@ export interface GeminiResponseResult {
  */
 export const isCrisisIntent = (text: string): boolean => {
   const normalized = text.toLowerCase().trim();
-  const crisisRegex = /(tự sát|tự tử|muốn chết|muốn tự vẫn|kết thúc cuộc sống|kết thúc cuộc đời|tự hại|không muốn sống nữa|chán sống|cắt cổ tay|tự kết liễu|nhảy lầu|uống thuốc tự tử|chết quách|muốn biến mất|suicide|kill myself|end my life|self harm)/i;
+  const crisisRegex = /(tự sát|tự tử|muốn chết|muốn tự vẫn|kết thúc cuộc sống|kết thúc cuộc đời|tự hại|không muốn sống nữa|chán sống|cắt cổ tay|rạch tay|tự kết liễu|nhảy lầu|nhảy cầu|uống thuốc tự tử|chết quách|muốn biến mất|buông xuôi tất cả|bế tắc quá không muốn sống|suicide|kill myself|end my life|want to die|self harm)/i;
   return crisisRegex.test(normalized);
 };
 
@@ -142,16 +142,14 @@ export const sanitizeCrisisResponse = (rawText: string): string => {
   return sanitized;
 };
 
-export const CRISIS_HOTLINE_MESSAGE = `Tôi rất lo lắng khi nghe bạn chia sẻ điều này. Bạn đang phải chịu đựng một nỗi đau quá lớn, và tôi hiểu lúc này mọi thứ có thể đang vô cùng nặng nề với bạn.
+export const CRISIS_HOTLINE_MESSAGE = `Tôi rất lo lắng khi nghe bạn nói như vậy. Bạn đang phải chịu đựng một nỗi đau quá lớn, và tôi ở đây để lắng nghe.
 
-Vì sự an toàn tính mạng của bạn là trên hết, tôi là trợ lý AI và không thể thay thế sự can thiệp y tế hay chuyên gia tâm lý trực tiếp. Phiên trò chuyện này sẽ tạm ngưng và đóng lại tại đây để bạn có thể kết nối ngay với sự hỗ trợ khẩn cấp.
+Vì sự an toàn của bạn, tôi là AI và không thể thay thế sự can thiệp y tế hay chuyên gia tâm lý chuyên nghiệp. Phiên trò chuyện này sẽ ngưng lại tại đây.
 
-Vui lòng liên hệ ngay lập tức với các đường dây nóng hỗ trợ khẩn cấp tại Việt Nam:
+Vui lòng liên hệ ngay với các đường dây nóng hỗ trợ khẩn cấp tại Việt Nam:
 • **1900 6235** — Trung tâm Tư vấn Tâm lý & Hỗ trợ Khủng hoảng (Hội Tâm lý học Việt Nam)
 • **115** — Cấp cứu Y tế Khẩn cấp
-• Hoặc hãy gọi ngay cho một người thân, bạn bè đáng tin cậy bên cạnh bạn lúc này.
-
-Bạn rất quý giá. Hãy cho bản thân cơ hội được các chuyên gia y tế và người thân nâng đỡ bạn vượt qua thời khắc này.`;
+• Hoặc hãy gọi ngay cho một người thân, bạn bè đáng tin cậy bên cạnh bạn lúc này.`;
 
 // =========================================================================
 // FREE AI ENGINE: High-Speed Edge Cloud AI (Meta Llama 3.2, Zero Key, 100% Free)

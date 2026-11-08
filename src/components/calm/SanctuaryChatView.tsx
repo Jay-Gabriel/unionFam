@@ -455,116 +455,112 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
             <div ref={chatEndRef} className="h-2 w-full" />
           </div>
 
-          {/* Emergency Crisis Lock Banner */}
-          {isCrisisLocked && (
-            <div className="p-4 bg-rose-950/90 border-t border-rose-500/40 text-rose-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xl animate-fadeIn">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-rose-500/20 border border-rose-400/50 flex items-center justify-center text-rose-300 shrink-0">
-                  <PhoneCall className="w-5 h-5 animate-pulse" />
-                </div>
-                <div>
-                  <div className="font-semibold text-rose-100 text-sm">
-                    Phiên trò chuyện đã ngưng & đóng lại vì lý do an toàn
-                  </div>
-                  <div className="text-xs text-rose-200/90 font-sans mt-0.5">
-                    Đường dây nóng hỗ trợ khẩn cấp: <strong className="text-white underline">1900 6235</strong> (Hội Tâm lý học VN) hoặc <strong className="text-white underline">115</strong> (Cấp cứu)
-                  </div>
-                </div>
+          {/* Khi tiêu cực quá (tự sát / khủng hoảng): Ngưng hoàn toàn, không cho chat nữa */}
+          {isCrisisLocked ? (
+            <div className="p-6 border-t border-calm-lichen/20 bg-calm-deep-moss/95 text-center space-y-3 animate-fadeIn">
+              <div className="w-10 h-10 rounded-full bg-calm-forest-dusk border border-calm-lichen/30 flex items-center justify-center mx-auto text-calm-lichen">
+                <Leaf className="w-5 h-5 text-calm-lichen" />
               </div>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                <a
-                  href="tel:19006235"
-                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs transition flex items-center justify-center gap-1.5 shadow-soft"
-                >
-                  <PhoneCall className="w-3.5 h-3.5" />
-                  <span>Gọi 1900 6235</span>
-                </a>
-                <a
-                  href="tel:115"
-                  className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-rose-400/40 text-rose-200 text-xs transition flex items-center justify-center gap-1"
-                >
-                  <span>Cấp cứu 115</span>
-                </a>
+              <div className="font-serif text-base sm:text-lg text-calm-warm-ivory font-light">
+                Cuộc trò chuyện đã khép lại
               </div>
-            </div>
-          )}
-
-          {/* 3 Core Problem Scenarios Quick Bar (Hidden if in crisis) */}
-          {!isCrisisLocked && (
-            <div className="px-4 py-2.5 bg-calm-deep-moss/90 border-t border-calm-lichen/15 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-calm-lichen font-mono flex items-center pr-1 uppercase tracking-wider shrink-0 font-semibold">
-                  3 TÌNH HUỐNG TRỌNG TÂM (CHỌN NHANH ĐỂ BẮT ĐẦU):
-                </span>
+              <p className="text-xs sm:text-sm text-calm-fog/80 max-w-md mx-auto leading-relaxed font-light">
+                Không gian đối thoại AI đã ngưng để bạn được nghỉ ngơi và ưu tiên sự an toàn cho chính mình.
+              </p>
+              <div className="flex items-center justify-center gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowDecisionCard(true)}
-                  className="text-[10px] font-mono text-calm-pollen hover:underline flex items-center gap-1 cursor-pointer"
+                  onClick={handleResetConversation}
+                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-xs text-calm-paper-white transition flex items-center gap-1.5 cursor-pointer shadow-soft"
                 >
-                  <Sparkles className="w-3 h-3 text-calm-pollen" />
-                  <span>Xem Thẻ Quyết Định</span>
+                  <RotateCcw className="w-3.5 h-3.5 text-calm-pollen" />
+                  <span>Bắt đầu cuộc trò chuyện mới</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onBackToHome}
+                  className="px-4 py-2 rounded-full bg-calm-moss hover:bg-calm-fern border border-calm-lichen/40 text-xs text-white transition flex items-center gap-1.5 cursor-pointer shadow-soft"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Về trang chủ</span>
                 </button>
               </div>
-
-              <div className="flex gap-2 overflow-x-auto pb-1 text-[11px] font-sans items-center scrollbar-none">
-                {CORE_PROBLEM_SCENARIOS.map(sc => (
-                  <button
-                    key={sc.id}
-                    type="button"
-                    onClick={() => handleSelectScenario(sc)}
-                    disabled={isSessionClosed}
-                    className={`px-3 py-1.5 rounded-full border transition whitespace-nowrap shrink-0 hover:scale-105 flex items-center gap-1.5 cursor-pointer ${
-                      activeScenarioId === sc.id
-                        ? 'bg-calm-moss border-calm-lichen text-white font-semibold shadow-soft'
-                        : 'bg-calm-forest-dusk/90 border-calm-lichen/20 text-calm-fog hover:text-white hover:border-calm-lichen/50'
-                    }`}
-                  >
-                    <span className="text-[9px] font-mono font-bold text-calm-pollen">{sc.badge}:</span>
-                    <span>{sc.title}</span>
-                  </button>
-                ))}
-              </div>
             </div>
-          )}
+          ) : (
+            <>
+              {/* 3 Core Problem Scenarios Quick Bar */}
+              <div className="px-4 py-2.5 bg-calm-deep-moss/90 border-t border-calm-lichen/15 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-calm-lichen font-mono flex items-center pr-1 uppercase tracking-wider shrink-0 font-semibold">
+                    3 TÌNH HUỐNG TRỌNG TÂM (CHỌN NHANH ĐỂ BẮT ĐẦU):
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowDecisionCard(true)}
+                    className="text-[10px] font-mono text-calm-pollen hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3 text-calm-pollen" />
+                    <span>Xem Thẻ Quyết Định</span>
+                  </button>
+                </div>
 
-          {/* Input Box */}
-          <form onSubmit={handleSendMessage} className="p-4 border-t border-calm-lichen/15 bg-calm-deep-moss/90 flex gap-2">
-            <input
-              type="text"
-              value={inputText}
-              disabled={isSessionClosed || isCrisisLocked}
-              onChange={e => setInputText(e.target.value)}
-              placeholder={
-                isCrisisLocked
-                  ? 'Phiên đối thoại đã ngưng và đóng lại. Vui lòng gọi đường dây nóng 1900 6235 hoặc 115.'
-                  : isSessionClosed
-                  ? 'Phiên đối thoại đã dừng. Bạn có thể nhấn Bắt đầu lại để trò chuyện mới.'
-                  : 'Gõ chia sẻ của bạn tại không gian này (không giới hạn chủ đề)...'
-              }
-              className="flex-1 bg-calm-forest-dusk/90 border border-calm-lichen/30 rounded-2xl px-4 py-3 text-xs sm:text-sm text-calm-paper-white placeholder-calm-fog/40 focus:outline-none focus:border-calm-lichen transition disabled:opacity-50"
-            />
-            {isSessionClosed || isCrisisLocked ? (
-              <button
-                type="button"
-                onClick={handleResetConversation}
-                className="px-4 py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern text-white font-sans font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer whitespace-nowrap"
-                title="Bắt đầu lại cuộc trò chuyện mới"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span className="hidden sm:inline">Bắt đầu lại</span>
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!inputText.trim() || isAiTyping}
-                className="px-5 py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern disabled:opacity-40 text-white font-sans font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer"
-              >
-                <span>Gửi</span>
-                <Send className="w-4 h-4" />
-              </button>
-            )}
-          </form>
+                <div className="flex gap-2 overflow-x-auto pb-1 text-[11px] font-sans items-center scrollbar-none">
+                  {CORE_PROBLEM_SCENARIOS.map(sc => (
+                    <button
+                      key={sc.id}
+                      type="button"
+                      onClick={() => handleSelectScenario(sc)}
+                      disabled={isSessionClosed}
+                      className={`px-3 py-1.5 rounded-full border transition whitespace-nowrap shrink-0 hover:scale-105 flex items-center gap-1.5 cursor-pointer ${
+                        activeScenarioId === sc.id
+                          ? 'bg-calm-moss border-calm-lichen text-white font-semibold shadow-soft'
+                          : 'bg-calm-forest-dusk/90 border-calm-lichen/20 text-calm-fog hover:text-white hover:border-calm-lichen/50'
+                      }`}
+                    >
+                      <span className="text-[9px] font-mono font-bold text-calm-pollen">{sc.badge}:</span>
+                      <span>{sc.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Input Box */}
+              <form onSubmit={handleSendMessage} className="p-4 border-t border-calm-lichen/15 bg-calm-deep-moss/90 flex gap-2">
+                <input
+                  type="text"
+                  value={inputText}
+                  disabled={isSessionClosed}
+                  onChange={e => setInputText(e.target.value)}
+                  placeholder={
+                    isSessionClosed
+                      ? 'Phiên đối thoại đã dừng. Bạn có thể nhấn Bắt đầu lại để trò chuyện mới.'
+                      : 'Gõ chia sẻ của bạn tại không gian này (không giới hạn chủ đề)...'
+                  }
+                  className="flex-1 bg-calm-forest-dusk/90 border border-calm-lichen/30 rounded-2xl px-4 py-3 text-xs sm:text-sm text-calm-paper-white placeholder-calm-fog/40 focus:outline-none focus:border-calm-lichen transition disabled:opacity-50"
+                />
+                {isSessionClosed ? (
+                  <button
+                    type="button"
+                    onClick={handleResetConversation}
+                    className="px-4 py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern text-white font-sans font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer whitespace-nowrap"
+                    title="Bắt đầu lại cuộc trò chuyện mới"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span className="hidden sm:inline">Bắt đầu lại</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!inputText.trim() || isAiTyping}
+                    className="px-5 py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern disabled:opacity-40 text-white font-sans font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer"
+                  >
+                    <span>Gửi</span>
+                    <Send className="w-4 h-4" />
+                  </button>
+                )}
+              </form>
+            </>
+          )}
 
         </div>
       </div>
