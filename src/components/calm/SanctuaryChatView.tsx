@@ -14,7 +14,8 @@ import {
   X,
   MessageCircle,
   Leaf,
-  PhoneCall
+  PhoneCall,
+  Compass
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -28,9 +29,17 @@ import { SessionOutcomeType } from '../../config/betaFlags';
 import { saveConversationToCloud, loadConversationFromCloud, saveMemoryToCloud } from '../../services/supabaseService';
 import { createExperimentFromSession } from '../../services/experimentService';
 import { DecisionCardModal } from '../decision/DecisionCardModal';
+import { DecisionCanvas } from '../decision/DecisionCanvas';
 import { IncidentReportModal } from '../beta/IncidentReportModal';
 import { BetaDashboardModal } from '../beta/BetaDashboardModal';
-import { CORE_PROBLEM_SCENARIOS, extractDecisionCardFromConversation, ProblemScenario } from '../../services/decisionService';
+import {
+  CORE_PROBLEM_SCENARIOS,
+  extractDecisionCardFromConversation,
+  getActiveDecisionCard,
+  saveActiveDecisionCard,
+  ProblemScenario
+} from '../../services/decisionService';
+import { DecisionCardData } from '../../types/decisionCard';
 
 interface SanctuaryChatViewProps {
   onBackToHome: () => void;
@@ -65,6 +74,12 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
   const apiKey = getStoredGeminiKey();
   const [isAiTyping, setIsAiTyping] = useState(false);
 
+  // Decision Card Canvas State (Live Studio)
+  const [decisionCard, setDecisionCard] = useState<DecisionCardData>(getActiveDecisionCard);
+  const [isExtractingCard, setIsExtractingCard] = useState(false);
+  const [cardUpdatedNotice, setCardUpdatedNotice] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState<'dialogue' | 'studio'>('dialogue');
+
   // Checkpoint & Memory State
   const [showCheckpointModal, setShowCheckpointModal] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState<SessionOutcomeType | null>(null);
@@ -73,7 +88,7 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
   const [isCrisisLocked, setIsCrisisLocked] = useState(false);
   const [checkpointNote, setCheckpointNote] = useState('');
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [showDecisionCard, setShowDecisionCard] = useState(false);
+  const [showDecisionCardModal, setShowDecisionCardModal] = useState(false);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showBetaDashboard, setShowBetaDashboard] = useState(false);
   const [activeScenarioId, setActiveScenarioId] = useState<'work_life' | 'purpose' | 'major_decision' | null>(null);
@@ -91,6 +106,11 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
         }
       }
     });
+
+    const storedCard = getActiveDecisionCard();
+    if (storedCard) {
+      setDecisionCard(storedCard);
+    }
   }, []);
 
   // Auto-scroll whenever messages change
@@ -121,11 +141,43 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
 
   const handleSelectScenario = async (scenario: ProblemScenario) => {
     setActiveScenarioId(scenario.id);
+
+    // Cập nhật Thẻ Quyết Định theo mẫu tình huống
+    const scenarioCard: DecisionCardData = {
+      ...decisionCard,
+      ...scenario.defaultCardData,
+      scenarioCategory: scenario.id,
+      version: decisionCard.version + 1,
+      status: 'USER_REVIEW',
+      updatedAt: new Date().toISOString(),
+    };
+    setDecisionCard(scenarioCard);
+    saveActiveDecisionCard(scenarioCard);
+    setCardUpdatedNotice(true);
+    setTimeout(() => setCardUpdatedNotice(false), 3000);
+
     submitMessage(scenario.starterPrompt);
-    extractDecisionCardFromConversation(
-      [{ sender: 'user', text: scenario.starterPrompt }],
-      scenario.id
-    );
+  };
+
+  const handleRefreshCanvasFromChat = async () => {
+    setIsExtractingCard(true);
+    try {
+      const extracted = await extractDecisionCardFromConversation(
+        messages,
+        activeScenarioId || undefined
+      );
+      setDecisionCard(extracted);
+      saveActiveDecisionCard(extracted);
+      setCardUpdatedNotice(true);
+      setTimeout(() => setCardUpdatedNotice(false), 3000);
+    } finally {
+      setIsExtractingCard(false);
+    }
+  };
+
+  const handleUpdateCardFromCanvas = (updated: DecisionCardData) => {
+    setDecisionCard(updated);
+    saveActiveDecisionCard(updated);
   };
 
   const submitMessage = async (textToSend: string) => {
@@ -164,6 +216,14 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
         setIsCrisisLocked(true);
       } else if (result.isUserStop) {
         setIsSessionClosed(true);
+      } else {
+        // Tự động kết tinh và cập nhật Thẻ Quyết Định theo hội thoại
+        extractDecisionCardFromConversation(updatedWithAi, activeScenarioId || undefined).then(cardData => {
+          setDecisionCard(cardData);
+          saveActiveDecisionCard(cardData);
+          setCardUpdatedNotice(true);
+          setTimeout(() => setCardUpdatedNotice(false), 3500);
+        });
       }
     } catch {
       const fallbackMsg: Message = {
@@ -240,33 +300,6 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
     };
 
     const outcomeText = outcomeLabels[selectedOutcome];
-    const memoryNote = memoryConsent === 'granted'
-      ? 'Đã lưu đúc kết vào bộ nhớ an toàn của bạn cho các phiên sau.'
-      : 'Đã hoàn tất phiên không lưu (No Memory). Dữ liệu này không được ghi dài hạn.';
-
-    // Tự động chuyển bài tập sang Thử nghiệm
-    const isExperiment = selectedOutcome === 'LIFE_EXPERIMENT' || selectedOutcome === 'MEANINGFUL_NEXT_STEP';
-    if (isExperiment || checkpointNote) {
-      createExperimentFromSession(
-        checkpointNote || outcomeText,
-        `Bước hành động kiểm chứng vi mô đúc kết từ phiên trò chuyện ngày ${new Date().toLocaleDateString('vi-VN')}.`
-      );
-    }
-
-    const outcomeMsg: Message = {
-      id: Date.now().toString(),
-      sender: 'ai',
-      text: `✨ **Đúc kết phiên đã ghi nhận**: ${outcomeText}${checkpointNote ? `\n\n*Chi tiết*: "${checkpointNote}"` : ''}\n\n🛡️ *Trạng thái bộ nhớ*: ${memoryNote}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    const updatedWithOutcome: Message[] = [...messages, outcomeMsg];
-    setMessages(updatedWithOutcome);
-
-    saveConversationToCloud(conversationId, updatedWithOutcome, {
-      type: selectedOutcome,
-      text: checkpointNote || outcomeText,
-    });
 
     if (memoryConsent === 'granted') {
       saveMemoryToCloud({
@@ -283,7 +316,7 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-calm-forest-dusk text-calm-paper-white flex flex-col justify-between pt-20 pb-6 px-4 sm:px-6">
+    <div className="relative w-full min-h-screen bg-calm-forest-dusk text-calm-paper-white flex flex-col justify-between pt-16 sm:pt-20 pb-4 px-3 sm:px-6">
       
       {/* Background Ambient Glow */}
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -296,32 +329,60 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
         />
       </div>
 
-      {/* Main Sanctuary Chat Window */}
-      <div className="relative z-10 w-full max-w-4xl mx-auto flex-1 flex flex-col my-auto">
+      {/* Main Studio Shell */}
+      <div className="relative z-10 w-full max-w-[1600px] mx-auto flex-1 flex flex-col">
         
         {/* Top Controls Bar */}
-        <div className="flex items-center justify-between pb-3 px-2">
+        <div className="flex items-center justify-between pb-3 px-1 gap-2">
+          {/* Back to Home Button */}
           <button
             onClick={onBackToHome}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-calm-deep-moss/80 hover:bg-calm-moss border border-calm-lichen/30 text-calm-fog text-xs font-sans transition cursor-pointer shadow-soft"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-calm-deep-moss/80 hover:bg-calm-moss border border-calm-lichen/30 text-calm-fog text-xs font-sans transition cursor-pointer shadow-soft shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-calm-lichen" />
-            <span>Về trang chủ</span>
+            <span className="hidden sm:inline">Về trang chủ</span>
+            <span className="sm:hidden">Trang chủ</span>
           </button>
 
-          <div className="flex items-center gap-2">
-            {/* Decision Card Button */}
+          {/* Center: Mobile View Switcher Tabs (< lg) OR Desktop Title (>= lg) */}
+          <div className="lg:hidden flex items-center bg-calm-deep-moss/90 border border-calm-lichen/30 rounded-full p-1 shadow-soft">
             <button
-              onClick={() => setShowDecisionCard(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-calm-pollen/40 bg-calm-deep-moss/80 hover:bg-calm-moss text-calm-pollen text-xs font-sans transition shadow-soft cursor-pointer"
-              title="Mở Decision Card (Bản nháp 7 mục)"
+              type="button"
+              onClick={() => setActiveMobileTab('dialogue')}
+              className={`px-3 py-1 rounded-full text-xs font-sans transition cursor-pointer flex items-center gap-1.5 ${
+                activeMobileTab === 'dialogue'
+                  ? 'bg-calm-moss text-white font-semibold shadow-sm'
+                  : 'text-calm-fog hover:text-white'
+              }`}
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>Đối thoại</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMobileTab('studio')}
+              className={`px-3 py-1 rounded-full text-xs font-sans transition cursor-pointer flex items-center gap-1.5 ${
+                activeMobileTab === 'studio'
+                  ? 'bg-calm-moss text-white font-semibold shadow-sm'
+                  : 'text-calm-fog hover:text-white'
+              }`}
             >
               <Layers className="w-3.5 h-3.5 text-calm-pollen" />
-              <span>Decision Card</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Thẻ Quyết Định</span>
+              {cardUpdatedNotice && (
+                <span className="w-2 h-2 rounded-full bg-calm-pollen animate-ping" />
+              )}
             </button>
+          </div>
 
-            {/* Báo lỗi */}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-calm-deep-moss/70 border border-calm-lichen/25 text-calm-lichen text-xs font-mono font-medium">
+            <Compass className="w-3.5 h-3.5 text-calm-pollen" />
+            <span>DECISION STUDIO · STUDIO SONG SONG (ĐỐI THOẠI & THẺ QUYẾT ĐỊNH)</span>
+          </div>
+
+          {/* Right Action Icons */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Incident Report */}
             <button
               onClick={() => setShowIncidentModal(true)}
               className="w-8 h-8 rounded-full border border-rose-400/40 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 flex items-center justify-center transition cursor-pointer"
@@ -341,226 +402,252 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
           </div>
         </div>
 
-        {/* The Chat Card Box */}
-        <div className="w-full rounded-3xl bg-calm-forest-dusk/95 border border-calm-lichen/30 backdrop-blur-2xl shadow-[0_12px_45px_rgba(0,0,0,0.5)] flex flex-col h-[600px] sm:h-[650px] overflow-hidden">
+        {/* Studio Workspace: Dual-Pane on Desktop (lg+), Tabbed Switcher on Mobile (< lg) */}
+        <div className="flex-1 lg:grid lg:grid-cols-12 gap-5 h-[calc(100vh-7.5rem)] min-h-[580px] overflow-hidden">
           
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-calm-lichen/15 bg-calm-deep-moss/90 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-calm-moss/40 border border-calm-lichen/30 flex items-center justify-center text-calm-lichen">
-                <Leaf className="w-4 h-4 text-calm-lichen" />
-              </div>
-              <div>
-                <h3 className="font-serif text-base text-calm-paper-white font-medium flex items-center gap-2">
-                  <span>Life Lab Mirror Companion</span>
-                  <span className="text-[10px] bg-calm-moss/30 text-calm-lichen px-2.5 py-0.5 rounded-full border border-calm-lichen/40 flex items-center gap-1.5 font-sans">
-                    <span className="w-1.5 h-1.5 rounded-full bg-calm-lichen animate-pulse" />
-                    <span>AI Active</span>
-                  </span>
-                </h3>
-                <span className="text-[10px] text-calm-fog/70 font-mono tracking-wider">
-                  Khoảng Lặng Đồng Hành • Lắng Nghe Không Phán Xét
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
-              {/* Reset Conversation Button */}
-              <button
-                type="button"
-                onClick={handleResetConversation}
-                disabled={isAiTyping}
-                className="text-[11px] text-calm-fog hover:text-white font-sans bg-calm-moss/20 hover:bg-calm-moss/40 disabled:opacity-40 px-2.5 py-1 rounded-full border border-calm-lichen/20 transition flex items-center gap-1 cursor-pointer shadow-sm hover:scale-105"
-                title="Làm mới cuộc trò chuyện, xóa lịch sử và bắt đầu lại từ đầu"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-calm-pollen" />
-                <span>Làm mới</span>
-              </button>
-
-              {/* Checkpoint Button */}
-              <button
-                type="button"
-                onClick={handleOpenCheckpointModal}
-                className="text-[11px] text-calm-lichen font-sans bg-calm-lichen/15 hover:bg-calm-lichen/25 px-2.5 py-1 rounded-full border border-calm-lichen/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
-                title="Đúc kết phiên đối thoại (Session Checkpoint)"
-              >
-                <BookmarkCheck className="w-3.5 h-3.5 text-calm-lichen" />
-                <span>Đúc Kết</span>
-              </button>
-
-              {/* Stop Button */}
-              <button
-                type="button"
-                onClick={handleUserStop}
-                disabled={isSessionClosed}
-                className="text-[11px] text-calm-fog font-sans bg-white/5 hover:bg-calm-forest-dusk disabled:opacity-40 px-2.5 py-1 rounded-full border border-calm-lichen/15 transition flex items-center gap-1 cursor-pointer"
-                title="Dừng phiên trò chuyện ngay lúc này"
-              >
-                <PauseCircle className="w-3.5 h-3.5 text-calm-fog/70" />
-                <span>{isSessionClosed ? 'Đã dừng' : 'Dừng'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Messages Flow Area */}
+          {/* LEFT PANE: Mindful Dialogue (Active if Desktop OR Mobile tab is 'dialogue') */}
           <div
-            ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto p-6 space-y-4 scroll-smooth"
+            className={`lg:col-span-5 flex-col h-full rounded-3xl bg-calm-forest-dusk/95 border border-calm-lichen/30 backdrop-blur-2xl shadow-2xl overflow-hidden ${
+              activeMobileTab === 'dialogue' ? 'flex' : 'hidden lg:flex'
+            }`}
           >
-            {messages.map(msg => (
-              <div
-                key={msg.id}
-                className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} animate-fadeIn`}
-              >
-                <div
-                  className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
-                    msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-amber-700/90 to-amber-600/90 text-white font-sans font-medium rounded-br-none shadow-md border border-amber-400/20'
-                      : 'bg-calm-deep-moss/95 border border-calm-lichen/20 text-calm-fog font-serif rounded-bl-none shadow-lg whitespace-pre-line'
-                  }`}
-                >
-                  {msg.text}
-
-                  {msg.sender === 'ai' && (
-                    msg.text.toLowerCase().includes('decision card') ||
-                    msg.text.toLowerCase().includes('thẻ quyết định')
-                  ) && messages.filter(m => m.sender === 'user').length >= 3 && (
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => setShowDecisionCard(true)}
-                        className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-calm-moss/40 hover:bg-calm-moss/60 border border-calm-lichen/40 text-calm-pollen text-xs font-sans transition shadow-sm hover:scale-[1.02] cursor-pointer"
-                      >
-                        <Layers className="w-3.5 h-3.5 text-calm-pollen" />
-                        <span>Mở Decision Card (Bản nháp 7 mục)</span>
-                        <ArrowRight className="w-3 h-3 text-calm-pollen" />
-                      </button>
-                    </div>
-                  )}
+            {/* Dialogue Header */}
+            <div className="px-4 sm:px-6 py-3.5 border-b border-calm-lichen/15 bg-calm-deep-moss/90 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-calm-moss/40 border border-calm-lichen/30 flex items-center justify-center text-calm-lichen shrink-0">
+                  <Leaf className="w-4 h-4 text-calm-lichen" />
                 </div>
-                <span className="text-[10px] text-calm-fog/60 mt-1 font-mono px-1">
-                  {msg.timestamp}
-                </span>
+                <div>
+                  <h3 className="font-serif text-sm sm:text-base text-calm-paper-white font-medium flex items-center gap-2">
+                    <span>Life Lab Mirror Companion</span>
+                    <span className="text-[10px] bg-calm-moss/30 text-calm-lichen px-2 py-0.5 rounded-full border border-calm-lichen/40 flex items-center gap-1 font-sans">
+                      <span className="w-1.5 h-1.5 rounded-full bg-calm-lichen animate-pulse" />
+                      <span>AI Active</span>
+                    </span>
+                  </h3>
+                  <span className="text-[10px] text-calm-fog/70 font-mono tracking-wider">
+                    Lắng Nghe Không Phán Xét
+                  </span>
+                </div>
               </div>
-            ))}
 
-            {isAiTyping && (
-              <div className="flex items-center gap-2 p-4 rounded-2xl bg-calm-deep-moss/80 border border-calm-lichen/15 text-calm-pollen text-xs w-36 animate-fadeIn">
-                <span className="w-2 h-2 rounded-full bg-calm-pollen animate-bounce" />
-                <span className="w-2 h-2 rounded-full bg-calm-pollen animate-bounce [animation-delay:0.2s]" />
-                <span className="w-2 h-2 rounded-full bg-calm-pollen animate-bounce [animation-delay:0.4s]" />
-                <span className="text-[11px] font-sans text-calm-fog/70 ml-1">Đang suy ngẫm...</span>
-              </div>
-            )}
-            <div ref={chatEndRef} className="h-2 w-full" />
-          </div>
-
-          {/* Khi tiêu cực quá (tự sát / khủng hoảng): Ngưng hoàn toàn, không cho chat nữa */}
-          {isCrisisLocked ? (
-            <div className="p-6 border-t border-calm-lichen/20 bg-calm-deep-moss/95 text-center space-y-3 animate-fadeIn">
-              <div className="w-10 h-10 rounded-full bg-calm-forest-dusk border border-calm-lichen/30 flex items-center justify-center mx-auto text-calm-lichen">
-                <Leaf className="w-5 h-5 text-calm-lichen" />
-              </div>
-              <div className="font-serif text-base sm:text-lg text-calm-warm-ivory font-light">
-                Cuộc trò chuyện đã khép lại
-              </div>
-              <p className="text-xs sm:text-sm text-calm-fog/80 max-w-md mx-auto leading-relaxed font-light">
-                Không gian đối thoại AI đã ngưng để bạn được nghỉ ngơi và ưu tiên sự an toàn cho chính mình.
-              </p>
-              <div className="flex items-center justify-center gap-3 pt-2">
+              <div className="flex items-center gap-1.5">
+                {/* Reset Conversation Button */}
                 <button
                   type="button"
                   onClick={handleResetConversation}
-                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-xs text-calm-paper-white transition flex items-center gap-1.5 cursor-pointer shadow-soft"
+                  disabled={isAiTyping}
+                  className="text-[11px] text-calm-fog hover:text-white font-sans bg-calm-moss/20 hover:bg-calm-moss/40 disabled:opacity-40 px-2.5 py-1 rounded-full border border-calm-lichen/20 transition flex items-center gap-1 cursor-pointer shadow-sm"
+                  title="Làm mới cuộc trò chuyện"
                 >
                   <RotateCcw className="w-3.5 h-3.5 text-calm-pollen" />
-                  <span>Bắt đầu cuộc trò chuyện mới</span>
+                  <span className="hidden sm:inline">Làm mới</span>
                 </button>
+
+                {/* Checkpoint Button */}
                 <button
                   type="button"
-                  onClick={onBackToHome}
-                  className="px-4 py-2 rounded-full bg-calm-moss hover:bg-calm-fern border border-calm-lichen/40 text-xs text-white transition flex items-center gap-1.5 cursor-pointer shadow-soft"
+                  onClick={handleOpenCheckpointModal}
+                  className="text-[11px] text-calm-lichen font-sans bg-calm-lichen/15 hover:bg-calm-lichen/25 px-2.5 py-1 rounded-full border border-calm-lichen/30 transition flex items-center gap-1 shadow-sm cursor-pointer"
+                  title="Đúc kết phiên đối thoại"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Về trang chủ</span>
+                  <BookmarkCheck className="w-3.5 h-3.5 text-calm-lichen" />
+                  <span>Đúc Kết</span>
+                </button>
+
+                {/* Stop Button */}
+                <button
+                  type="button"
+                  onClick={handleUserStop}
+                  disabled={isSessionClosed}
+                  className="text-[11px] text-calm-fog font-sans bg-white/5 hover:bg-calm-forest-dusk disabled:opacity-40 px-2.5 py-1 rounded-full border border-calm-lichen/15 transition flex items-center gap-1 cursor-pointer"
+                  title="Dừng phiên trò chuyện ngay lúc này"
+                >
+                  <PauseCircle className="w-3.5 h-3.5 text-calm-fog/70" />
+                  <span>{isSessionClosed ? 'Đã dừng' : 'Dừng'}</span>
                 </button>
               </div>
             </div>
-          ) : (
-            <>
-              {/* 3 Core Problem Scenarios Quick Bar */}
-              <div className="px-4 py-2.5 bg-calm-deep-moss/90 border-t border-calm-lichen/15 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-calm-lichen font-mono flex items-center pr-1 uppercase tracking-wider shrink-0 font-semibold">
-                    3 TÌNH HUỐNG TRỌNG TÂM (CHỌN NHANH ĐỂ BẮT ĐẦU):
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowDecisionCard(true)}
-                    className="text-[10px] font-mono text-calm-pollen hover:underline flex items-center gap-1 cursor-pointer"
+
+            {/* Messages Flow Area */}
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 scroll-smooth"
+            >
+              {messages.map(msg => (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} animate-fadeIn`}
+                >
+                  <div
+                    className={`max-w-[88%] sm:max-w-[80%] p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                      msg.sender === 'user'
+                        ? 'bg-gradient-to-r from-amber-700/90 to-amber-600/90 text-white font-sans font-medium rounded-br-none shadow-md border border-amber-400/20'
+                        : 'bg-calm-deep-moss/95 border border-calm-lichen/20 text-calm-fog font-serif rounded-bl-none shadow-lg whitespace-pre-line'
+                    }`}
                   >
-                    <Sparkles className="w-3 h-3 text-calm-pollen" />
-                    <span>Xem Thẻ Quyết Định</span>
-                  </button>
-                </div>
+                    {msg.text}
 
-                <div className="flex gap-2 overflow-x-auto pb-1 text-[11px] font-sans items-center scrollbar-none">
-                  {CORE_PROBLEM_SCENARIOS.map(sc => (
-                    <button
-                      key={sc.id}
-                      type="button"
-                      onClick={() => handleSelectScenario(sc)}
-                      disabled={isSessionClosed}
-                      className={`px-3 py-1.5 rounded-full border transition whitespace-nowrap shrink-0 hover:scale-105 flex items-center gap-1.5 cursor-pointer ${
-                        activeScenarioId === sc.id
-                          ? 'bg-calm-moss border-calm-lichen text-white font-semibold shadow-soft'
-                          : 'bg-calm-forest-dusk/90 border-calm-lichen/20 text-calm-fog hover:text-white hover:border-calm-lichen/50'
-                      }`}
-                    >
-                      <span className="text-[9px] font-mono font-bold text-calm-pollen">{sc.badge}:</span>
-                      <span>{sc.title}</span>
-                    </button>
-                  ))}
+                    {/* Switch to Decision Studio pill for mobile if AI mentions decision card */}
+                    {msg.sender === 'ai' && (
+                      msg.text.toLowerCase().includes('decision card') ||
+                      msg.text.toLowerCase().includes('thẻ quyết định')
+                    ) && (
+                      <div className="lg:hidden mt-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setActiveMobileTab('studio')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-calm-moss/40 hover:bg-calm-moss/60 border border-calm-lichen/40 text-calm-pollen text-xs font-sans transition shadow-sm cursor-pointer"
+                        >
+                          <Layers className="w-3.5 h-3.5 text-calm-pollen" />
+                          <span>Xem Thẻ Quyết Định Live</span>
+                          <ArrowRight className="w-3 h-3 text-calm-pollen" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-calm-fog/60 mt-1 font-mono px-1">
+                    {msg.timestamp}
+                  </span>
                 </div>
-              </div>
+              ))}
 
-              {/* Input Box */}
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-calm-lichen/15 bg-calm-deep-moss/90 flex gap-2">
-                <input
-                  type="text"
-                  value={inputText}
-                  disabled={isSessionClosed}
-                  onChange={e => setInputText(e.target.value)}
-                  placeholder={
-                    isSessionClosed
-                      ? 'Phiên đối thoại đã dừng. Bạn có thể nhấn Bắt đầu lại để trò chuyện mới.'
-                      : 'Gõ chia sẻ của bạn tại không gian này (không giới hạn chủ đề)...'
-                  }
-                  className="flex-1 bg-calm-forest-dusk/90 border border-calm-lichen/30 rounded-2xl px-4 py-3 text-xs sm:text-sm text-calm-paper-white placeholder-calm-fog/40 focus:outline-none focus:border-calm-lichen transition disabled:opacity-50"
-                />
-                {isSessionClosed ? (
+              {isAiTyping && (
+                <div className="flex items-center gap-2 p-3.5 rounded-2xl bg-calm-deep-moss/80 border border-calm-lichen/15 text-calm-pollen text-xs w-36 animate-fadeIn">
+                  <span className="w-2 h-2 rounded-full bg-calm-pollen animate-bounce" />
+                  <span className="w-2 h-2 rounded-full bg-calm-pollen animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-2 h-2 rounded-full bg-calm-pollen animate-bounce [animation-delay:0.4s]" />
+                  <span className="text-[11px] font-sans text-calm-fog/70 ml-1">Đang suy ngẫm...</span>
+                </div>
+              )}
+              <div ref={chatEndRef} className="h-2 w-full" />
+            </div>
+
+            {/* Bottom Actions: If Crisis -> Locked banner, Else -> Scenario Bar & Input */}
+            {isCrisisLocked ? (
+              <div className="p-5 border-t border-calm-lichen/20 bg-calm-deep-moss/95 text-center space-y-3 animate-fadeIn">
+                <div className="w-10 h-10 rounded-full bg-calm-forest-dusk border border-calm-lichen/30 flex items-center justify-center mx-auto text-calm-lichen">
+                  <Leaf className="w-5 h-5 text-calm-lichen" />
+                </div>
+                <div className="font-serif text-base sm:text-lg text-calm-warm-ivory font-light">
+                  Cuộc trò chuyện đã khép lại
+                </div>
+                <p className="text-xs sm:text-sm text-calm-fog/80 max-w-md mx-auto leading-relaxed font-light">
+                  Không gian đối thoại AI đã ngưng để bạn được nghỉ ngơi và ưu tiên sự an toàn cho chính mình.
+                </p>
+                <div className="flex items-center justify-center gap-3 pt-2">
                   <button
                     type="button"
                     onClick={handleResetConversation}
-                    className="px-4 py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern text-white font-sans font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer whitespace-nowrap"
-                    title="Bắt đầu lại cuộc trò chuyện mới"
+                    className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-xs text-calm-paper-white transition flex items-center gap-1.5 cursor-pointer shadow-soft"
                   >
-                    <RotateCcw className="w-4 h-4" />
-                    <span className="hidden sm:inline">Bắt đầu lại</span>
+                    <RotateCcw className="w-3.5 h-3.5 text-calm-pollen" />
+                    <span>Bắt đầu cuộc trò chuyện mới</span>
                   </button>
-                ) : (
                   <button
-                    type="submit"
-                    disabled={!inputText.trim() || isAiTyping}
-                    className="px-5 py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern disabled:opacity-40 text-white font-sans font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer"
+                    type="button"
+                    onClick={onBackToHome}
+                    className="px-4 py-2 rounded-full bg-calm-moss hover:bg-calm-fern border border-calm-lichen/40 text-xs text-white transition flex items-center gap-1.5 cursor-pointer shadow-soft"
                   >
-                    <span>Gửi</span>
-                    <Send className="w-4 h-4" />
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Về trang chủ</span>
                   </button>
-                )}
-              </form>
-            </>
-          )}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* 3 Core Problem Scenarios Quick Bar */}
+                <div className="px-3.5 py-2 bg-calm-deep-moss/90 border-t border-calm-lichen/15 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-calm-lichen font-mono flex items-center uppercase tracking-wider font-semibold">
+                      3 TÌNH HUỐNG TRỌNG TÂM:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveMobileTab('studio')}
+                      className="lg:hidden text-[10px] font-mono text-calm-pollen hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-calm-pollen" />
+                      <span>Xem Studio</span>
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2 overflow-x-auto pb-1 text-[11px] font-sans items-center scrollbar-none">
+                    {CORE_PROBLEM_SCENARIOS.map(sc => (
+                      <button
+                        key={sc.id}
+                        type="button"
+                        onClick={() => handleSelectScenario(sc)}
+                        disabled={isSessionClosed}
+                        className={`px-3 py-1 rounded-full border transition whitespace-nowrap shrink-0 hover:scale-105 flex items-center gap-1 cursor-pointer ${
+                          activeScenarioId === sc.id
+                            ? 'bg-calm-moss border-calm-lichen text-white font-semibold shadow-soft'
+                            : 'bg-calm-forest-dusk/90 border-calm-lichen/20 text-calm-fog hover:text-white hover:border-calm-lichen/50'
+                        }`}
+                      >
+                        <span className="text-[9px] font-mono font-bold text-calm-pollen">{sc.badge}:</span>
+                        <span>{sc.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Input Box */}
+                <form onSubmit={handleSendMessage} className="p-3.5 border-t border-calm-lichen/15 bg-calm-deep-moss/90 flex gap-2">
+                  <input
+                    type="text"
+                    value={inputText}
+                    disabled={isSessionClosed}
+                    onChange={e => setInputText(e.target.value)}
+                    placeholder={
+                      isSessionClosed
+                        ? 'Phiên đối thoại đã dừng. Nhấn Bắt đầu lại để trò chuyện mới.'
+                        : 'Gõ chia sẻ của bạn tại không gian này (không giới hạn chủ đề)...'
+                    }
+                    className="flex-1 bg-calm-forest-dusk/90 border border-calm-lichen/30 rounded-2xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-calm-paper-white placeholder-calm-fog/40 focus:outline-none focus:border-calm-lichen transition disabled:opacity-50"
+                  />
+                  {isSessionClosed ? (
+                    <button
+                      type="button"
+                      onClick={handleResetConversation}
+                      className="px-4 py-2.5 sm:py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern text-white font-sans font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer whitespace-nowrap"
+                      title="Bắt đầu lại cuộc trò chuyện mới"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span className="hidden sm:inline">Bắt đầu lại</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!inputText.trim() || isAiTyping}
+                      className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-calm-moss hover:bg-calm-fern disabled:opacity-40 text-white font-sans font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-soft cursor-pointer"
+                    >
+                      <span>Gửi</span>
+                      <Send className="w-4 h-4" />
+                    </button>
+                  )}
+                </form>
+              </>
+            )}
+          </div>
+
+          {/* RIGHT PANE: Live Decision Studio Canvas (Active if Desktop OR Mobile tab is 'studio') */}
+          <div
+            className={`lg:col-span-7 h-full ${
+              activeMobileTab === 'studio' ? 'flex flex-col' : 'hidden lg:flex flex-col'
+            }`}
+          >
+            <DecisionCanvas
+              card={decisionCard}
+              onUpdateCard={handleUpdateCardFromCanvas}
+              onRefreshFromChat={handleRefreshCanvasFromChat}
+              onSelectScenario={handleSelectScenario}
+              isExtracting={isExtractingCard}
+              userMessageCount={messages.filter(m => m.sender === 'user').length}
+              onGoToExperiments={onGoToExperiments}
+              onSaveToMemories={handleOpenCheckpointModal}
+            />
+          </div>
 
         </div>
       </div>
@@ -576,14 +663,15 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
                   <span>Đúc Kết Phiên Đối Thoại</span>
                 </h3>
                 <p className="text-xs text-calm-fog/70 font-sans mt-0.5">
-                  Session Outcome Checkpoint • Life Lab Master V8.7.2
+                  Session Outcome Checkpoint • Life Lab Master V8.7.5
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setShowCheckpointModal(false)}
-                className="p-1 rounded-full text-calm-fog/60 hover:text-white hover:bg-white/10"
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-calm-fog hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -693,10 +781,10 @@ export const SanctuaryChatView: React.FC<SanctuaryChatViewProps> = ({
         </div>
       )}
 
-      {/* Decision Card Modal (V8.7.5 Standard 7 Fields) */}
+      {/* Decision Card Modal (Optional Full Screen fallback) */}
       <DecisionCardModal
-        isOpen={showDecisionCard}
-        onClose={() => setShowDecisionCard(false)}
+        isOpen={showDecisionCardModal}
+        onClose={() => setShowDecisionCardModal(false)}
         messages={messages}
       />
 
