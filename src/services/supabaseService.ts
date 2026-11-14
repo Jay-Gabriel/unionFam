@@ -1,9 +1,7 @@
 import {
   supabase,
   isSupabaseConfigured,
-  isKeyAuthenticated,
-  getSupabaseConfig,
-  KEY_AUTH_EVENT
+  getSupabaseConfig
 } from '../lib/supabaseClient';
 import { User } from '@supabase/supabase-js';
 
@@ -29,25 +27,9 @@ const LOCAL_MESSAGES_KEY = 'unionfam_messages_cache';
 const LOCAL_MEMORIES_KEY = 'unionfam_memories_cache';
 
 /**
- * Lấy thông tin user hiện tại (hỗ trợ cả Supabase Key Auth lẫn Google OAuth)
+ * Lấy thông tin user hiện tại qua Supabase Auth
  */
 export async function getCurrentUser(): Promise<User | null> {
-  // 1. Kiểm tra nếu đang đăng nhập bằng Supabase Key / Secret Key
-  if (isKeyAuthenticated()) {
-    return {
-      id: 'supabase-key-user',
-      app_metadata: { provider: 'supabase_key' },
-      user_metadata: {
-        full_name: 'Quản trị viên',
-        key_preview: 'Đã mã hóa',
-        is_key_auth: true,
-      },
-      aud: 'authenticated',
-      created_at: new Date().toISOString(),
-    } as any;
-  }
-
-  // 2. Kiểm tra nếu có Google OAuth / Email session
   if (!supabase) return null;
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
@@ -62,30 +44,15 @@ export async function getCurrentUser(): Promise<User | null> {
  * Đăng ký lắng nghe thay đổi trạng thái đăng nhập
  */
 export function onAuthStateChange(callback: (user: User | null) => void) {
-  const checkState = () => {
-    getCurrentUser().then(callback);
-  };
-
-  if (typeof window !== 'undefined') {
-    window.addEventListener(KEY_AUTH_EVENT, checkState);
+  if (!supabase) {
+    return () => {};
   }
 
-  let subscription: any = null;
-  if (supabase) {
-    const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        callback(session.user);
-      } else {
-        checkState();
-      }
-    });
-    subscription = data.subscription;
-  }
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    callback(session?.user || null);
+  });
 
   return () => {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener(KEY_AUTH_EVENT, checkState);
-    }
     if (subscription) {
       subscription.unsubscribe();
     }
