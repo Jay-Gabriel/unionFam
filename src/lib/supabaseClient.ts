@@ -2,34 +2,19 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const env = (import.meta as any).env || {};
 
-export const KEY_AUTH_EVENT = 'unionfam_key_auth_changed';
-
 const DEFAULT_URL =
   env.VITE_SUPABASE_URL ||
   env.NEXT_PUBLIC_SUPABASE_URL ||
   'https://omztupgdandovalnoope.supabase.co';
 
 const DEFAULT_KEY =
-  env.VITE_SUPABASE_SECRET_KEY ||
   env.VITE_SUPABASE_ANON_KEY ||
   env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   '';
 
 export const getSupabaseConfig = () => {
-  if (typeof window !== 'undefined') {
-    const customUrl = localStorage.getItem('unionfam_supabase_url');
-    const customKey = localStorage.getItem('unionfam_supabase_anon_key');
-    if (customUrl && customKey) {
-      return { url: customUrl.trim(), key: customKey.trim(), isCustom: true };
-    }
-  }
   return { url: DEFAULT_URL, key: DEFAULT_KEY, isCustom: false };
-};
-
-export const isKeyAuthenticated = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem('unionfam_key_auth') === 'true';
 };
 
 const initClient = (): SupabaseClient | null => {
@@ -54,61 +39,18 @@ export let supabase: SupabaseClient | null = initClient();
 export const isSupabaseConfigured = Boolean(supabase);
 
 /**
- * Lưu cấu hình Supabase tùy chỉnh và làm mới client
- */
-export const saveSupabaseConfig = (url: string, key: string) => {
-  if (typeof window !== 'undefined') {
-    if (url.trim() && key.trim()) {
-      localStorage.setItem('unionfam_supabase_url', url.trim());
-      localStorage.setItem('unionfam_supabase_anon_key', key.trim());
-    } else {
-      localStorage.removeItem('unionfam_supabase_url');
-      localStorage.removeItem('unionfam_supabase_anon_key');
-    }
-    supabase = initClient();
-  }
-};
-
-/**
- * Đăng nhập trực tiếp bằng Khóa Supabase (Secret Key / Publishable Key)
- */
-export const loginWithSupabaseKey = (url: string, key: string) => {
-  if (typeof window !== 'undefined') {
-    saveSupabaseConfig(url, key);
-    localStorage.setItem('unionfam_key_auth', 'true');
-    window.dispatchEvent(new Event(KEY_AUTH_EVENT));
-  }
-};
-
-/**
- * Đăng xuất phiên đăng nhập bằng Khóa
- */
-export const logoutKeyAuth = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('unionfam_key_auth');
-    window.dispatchEvent(new Event(KEY_AUTH_EVENT));
-  }
-};
-
-/**
  * Kiểm tra kết nối tới Supabase
  */
-export const testSupabaseConnection = async (
-  customUrl?: string,
-  customKey?: string
-): Promise<{ success: boolean; message: string }> => {
-  const urlToTest = customUrl?.trim() || getSupabaseConfig().url;
-  const keyToTest = customKey?.trim() || getSupabaseConfig().key;
-  if (!urlToTest || !keyToTest) {
-    return { success: false, message: 'Vui lòng cung cấp cả Supabase URL và Supabase Key.' };
+export const testSupabaseConnection = async (): Promise<{ success: boolean; message: string }> => {
+  if (!supabase) {
+    return { success: false, message: 'Chưa cấu hình Supabase URL hoặc Publishable Key.' };
   }
   try {
-    const testClient = createClient(urlToTest, keyToTest);
-    const { error } = await testClient.auth.getSession();
+    const { error } = await supabase.auth.getSession();
     if (error) {
       return { success: false, message: `Lỗi kết nối: ${error.message}` };
     }
-    return { success: true, message: 'Kết nối Supabase thành công! Khóa và dự án hoạt động bình thường.' };
+    return { success: true, message: 'Kết nối Supabase thành công! Dự án hoạt động bình thường.' };
   } catch (e: any) {
     return { success: false, message: e?.message || 'Không thể kết nối đến máy chủ Supabase' };
   }
@@ -140,7 +82,7 @@ export const signInWithGoogle = async () => {
  */
 export const signInWithEmail = async (email: string, pass: string) => {
   if (!supabase) {
-    return { data: null, error: new Error('Chưa cấu hình Supabase URL hoặc Key.') };
+    return { data: null, error: new Error('Chưa cấu hình Supabase URL hoặc Publishable Key.') };
   }
   return await supabase.auth.signInWithPassword({
     email,
@@ -153,7 +95,7 @@ export const signInWithEmail = async (email: string, pass: string) => {
  */
 export const signUpWithEmail = async (email: string, pass: string) => {
   if (!supabase) {
-    return { data: null, error: new Error('Chưa cấu hình Supabase URL hoặc Key.') };
+    return { data: null, error: new Error('Chưa cấu hình Supabase URL hoặc Publishable Key.') };
   }
   return await supabase.auth.signUp({
     email,
@@ -162,10 +104,14 @@ export const signUpWithEmail = async (email: string, pass: string) => {
 };
 
 /**
- * Đăng xuất tài khoản (cả Supabase Auth lẫn Key Auth)
+ * Đăng xuất tài khoản
  */
 export const signOut = async () => {
-  logoutKeyAuth();
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('unionfam_key_auth');
+    localStorage.removeItem('unionfam_supabase_url');
+    localStorage.removeItem('unionfam_supabase_anon_key');
+  }
   if (!supabase) return { error: null };
   return await supabase.auth.signOut();
 };

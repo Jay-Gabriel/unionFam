@@ -1,14 +1,8 @@
 // Life Lab Companion Service (V8.7.5 Verified Implementation Standard & Decision Mode V1.0)
 // Dedicated for young professionals (23-35) balancing work, life, and personal agency
 
-const getSystemGroqKey = (): string => {
-  // System-level Groq Key (Zero cost, high-speed, sub-second inference)
-  const codes = [103,115,107,95,71,117,77,56,70,119,108,81,65,98,101,112,119,66,72,57,119,88,88,102,87,71,100,121,98,51,70,89,51,112,122,50,73,104,108,57,88,106,66,68,104,78,120,48,90,100,83,121,52,73,50,71];
-  return String.fromCharCode(...codes);
-};
-
 export const getStoredGeminiKey = (): string => {
-  // 1. Kiểm tra biến môi trường Server (Vite .env hoặc Vercel Environment Variables)
+  // Chỉ kiểm tra biến môi trường được cấu hình hợp lệ phía frontend hoặc trả về rỗng để gọi qua Gateway an toàn
   const envKey = (import.meta as any).env?.VITE_GROQ_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
   if (envKey) {
     const clean = envKey.trim();
@@ -17,8 +11,7 @@ export const getStoredGeminiKey = (): string => {
     }
   }
 
-  // 2. Chạy ngầm dưới hệ thống bằng Groq Key tốc độ cao (không lộ ra giao diện)
-  return getSystemGroqKey();
+  return '';
 };
 
 export const saveStoredGeminiKey = (key: string): void => {
