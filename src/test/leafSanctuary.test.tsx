@@ -67,4 +67,28 @@ describe('UnionFam 3D Leaf Sanctuary & Anti-ChatGPT Flow', () => {
     const lockedInput = screen.getByPlaceholderText(/Phiên trò chuyện đã khóa/i);
     expect(lockedInput).toBeDisabled();
   });
+
+  it('supports gentle Leaf voice toggle and mobile pane switcher on DecisionChatScreen', () => {
+    const onDesignExperiment = vi.fn();
+    render(<DecisionChatScreen onDesignExperiment={onDesignExperiment} />);
+
+    // Voice toggle switches gently between Giọng lá and Tắt giọng
+    const voiceBtn = screen.getByRole('button', { name: /Bật giọng lá/i });
+    expect(voiceBtn).toHaveTextContent(/Giọng lá/i);
+    fireEvent.click(voiceBtn);
+    expect(screen.getByRole('button', { name: /Tắt giọng lá/i })).toHaveTextContent(/Tắt giọng/i);
+
+    // Per-message gentle voice trigger renders
+    expect(screen.getAllByRole('button', { name: /Nghe nhẹ đoạn này/i }).length).toBeGreaterThan(0);
+
+    // Mobile tab switcher toggles active pressed state cleanly
+    const chatTab = screen.getByRole('button', { name: /^Phản chiếu$/i });
+    const cardTab = screen.getByRole('button', { name: /Thẻ \(1\)/i });
+    expect(chatTab).toHaveAttribute('aria-pressed', 'true');
+    expect(cardTab).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(cardTab);
+    expect(cardTab).toHaveAttribute('aria-pressed', 'true');
+    expect(chatTab).toHaveAttribute('aria-pressed', 'false');
+  });
 });

@@ -150,13 +150,19 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#182D26] flex flex-col font-sans">
+    <div
+      className={
+        route.name === 'decision_detail'
+          ? 'h-[100dvh] overflow-hidden bg-[#F7F5EF] text-[#182D26] flex flex-col font-sans'
+          : 'min-h-screen bg-[#F7F5EF] text-[#182D26] flex flex-col font-sans'
+      }
+    >
       {/* Top Calm Navigation Header */}
-      <nav className="w-full border-b border-[#BBC7BC] bg-[#F7F5EF]/90 backdrop-blur-md sticky top-0 z-40 px-4 md:px-6 py-3 flex justify-between items-center max-w-6xl mx-auto gap-3">
+      <nav className="w-full shrink-0 border-b border-[#BBC7BC] bg-[#F7F5EF]/90 backdrop-blur-md sticky top-0 z-40 px-3 sm:px-6 py-2.5 flex justify-between items-center max-w-6xl mx-auto gap-2 sm:gap-3">
         <button
           type="button"
           onClick={() => navigateTo('/')}
-          className="flex items-center gap-2 text-left font-bold text-lg text-[#254B3D] tracking-tight shrink-0 cursor-pointer"
+          className="flex items-center gap-2 text-left font-bold text-base sm:text-lg text-[#254B3D] tracking-tight shrink-0 cursor-pointer"
         >
           <img
             src="/assets/3d/leaf-herb-3d.png"
@@ -166,7 +172,7 @@ export const App: React.FC = () => {
           <span>UnionFam</span>
         </button>
 
-        <div className="flex items-center gap-3 md:gap-4 text-xs font-medium overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-2.5 sm:gap-4 text-xs font-medium overflow-x-auto whitespace-nowrap">
           <button
             type="button"
             onClick={() => navigateTo('/today')}
@@ -197,7 +203,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowRadioModal(true)}
-            className="px-3 py-1.5 rounded-full border border-[#BBC7BC] bg-white/80 hover:bg-[#E8EDE5] text-[#254B3D] transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+            className="px-2.5 sm:px-3 py-1.5 rounded-full border border-[#BBC7BC] bg-white/80 hover:bg-[#E8EDE5] text-[#254B3D] transition flex items-center gap-1.5 shrink-0 cursor-pointer"
             title="Mở Đài Radio Tâm Trí"
           >
             <Music className="w-3.5 h-3.5" />
@@ -206,7 +212,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowAuthModal(true)}
-            className="px-3.5 py-1.5 rounded-full border border-[#BBC7BC] hover:bg-[#E8EDE5] text-[#254B3D] transition shrink-0 cursor-pointer"
+            className="px-3 py-1.5 rounded-full border border-[#BBC7BC] hover:bg-[#E8EDE5] text-[#254B3D] transition shrink-0 cursor-pointer"
           >
             Tài khoản
           </button>
@@ -214,18 +220,28 @@ export const App: React.FC = () => {
       </nav>
 
       {/* Main Routed Content */}
-      <main className="flex-1 flex flex-col">{renderCurrentScreen()}</main>
+      <main
+        className={
+          route.name === 'decision_detail'
+            ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
+            : 'flex-1 flex flex-col'
+        }
+      >
+        {renderCurrentScreen()}
+      </main>
 
-      {/* Pristine Calm Footer */}
-      <footer className="py-6 border-t border-[#BBC7BC]/40 text-center text-xs text-[#182D26]/60">
-        <div className="flex flex-wrap items-center justify-center gap-3 px-4">
-          <span>UnionFam · Đồng hành cùng Chiếc Lá</span>
-          <span>•</span>
-          <span>Bảo mật dữ liệu cá nhân</span>
-          <span>•</span>
-          <span>Không áp lực</span>
-        </div>
-      </footer>
+      {/* Pristine Calm Footer (omitted on Studio S03 to keep full viewport clean) */}
+      {route.name !== 'decision_detail' && (
+        <footer className="py-6 border-t border-[#BBC7BC]/40 text-center text-xs text-[#182D26]/60">
+          <div className="flex flex-wrap items-center justify-center gap-3 px-4">
+            <span>UnionFam · Đồng hành cùng Chiếc Lá</span>
+            <span>•</span>
+            <span>Bảo mật dữ liệu cá nhân</span>
+            <span>•</span>
+            <span>Không áp lực</span>
+          </div>
+        </footer>
+      )}
 
       {/* Video Intro Overlay (Linh vật Chiếc Lá chăm sóc & thấu hiểu mọi người) */}
       <LeafIntroOverlay isOpen={showIntro} onClose={handleCloseIntro} />

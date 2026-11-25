@@ -33,7 +33,7 @@ function buildReflectiveResponse(
     lower.includes('áp lực')
   ) {
     const reply =
-      'Chiếc Lá nghe thấy sự nặng nề trong nhịp sống gần đây của bạn. Khi năng lượng xuống thấp, não bộ thường ép ta phải chọn thật nhanh để thoát khỏi áp lực — nhưng lúc này điều cần nhất lại là một ranh giới an toàn. Mình gợi ý thêm giới hạn bảo vệ năng lượng vào Thẻ Quyết Định bên phải nhé?';
+      'Chiếc Lá nghe thấy bạn đang hơi chùng xuống vì mệt. Khi mỏi mệt, mình không cần vội chọn ngay đâu — giữ cho bản thân một khoảng thở an toàn trước đã. Nếu thấy hợp lý, bạn thử xem hai gợi ý nhỏ bên Thẻ Quyết Định nhé.';
     if (!previousReplies.has(reply)) {
       return {
         reply,
@@ -53,7 +53,7 @@ function buildReflectiveResponse(
     lower.includes('tài chính')
   ) {
     const reply =
-      'Tiền bạc là chiếc neo an toàn rất thực tế, chứ không hề tầm thường. Thay vì chọn giữa "đam mê" hay "thu nhập", chúng ta thử tách riêng mức sàn sinh hoạt tối thiểu bạn cần giữ vững, để các lựa chọn khác nhẹ gánh hơn nhé?';
+      'Nỗi lo cơm áo là điểm tựa rất thật lòng, mình hiểu mà. Ta có thể ghi nhẹ ra mức thu nhập tối thiểu để bạn thấy yên tâm trước, rồi mọi phương án khác sẽ bớt nặng nề hơn một chút.';
     if (!previousReplies.has(reply)) {
       return {
         reply,
@@ -73,7 +73,7 @@ function buildReflectiveResponse(
     lower.includes('người khác')
   ) {
     const reply =
-      'Đôi khi cảm giác mắc kẹt không đến từ việc bạn không biết mình muốn gì, mà đến từ nỗi sợ làm người thân thất vọng. Nếu tách riêng kỳ vọng bên ngoài ra một bên, điều bạn thực sự muốn giữ cho chính mình là gì?';
+      'Có những lúc mình chững lại không phải vì thiếu hướng đi, mà vì sợ làm người thương buồn lòng. Nếu tạm gác kỳ vọng bên ngoài sang một góc nhỏ, điều bạn muốn giữ cho mình lúc này là gì nhỉ?';
     if (!previousReplies.has(reply)) {
       return {
         reply,
@@ -98,7 +98,7 @@ function buildReflectiveResponse(
     lower.includes('phân vân')
   ) {
     const reply =
-      'Nỗi sợ chọn sai thường khiến ta đứng yên rất lâu vì tưởng rằng mỗi quyết định đều là vĩnh viễn. Nhưng đa phần lựa chọn đều có thể thu nhỏ thành một bước thử 3 ngày đảo ngược được. Mình đặt sẵn 2 hướng cân nhắc vào Thẻ Quyết Định để bạn dễ nhìn hơn nhé?';
+      'Sợ chọn sai là cảm giác rất tự nhiên thôi bạn à. Đa phần mọi ngã rẽ đều có thể thu nhỏ lại thành một bước thử 3 ngày nhẹ nhàng và quay đầu được. Mình đặt thử 2 hướng nhẹ vào Thẻ Quyết Định để bạn ngắm xem sao nhé.';
     if (!previousReplies.has(reply)) {
       return {
         reply,
@@ -125,7 +125,7 @@ function buildReflectiveResponse(
   if (lower.includes('thử') || lower.includes('bước nhỏ') || lower.includes('hành động')) {
     return {
       reply:
-        'Rất tuyệt! Một bước thử nhỏ không đòi hỏi bạn phải đánh cược cả tương lai — nó chỉ giúp bạn thu về dữ liệu thật trong 1 đến 3 ngày tới. Bạn có thể xem lại Thẻ Quyết Định bên phải và bấm "Thiết kế bước thử" bất cứ lúc nào thấy sẵn sàng.',
+        'Nghe thật nhẹ nhõm. Một bước thử nhỏ không bắt bạn phải đánh cược điều gì lớn lao, chỉ để xem cảm giác của mình trong vài ngày tới ra sao thôi. Khi nào thấy vừa ý với Thẻ Quyết Định, bạn chạm "Thiết kế bước thử" nhé.',
       proposal: {
         criteria: ['Bảo toàn sức khỏe', 'Bước đi nhỏ có thể kiểm chứng ngay tuần này'],
       },
@@ -136,7 +136,7 @@ function buildReflectiveResponse(
   const fallbackPool: Pick<AiGatewayResponse, 'reply' | 'proposal'>[] = [
     {
       reply:
-        'Mình nghe thấy điều bạn đang băn khoăn. Giữa những yếu tố đang giằng co nhau lúc này, điều gì là ranh giới bạn nhất định không muốn đánh đổi?',
+        'Chiếc Lá nghe thấy điều bạn đang nâng lên đặt xuống. Giữa những vướng bận này, có ranh giới nhỏ nào bạn muốn giữ bình yên cho riêng mình nhất không?',
       proposal: {
         decision_question: 'Tôi nên điều chỉnh ranh giới công việc hay chuẩn bị tìm hướng đi mới?',
         criteria: ['Bảo toàn sức khỏe', 'Không đánh mất sự chủ động thời gian'],
@@ -144,7 +144,7 @@ function buildReflectiveResponse(
     },
     {
       reply:
-        'Cảm ơn bạn đã chia sẻ thật lòng. Nếu thử nhìn vấn đề này với sự dịu dàng như dành cho một người bạn thân, bạn thấy bước kiểm chứng nhỏ nào là an toàn nhất ngay lúc này?',
+        'Cảm ơn bạn đã sẻ chia chậm rãi như vậy. Nếu đối xử với chính mình dịu dàng như với một người bạn thân, bạn thấy bước nhỏ nào đang vừa sức nhất lúc này?',
       proposal: {
         options: [
           {

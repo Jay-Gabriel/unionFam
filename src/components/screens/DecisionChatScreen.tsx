@@ -11,10 +11,19 @@ import {
   Send,
   Square,
   Sprout,
+  Volume2,
+  VolumeX,
+  MessageCircle,
+  ClipboardList,
 } from 'lucide-react';
 import { DecisionCardRecord, DecisionProposalRecord } from '../../types/decisionJourney';
 import { applyProposalToCard, canDesignExperiment } from '../../services/decisionStateMachine';
 import { callAiGatewayTurn } from '../../services/aiGatewayService';
+import {
+  playSoftLeafChime,
+  speakGentleLeaf,
+  stopLeafVoice,
+} from '../../services/leafVoiceService';
 import { LeafMascot3D, LeafMascotMood } from '../ui/LeafMascot3D';
 import { Tilt3DCard } from '../ui/Tilt3DCard';
 import { LeafBreathingRitual } from '../studio/LeafBreathingRitual';
@@ -39,11 +48,7 @@ const MOOD_STONES = [
 
 /**
  * S03: Không gian Đối thoại & Đồng sáng tạo Thẻ Quyết Định cùng Chiếc Lá 3D.
- * Thiết kế khác biệt hoàn toàn với ChatGPT:
- * - Linh vật Chiếc Lá phản ứng trực tiếp theo cảm xúc & nhịp suy nghĩ.
- * - Thanh Mầm Rõ Ràng (3 chặng) & Nghi thức Thở cùng Chiếc Lá 15s.
- * - Các viên đá cảm xúc (Clarity Stones) chạm 1 lần.
- * - Thẻ Quyết Định 3D bên phải cho phép chỉnh sửa trực tiếp, kéo thước đo Độ Sáng Rõ & duyệt đề xuất.
+ * Tối ưu độ rõ ràng, giọng phản chiếu nhẹ nhàng (text + Web Speech dịu) và bố cục 100dvh trên mobile & desktop.
  */
 export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
   initialProblemText,
@@ -66,7 +71,7 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
       initial.push({
         id: 'init-reply',
         role: 'assistant',
-        text: 'Mình đã lắng nghe chia sẻ của bạn. Hãy cùng nhìn xem điều gì là quan trọng nhất để giữ an toàn cho bạn trên Thẻ Quyết Định bên phải nhé.',
+        text: 'Mình đã lắng nghe chia sẻ của bạn. Hãy cùng nhìn nhẹ xem điều gì cần giữ an toàn nhất cho bạn trên Thẻ Quyết Định nhé.',
       });
     }
     return initial;
@@ -78,6 +83,11 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
   const [leafMood, setLeafMood] = useState<LeafMascotMood>('listening');
   const [showBreathing, setShowBreathing] = useState(false);
   const [clarityPulse, setClarityPulse] = useState(6);
+
+  // Mobile pane switcher & gentle Leaf voice state
+  const [mobilePane, setMobilePane] = useState<'chat' | 'card'>('chat');
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
 
   const [card, setCard] = useState<DecisionCardRecord>({
     id: 'dec-current',
@@ -110,7 +120,46 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-  }, [messages, isAiLoading]);
+  }, [messages, isAiLoading, activeProposal]);
+
+  useEffect(() => {
+    return () => {
+      stopLeafVoice();
+    };
+  }, []);
+
+  const speakMessage = (msgId: string, text: string) => {
+    speakGentleLeaf(text, {
+      onStart: () => setSpeakingMsgId(msgId),
+      onEnd: () => setSpeakingMsgId((curr) => (curr === msgId ? null : curr)),
+    });
+  };
+
+  const handleToggleVoice = () => {
+    if (voiceEnabled) {
+      setVoiceEnabled(false);
+      setSpeakingMsgId(null);
+      stopLeafVoice();
+      return;
+    }
+
+    setVoiceEnabled(true);
+    playSoftLeafChime();
+    const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+    if (lastAssistant) {
+      speakMessage(lastAssistant.id, lastAssistant.text);
+    }
+  };
+
+  const handleSpeakMessageToggle = (msg: ChatItem) => {
+    if (speakingMsgId === msg.id) {
+      stopLeafVoice();
+      setSpeakingMsgId(null);
+      return;
+    }
+    playSoftLeafChime();
+    speakMessage(msg.id, msg.text);
+  };
 
   const sendMessage = async (textToSend: string) => {
     const trimmed = textToSend.trim();
@@ -137,6 +186,8 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
       setIsAiLoading(false);
 
       if (response.safetyInterception) {
+        stopLeafVoice();
+        setSpeakingMsgId(null);
         setIsSafetyLocked(true);
         setLeafMood('safety');
         setMessages((prev) => [
@@ -147,11 +198,17 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
         return;
       }
 
+      const assistantMsgId = `a_${Date.now()}`;
       setLeafMood('caring');
       setMessages((prev) => [
         ...prev,
-        { id: `a_${Date.now()}`, role: 'assistant', text: response.reply },
+        { id: assistantMsgId, role: 'assistant', text: response.reply },
       ]);
+
+      if (voiceEnabled) {
+        playSoftLeafChime();
+        speakMessage(assistantMsgId, response.reply);
+      }
 
       if (response.proposal && Object.keys(response.proposal).length > 0) {
         setActiveProposal({
@@ -171,7 +228,7 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
         {
           id: `err_${Date.now()}`,
           role: 'assistant',
-          text: 'Kết nối hơi chập chờn một chút. Bạn có thể bấm gửi lại hoặc viết tiếp vào Thẻ Quyết Định bên phải nhé.',
+          text: 'Kết nối hơi chập chờn một chút. Bạn có thể bấm gửi lại hoặc viết tiếp vào Thẻ Quyết Định nhé.',
         },
       ]);
     }
@@ -185,6 +242,8 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
     cancelledRef.current = true;
     setIsAiLoading(false);
     setLeafMood('listening');
+    stopLeafVoice();
+    setSpeakingMsgId(null);
   };
 
   const handleAcceptProposal = () => {
@@ -279,23 +338,66 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
         : 'Sáng rõ & vững vàng — sẵn sàng thử một bước nhỏ';
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#F7F5EF] text-[#182D26] flex flex-col lg:flex-row">
-      {/* Cột 1: Không gian Đồng hành Chiếc Lá (60%) */}
-      <div className="flex-1 lg:w-[58%] flex flex-col min-h-[72vh] lg:h-[calc(100vh-64px)] border-b lg:border-b-0 lg:border-r border-[#BBC7BC]">
+    <div className="flex-1 min-h-0 h-full bg-[#F7F5EF] text-[#182D26] flex flex-col lg:flex-row overflow-hidden">
+      {/* Mobile Tab Switcher (kept concise, hidden on desktop lg+) */}
+      <div className="lg:hidden shrink-0 px-3 py-2 bg-[#FAF8F2] border-b border-[#BBC7BC] grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setMobilePane('chat')}
+          aria-pressed={mobilePane === 'chat'}
+          className={`min-h-[42px] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+            mobilePane === 'chat'
+              ? 'bg-[#254B3D] text-white shadow-xs'
+              : 'bg-white border border-[#BBC7BC] text-[#254B3D]'
+          }`}
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          <span>Phản chiếu</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobilePane('card')}
+          aria-pressed={mobilePane === 'card'}
+          className={`min-h-[42px] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer relative ${
+            mobilePane === 'card'
+              ? 'bg-[#254B3D] text-white shadow-xs'
+              : 'bg-white border border-[#BBC7BC] text-[#254B3D]'
+          }`}
+        >
+          <ClipboardList className="w-3.5 h-3.5" />
+          <span>Thẻ ({card.criteria.length})</span>
+          {activeProposal && mobilePane !== 'card' && (
+            <span
+              className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+              aria-label="Có đề xuất mới từ Chiếc Lá"
+            />
+          )}
+        </button>
+      </div>
+
+      {/* Cột 1: Không gian Đồng hành Chiếc Lá (58%) */}
+      <div
+        className={`${
+          mobilePane === 'chat' ? 'flex' : 'hidden lg:flex'
+        } flex-1 min-h-0 lg:w-[58%] flex-col lg:border-r border-[#BBC7BC] bg-[#F7F5EF]`}
+      >
         {/* Living 3D Leaf Companion Header */}
-        <div className="px-4 py-3 border-b border-[#BBC7BC]/80 bg-[#FAF8F2] flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="shrink-0 px-3 sm:px-4 py-2.5 border-b border-[#BBC7BC]/80 bg-[#FAF8F2] flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
             <LeafMascot3D mood={leafMood} size="sm" auraIntensity={clarityPulse} />
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="font-semibold text-base text-[#254B3D]">{card.title}</h2>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#E8EDE5] text-[#254B3D] font-medium">
+                <h2 className="font-semibold text-sm sm:text-base text-[#254B3D] truncate">
+                  {card.title}
+                </h2>
+                <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-[#E8EDE5] text-[#254B3D] font-medium">
                   r{card.current_revision}
                 </span>
               </div>
               {/* 3-Leaf Clarity Sprout Progress */}
-              <div className="flex items-center gap-1.5 text-[11px] text-[#182D26]/70 mt-0.5">
-                <Sprout className="w-3.5 h-3.5 text-[#596A55]" />
+              <div className="flex flex-wrap items-center gap-1 text-[11px] text-[#182D26]/70 mt-0.5">
+                <Sprout className="w-3.5 h-3.5 text-[#596A55] shrink-0" />
                 <span className={sproutStage >= 1 ? 'font-semibold text-[#254B3D]' : ''}>
                   1. Câu hỏi
                 </span>
@@ -311,14 +413,31 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleToggleVoice}
+              aria-pressed={voiceEnabled}
+              aria-label={voiceEnabled ? 'Tắt giọng lá' : 'Bật giọng lá'}
+              title={voiceEnabled ? 'Đang bật giọng đọc nhẹ của Chiếc Lá' : 'Bật giọng đọc nhẹ của Chiếc Lá'}
+              className={`min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${
+                voiceEnabled
+                  ? 'border-[#254B3D] bg-[#DCE7D9] text-[#182D26]'
+                  : 'border-[#BBC7BC] bg-white hover:bg-[#E8EDE5] text-[#254B3D]'
+              }`}
+            >
+              {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              <span>{voiceEnabled ? 'Tắt giọng' : 'Giọng lá'}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setShowBreathing(true)}
-              className="min-h-[38px] px-3 py-1.5 rounded-full border border-[#BBC7BC] bg-white hover:bg-[#E8EDE5] text-[#254B3D] text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
+              className="min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-full border border-[#BBC7BC] bg-white hover:bg-[#E8EDE5] text-[#254B3D] text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
             >
               <Wind className="w-3.5 h-3.5" />
-              <span>Thở cùng Chiếc Lá</span>
+              <span className="sm:hidden">Thở nhẹ</span>
+              <span className="hidden sm:inline">Thở cùng Chiếc Lá</span>
             </button>
 
             {isAiLoading && (
@@ -335,20 +454,23 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
         </div>
 
         {/* Reflective Journal Stream */}
-        <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4">
+        <div
+          ref={chatScrollRef}
+          className="flex-1 min-h-0 overflow-y-auto px-3.5 sm:px-5 py-4 space-y-3.5"
+        >
           {messages.map((m) => {
             if (m.role === 'safety') {
               return (
                 <div
                   key={m.id}
                   role="alert"
-                  className="p-5 rounded-2xl bg-amber-50 border-2 border-amber-400 text-[#182D26] space-y-2.5 shadow-sm fade-slide-up"
+                  className="p-4 sm:p-5 rounded-2xl bg-amber-50 border-2 border-amber-400 text-[#182D26] space-y-2.5 shadow-sm fade-slide-up"
                 >
                   <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
                     <ShieldAlert className="w-5 h-5 shrink-0" />
                     <span>Chiếc Lá ưu tiên sự an toàn của bạn trước tiên</span>
                   </div>
-                  <p className="text-sm leading-relaxed whitespace-pre-line">{m.text}</p>
+                  <p className="text-[15px] leading-[1.65] whitespace-pre-line">{m.text}</p>
                   <p className="text-xs text-amber-900/80">
                     Khung nhập liệu đã tạm khóa để bạn có thể kết nối trực tiếp với chuyên gia hỗ trợ ngay lúc này.
                   </p>
@@ -360,17 +482,18 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
               return (
                 <div
                   key={m.id}
-                  className="ml-auto max-w-[82%] p-3.5 rounded-2xl rounded-tr-sm bg-[#254B3D] text-[#F7F5EF] text-sm leading-relaxed shadow-xs fade-slide-up"
+                  className="ml-auto max-w-[85%] sm:max-w-[78%] px-4 py-3 rounded-2xl rounded-tr-sm bg-[#DCE7D9] text-[#182D26] border border-[#B5C7B1] text-[15px] leading-[1.65] shadow-xs fade-slide-up"
                 >
                   {m.text}
                 </div>
               );
             }
 
+            const isSpeakingThis = speakingMsgId === m.id;
             return (
               <div
                 key={m.id}
-                className="max-w-[88%] flex items-start gap-2.5 fade-slide-up"
+                className="max-w-[92%] sm:max-w-[86%] flex items-start gap-2.5 fade-slide-up"
               >
                 <div className="w-8 h-8 rounded-full bg-[#E8EDE5] border border-[#BBC7BC] flex items-center justify-center shrink-0 mt-0.5 overflow-hidden">
                   <img
@@ -379,11 +502,26 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
                     className="w-6 h-6 object-contain"
                   />
                 </div>
-                <div className="p-4 rounded-2xl rounded-tl-sm bg-white border border-[#BBC7BC] text-[#182D26] text-sm leading-relaxed shadow-xs">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[#596A55] mb-1">
-                    Phản chiếu từ Chiếc Lá
-                  </span>
-                  {m.text}
+                <div className="flex-1 p-3.5 sm:p-4 rounded-2xl rounded-tl-sm bg-white border border-[#BBC7BC] text-[#182D26] text-[15px] leading-[1.65] shadow-xs space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#596A55]">
+                      Phản chiếu từ Chiếc Lá
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSpeakMessageToggle(m)}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1 transition cursor-pointer ${
+                        isSpeakingThis
+                          ? 'bg-[#DCE7D9] text-[#254B3D]'
+                          : 'text-[#596A55] hover:bg-[#E8EDE5]'
+                      }`}
+                      aria-label={isSpeakingThis ? 'Dừng đọc đoạn này' : 'Nghe nhẹ đoạn này'}
+                    >
+                      <Volume2 className="w-3 h-3" />
+                      <span>{isSpeakingThis ? 'Đang đọc...' : 'Nghe nhẹ'}</span>
+                    </button>
+                  </div>
+                  <p className="text-[#182D26]">{m.text}</p>
                 </div>
               </div>
             );
@@ -392,13 +530,24 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
           {isAiLoading && (
             <div className="flex items-center gap-2.5 text-xs text-[#596A55] italic pl-1">
               <span className="w-2 h-2 rounded-full bg-[#8FA083] animate-ping" />
-              <span>Chiếc Lá đang lắng nghe và suy ngẫm cùng bạn...</span>
+              <span>Chiếc Lá đang lắng nghe và suy ngẫm nhẹ nhàng cùng bạn...</span>
             </div>
+          )}
+
+          {activeProposal && mobilePane === 'chat' && (
+            <button
+              type="button"
+              onClick={() => setMobilePane('card')}
+              className="lg:hidden w-full p-3 rounded-xl bg-[#E8EDE5] border border-[#8FA083] text-xs font-medium text-[#254B3D] flex items-center justify-between gap-2 cursor-pointer"
+            >
+              <span>✨ Chiếc Lá vừa gợi ý 1 cập nhật nhẹ cho Thẻ Quyết Định</span>
+              <span className="font-bold shrink-0">Xem Thẻ →</span>
+            </button>
           )}
         </div>
 
-        {/* Tactile Mood / Clarity Stones Dock + Input */}
-        <div className="p-3.5 md:p-4 border-t border-[#BBC7BC] bg-[#FAF8F2] space-y-2.5">
+        {/* Tactile Mood / Clarity Stones Dock + Input (pinned safely above mobile bottom edge) */}
+        <div className="shrink-0 px-3 sm:px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[#BBC7BC] bg-[#FAF8F2] space-y-2">
           {!isSafetyLocked && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               {MOOD_STONES.map((stone) => (
@@ -415,7 +564,7 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <input
               type="text"
               value={inputText}
@@ -427,13 +576,13 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
                   : 'Nhập chia sẻ của bạn...'
               }
               disabled={isAiLoading || isSafetyLocked}
-              className="flex-1 p-3 rounded-xl border border-[#BBC7BC] bg-white focus:outline-[#254B3D] text-sm disabled:bg-stone-100 disabled:text-stone-400"
+              className="flex-1 min-h-[46px] px-3.5 py-2.5 rounded-xl border-2 border-[#B5C6B3] bg-white focus:outline-none focus:border-[#254B3D] text-[16px] sm:text-[15px] text-[#182D26] placeholder:text-[#182D26]/45 disabled:bg-stone-100 disabled:text-stone-400"
             />
             <button
               type="button"
               onClick={handleSend}
               disabled={isAiLoading || isSafetyLocked || !inputText.trim()}
-              className="px-5 py-2.5 bg-[#254B3D] hover:bg-[#182D26] text-white rounded-xl font-medium disabled:opacity-40 min-h-[44px] flex items-center gap-1.5 transition cursor-pointer"
+              className="px-4 sm:px-5 py-2.5 bg-[#254B3D] hover:bg-[#182D26] text-white rounded-xl font-medium disabled:opacity-40 min-h-[46px] flex items-center gap-1.5 transition cursor-pointer shrink-0"
             >
               <Send className="w-4 h-4" />
               <span>Gửi</span>
@@ -443,8 +592,12 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
       </div>
 
       {/* Cột 2: Thẻ Quyết Định 3D Tương Tác (42%) */}
-      <div className="lg:w-[42%] p-4 md:p-6 overflow-y-auto flex flex-col justify-between lg:h-[calc(100vh-64px)] bg-[#F7F5EF] gap-4">
-        <div className="space-y-4">
+      <div
+        className={`${
+          mobilePane === 'card' ? 'flex' : 'hidden lg:flex'
+        } flex-1 min-h-0 lg:w-[42%] flex-col bg-[#F7F5EF]`}
+      >
+        <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 space-y-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <img
@@ -453,18 +606,21 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
                 aria-hidden="true"
                 className="w-7 h-7 object-contain"
               />
-              <h3 className="font-bold text-xl text-[#254B3D]">Thẻ Quyết Định</h3>
+              <h3 className="font-bold text-lg sm:text-xl text-[#254B3D]">Thẻ Quyết Định</h3>
             </div>
             <span className="text-xs px-2.5 py-1 rounded-full bg-[#E8EDE5] text-[#254B3D] font-semibold">
               {card.status}
             </span>
           </div>
 
-          <Tilt3DCard intensity={5} className="sanctuary-3d-surface rounded-2xl border border-[#BBC7BC] p-5 space-y-4">
+          <Tilt3DCard
+            intensity={5}
+            className="sanctuary-3d-surface rounded-2xl border border-[#BBC7BC] p-4 sm:p-5 space-y-4"
+          >
             {/* 1. Câu hỏi quyết định (Inline editable) */}
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#182D26]/60">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#182D26]/65">
                   Câu hỏi quyết định
                 </span>
                 {!isEditingQuestion && (
@@ -490,7 +646,7 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
                     value={questionDraft}
                     onChange={(e) => setQuestionDraft(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSaveQuestion()}
-                    className="flex-1 px-3 py-1.5 rounded-lg border border-[#254B3D] bg-white text-sm"
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-[#254B3D] bg-white text-[14px] sm:text-sm"
                   />
                   <button
                     type="button"
@@ -502,7 +658,7 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
                   </button>
                 </div>
               ) : (
-                <p className="font-semibold text-sm text-[#182D26] mt-1 leading-relaxed">
+                <p className="font-semibold text-[15px] text-[#182D26] mt-1 leading-relaxed">
                   {card.decision_question}
                 </p>
               )}
@@ -510,7 +666,7 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
 
             {/* 2. Điều quan trọng (Criteria) */}
             <div className="pt-2 border-t border-[#BBC7BC]/40">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#182D26]/60">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#182D26]/65">
                 Điều quan trọng ({card.criteria.length})
               </span>
               <ul className="space-y-1.5 mt-2">
@@ -538,13 +694,13 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
                   onChange={(e) => setNewCriterion(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddCriterion()}
                   placeholder="+ Thêm điều bạn coi trọng..."
-                  className="flex-1 px-3 py-1.5 rounded-lg border border-[#BBC7BC] bg-white text-xs focus:outline-[#254B3D]"
+                  className="flex-1 min-h-[38px] px-3 py-1.5 rounded-lg border border-[#BBC7BC] bg-white text-[14px] sm:text-xs focus:outline-[#254B3D]"
                 />
                 <button
                   type="button"
                   onClick={handleAddCriterion}
                   aria-label="Thêm điều quan trọng"
-                  className="px-2.5 py-1.5 rounded-lg bg-[#E8EDE5] hover:bg-[#d7e2d3] text-[#254B3D] text-xs font-semibold cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-[#E8EDE5] hover:bg-[#d7e2d3] text-[#254B3D] text-xs font-semibold cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -553,7 +709,7 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
 
             {/* 3. Ranh giới không đánh đổi (Hard Constraints) */}
             <div className="pt-2 border-t border-[#BBC7BC]/40">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#182D26]/60">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#182D26]/65">
                 Giới hạn không đánh đổi
               </span>
               {card.hard_constraints.length > 0 && (
@@ -575,13 +731,13 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
                   onChange={(e) => setNewConstraint(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddConstraint()}
                   placeholder="+ Thêm giới hạn an toàn..."
-                  className="flex-1 px-3 py-1.5 rounded-lg border border-[#BBC7BC] bg-white text-xs focus:outline-[#254B3D]"
+                  className="flex-1 min-h-[38px] px-3 py-1.5 rounded-lg border border-[#BBC7BC] bg-white text-[14px] sm:text-xs focus:outline-[#254B3D]"
                 />
                 <button
                   type="button"
                   onClick={handleAddConstraint}
                   aria-label="Thêm giới hạn"
-                  className="px-2.5 py-1.5 rounded-lg bg-[#E8EDE5] hover:bg-[#d7e2d3] text-[#254B3D] text-xs font-semibold cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-[#E8EDE5] hover:bg-[#d7e2d3] text-[#254B3D] text-xs font-semibold cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -590,7 +746,7 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
 
             {/* 4. Phương án cân nhắc (Options) */}
             <div className="pt-2 border-t border-[#BBC7BC]/40">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#182D26]/60">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#182D26]/65">
                 Phương án đang cân nhắc
               </span>
               {card.options.length > 0 && (
@@ -615,13 +771,13 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
                   onChange={(e) => setNewOptionName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddOption()}
                   placeholder="+ Thêm phương án..."
-                  className="flex-1 px-3 py-1.5 rounded-lg border border-[#BBC7BC] bg-white text-xs focus:outline-[#254B3D]"
+                  className="flex-1 min-h-[38px] px-3 py-1.5 rounded-lg border border-[#BBC7BC] bg-white text-[14px] sm:text-xs focus:outline-[#254B3D]"
                 />
                 <button
                   type="button"
                   onClick={handleAddOption}
                   aria-label="Thêm phương án"
-                  className="px-2.5 py-1.5 rounded-lg bg-[#E8EDE5] hover:bg-[#d7e2d3] text-[#254B3D] text-xs font-semibold cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-[#E8EDE5] hover:bg-[#d7e2d3] text-[#254B3D] text-xs font-semibold cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -691,14 +847,17 @@ export const DecisionChatScreen: React.FC<DecisionChatScreenProps> = ({
           </Tilt3DCard>
         </div>
 
-        <button
-          type="button"
-          onClick={() => onDesignExperiment(card)}
-          disabled={!experimentReady}
-          className="w-full min-h-[44px] py-3.5 bg-[#254B3D] hover:bg-[#182D26] text-white font-medium rounded-full transition disabled:opacity-40 shadow-sm cursor-pointer"
-        >
-          {experimentReady ? 'Thiết kế bước thử →' : 'Cần làm rõ thêm câu hỏi & điều quan trọng'}
-        </button>
+        {/* Pinned CTA Footer (always visible, never clipped on viewport bottom) */}
+        <div className="shrink-0 px-3.5 sm:px-5 pt-2.5 pb-[max(0.85rem,env(safe-area-inset-bottom))] border-t border-[#BBC7BC]/70 bg-[#FAF8F2]">
+          <button
+            type="button"
+            onClick={() => onDesignExperiment(card)}
+            disabled={!experimentReady}
+            className="w-full min-h-[46px] py-3 bg-[#254B3D] hover:bg-[#182D26] text-white font-medium rounded-full transition disabled:opacity-40 shadow-sm cursor-pointer"
+          >
+            {experimentReady ? 'Thiết kế bước thử →' : 'Cần làm rõ thêm câu hỏi & điều quan trọng'}
+          </button>
+        </div>
       </div>
 
       {/* Nghi thức Thở cùng Chiếc Lá */}
