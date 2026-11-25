@@ -7,7 +7,7 @@ export const TodayScreen: React.FC<{
   onGoReview?: () => void;
 }> = ({ activeExperiment, onGoCheckin, onGoReview }) => {
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#182D26] px-6 py-10 max-w-2xl mx-auto space-y-6">
+    <div className="w-full bg-[#F7F5EF] text-[#182D26] px-4 sm:px-6 py-5 sm:py-10 max-w-2xl mx-auto space-y-5 sm:space-y-6">
       <Tilt3DCard
         intensity={4}
         className="p-5 rounded-3xl bg-[#E8EDE5]/70 border border-[#BBC7BC] flex items-center gap-4"
@@ -46,12 +46,12 @@ export const TodayScreen: React.FC<{
             </p>
           </div>
 
-          <div className="pt-2 flex flex-wrap justify-end gap-2.5">
+          <div className="pt-2 flex flex-col sm:flex-row sm:justify-end gap-2.5">
             {onGoReview && (
               <button
                 type="button"
                 onClick={onGoReview}
-                className="px-5 py-2.5 border border-[#BBC7BC] bg-white hover:bg-[#E8EDE5] text-[#254B3D] rounded-full font-medium text-sm min-h-[44px] cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 border border-[#BBC7BC] bg-white hover:bg-[#E8EDE5] text-[#254B3D] rounded-full font-medium text-sm min-h-[44px] cursor-pointer"
               >
                 Nhìn lại bước thử
               </button>
@@ -59,7 +59,7 @@ export const TodayScreen: React.FC<{
             <button
               type="button"
               onClick={onGoCheckin}
-              className="px-6 py-2.5 bg-[#254B3D] hover:bg-[#182D26] text-white rounded-full font-medium text-sm min-h-[44px] shadow-sm cursor-pointer"
+              className="w-full sm:w-auto px-6 py-2.5 bg-[#254B3D] hover:bg-[#182D26] text-white rounded-full font-medium text-sm min-h-[44px] shadow-sm cursor-pointer"
             >
               Ghi nhận hôm nay
             </button>

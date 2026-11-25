@@ -47,8 +47,13 @@ function createPlumpLeafShape(): THREE.Shape {
   return shape;
 }
 
+const clampRange = (val: number, min: number, max: number): number =>
+  Math.max(min, Math.min(max, val));
+
 /**
- * Linh vật Chiếc Lá 3D sống động với nội suy độc lập tần số quét (60Hz/120Hz/144Hz đều mượt).
+ * Linh vật Chiếc Lá 3D sống động trên cả desktop lẫn mobile:
+ * - Xoay chiều sâu liên tục (trục Y/X/Z + ánh sáng lướt) không đứng yên.
+ * - Hỗ trợ kéo ngón tay xoay 3D, chạm nhanh xoay vòng vui vẻ & nảy nhẹ, nghiêng theo cảm biến điện thoại.
  */
 export const LeafMascot3D: React.FC<LeafMascot3DProps> = ({
   mood = 'welcoming',
@@ -63,6 +68,11 @@ export const LeafMascot3D: React.FC<LeafMascot3DProps> = ({
   const mountRef = useRef<HTMLDivElement>(null);
   const moodRef = useRef<LeafMascotMood>(mood);
   const pointerRef = useRef({ x: 0, y: 0 });
+  const gyroRef = useRef({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0, time: 0 });
+  const tapSpinRef = useRef(0);
+  const bounceRef = useRef(0);
   const [webglFailed, setWebglFailed] = useState(false);
 
   moodRef.current = mood;
@@ -96,6 +106,12 @@ export const LeafMascot3D: React.FC<LeafMascot3DProps> = ({
     renderer.toneMappingExposure = 1.08;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
+
+    const handleContextLost = (ev: Event) => {
+      ev.preventDefault();
+      setWebglFailed(true);
+    };
+    renderer.domElement.addEventListener('webglcontextlost', handleContextLost);
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 30);
@@ -263,11 +279,29 @@ export const LeafMascot3D: React.FC<LeafMascot3DProps> = ({
       if (!container) return;
       const w = container.clientWidth || width;
       const h = container.clientHeight || height;
+      if (!w || !h) return;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
+
     window.addEventListener('resize', handleResize);
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver.observe(container);
+    }
+
+    const handleOrientation = (ev: DeviceOrientationEvent) => {
+      if (ev.gamma == null || ev.beta == null) return;
+      gyroRef.current = {
+        x: clampRange(ev.gamma / 30, -1, 1),
+        y: clampRange((ev.beta - 45) / 30, -1, 1),
+      };
+    };
+    if (typeof window !== 'undefined' && 'DeviceOrientationEvent' in window) {
+      window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+    }
 
     let animId = 0;
     const clock = new THREE.Clock();
@@ -282,20 +316,37 @@ export const LeafMascot3D: React.FC<LeafMascot3DProps> = ({
       const activeMood = moodRef.current;
 
       if (!prefersReducedMotion) {
-        mascotGroup.position.y = Math.sin(elapsed * 1.55) * 0.075;
-        const breathe = 1 + Math.sin(elapsed * 1.25) * 0.022;
+        bounceRef.current *= Math.exp(-7.5 * dt);
+        if (bounceRef.current < 0.001) bounceRef.current = 0;
+
+        mascotGroup.position.y = Math.sin(elapsed * 1.55) * 0.085 + bounceRef.current * 0.08;
+        const breathe = 1 + Math.sin(elapsed * 1.25) * 0.024 + bounceRef.current * 0.12;
         mascotGroup.scale.set(breathe, breathe, breathe);
 
-        const targetRotY = pointerRef.current.x * 0.26 + (activeMood === 'listening' ? -0.14 : 0);
+        // Gentle orbital sway + drag/pointer + phone gyro + celebratory 360 twirl
+        const idleRotY = Math.sin(elapsed * 0.95) * 0.38;
+        const idleRotX = Math.sin(elapsed * 0.68 + 0.7) * 0.14;
+        const idleRotZ = Math.sin(elapsed * 1.15) * 0.055;
+
+        const targetRotY =
+          idleRotY +
+          pointerRef.current.x * 0.85 +
+          gyroRef.current.x * 0.38 +
+          (activeMood === 'listening' ? -0.14 : 0) +
+          tapSpinRef.current;
         const targetRotX =
-          -pointerRef.current.y * 0.16 +
+          idleRotX -
+          pointerRef.current.y * 0.45 +
+          gyroRef.current.y * 0.25 +
           (activeMood === 'thinking' ? -0.08 : activeMood === 'caring' ? 0.08 : 0);
         const targetRotZ =
-          activeMood === 'celebrating' ? Math.sin(elapsed * 5) * 0.08 : Math.sin(elapsed * 1.1) * 0.032;
+          activeMood === 'celebrating' ? Math.sin(elapsed * 5) * 0.09 : idleRotZ;
 
         mascotGroup.rotation.y += (targetRotY - mascotGroup.rotation.y) * smooth;
         mascotGroup.rotation.x += (targetRotX - mascotGroup.rotation.x) * smooth;
         mascotGroup.rotation.z += (targetRotZ - mascotGroup.rotation.z) * smooth;
+
+        keyLight.position.x = 2.6 + Math.sin(elapsed * 0.85) * 1.1;
 
         const blinkCycle = elapsed % 4.4;
         const eyeScaleY = blinkCycle > 4.24 ? 0.1 : activeMood === 'celebrating' ? 0.42 : 1.08;
@@ -332,6 +383,11 @@ export const LeafMascot3D: React.FC<LeafMascot3DProps> = ({
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
+      resizeObserver?.disconnect();
+      if (typeof window !== 'undefined' && 'DeviceOrientationEvent' in window) {
+        window.removeEventListener('deviceorientation', handleOrientation);
+      }
+      renderer.domElement.removeEventListener('webglcontextlost', handleContextLost);
       disposables.forEach((d) => d.dispose());
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
@@ -353,24 +409,69 @@ export const LeafMascot3D: React.FC<LeafMascot3DProps> = ({
 
   const clampedOpacity = Math.min(1, Math.max(0.35, auraIntensity / 10));
 
-  const handlePointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
+  const updatePointerFromClient = (clientX: number, clientY: number, el: HTMLDivElement) => {
+    const rect = el.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     pointerRef.current = {
-      x: ((e.clientX - rect.left) / rect.width - 0.5) * 2,
-      y: ((e.clientY - rect.top) / rect.height - 0.5) * 2,
+      x: clampRange(((clientX - rect.left) / rect.width - 0.5) * 2, -1.2, 1.2),
+      y: clampRange(((clientY - rect.top) / rect.height - 0.5) * 2, -1.2, 1.2),
     };
   };
 
-  const handlePointerLeave = () => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = true;
+    dragStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+    updatePointerFromClient(e.clientX, e.clientY, e.currentTarget);
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    } catch {
+      // Safe fallback in simulated/test environments
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' || isDraggingRef.current) {
+      updatePointerFromClient(e.clientX, e.clientY, e.currentTarget);
+    }
+  };
+
+  const handlePointerUpOrCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    const dt = Date.now() - dragStartRef.current.time;
+    const dist = Math.hypot(
+      e.clientX - dragStartRef.current.x,
+      e.clientY - dragStartRef.current.y,
+    );
+    if (isDraggingRef.current && dt < 240 && dist < 12) {
+      tapSpinRef.current += Math.PI * 2;
+      bounceRef.current = 1;
+    }
+    isDraggingRef.current = false;
     pointerRef.current = { x: 0, y: 0 };
+    try {
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture?.(e.pointerId);
+      }
+    } catch {
+      // Safe ignore
+    }
+  };
+
+  const handlePointerLeave = () => {
+    if (!isDraggingRef.current) {
+      pointerRef.current = { x: 0, y: 0 };
+    }
   };
 
   const content = (
     <div
-      onMouseMove={handlePointerMove}
-      onMouseLeave={handlePointerLeave}
-      className={`inline-flex flex-col items-center gap-2 select-none ${className}`}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUpOrCancel}
+      onPointerCancel={handlePointerUpOrCancel}
+      onPointerLeave={handlePointerLeave}
+      className={`inline-flex flex-col items-center gap-2 select-none ${
+        shouldEnableWebGL ? 'touch-none cursor-grab active:cursor-grabbing' : ''
+      } ${className}`}
     >
       <div className={`relative flex items-center justify-center ${SIZE_CLASSES[size]}`}>
         <div

@@ -10,16 +10,19 @@ interface LandingScreenProps {
 
 export const LandingScreen: React.FC<LandingScreenProps> = ({ onStart, onReplayIntro }) => {
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#182D26] px-6 py-10 md:py-14 max-w-5xl mx-auto flex flex-col gap-10">
+    <div className="w-full bg-[#F7F5EF] text-[#182D26] px-4 sm:px-6 py-5 sm:py-12 max-w-5xl mx-auto flex flex-col gap-6 sm:gap-10">
       {/* Hero Section with Interactive 3D Leaf Mascot */}
-      <header className="relative text-center flex flex-col items-center space-y-5">
+      <header className="relative text-center flex flex-col items-center space-y-4 sm:space-y-5">
         <div className="relative inline-flex flex-col items-center">
-          <div className="relative px-8 py-4 rounded-[36px] bg-gradient-to-b from-white/90 to-[#E8EDE5]/70 border border-[#BBC7BC]/80 shadow-[0_24px_48px_-20px_rgba(37,75,61,0.28)]">
+          <div className="relative px-5 py-3 sm:px-8 sm:py-4 rounded-[28px] sm:rounded-[36px] bg-gradient-to-b from-white/90 to-[#E8EDE5]/70 border border-[#BBC7BC]/80 shadow-[0_24px_48px_-20px_rgba(37,75,61,0.28)]">
             <LeafMascot3D
               mood="welcoming"
               size="xl"
               whisper="Chào bạn, mình là Chiếc Lá nhỏ. Mình ở đây để lắng nghe bạn chậm rãi."
             />
+            <span className="block mt-2 text-[11px] text-[#596A55]/85 font-medium">
+              Chạm hoặc kéo nhẹ để xoay Chiếc Lá 3D
+            </span>
             <img
               src="/assets/3d/sparkles-3d.png"
               alt=""
@@ -29,18 +32,18 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onStart, onReplayI
           </div>
         </div>
 
-        <h1 className="font-playfair text-3xl md:text-5xl font-bold tracking-tight text-[#254B3D] max-w-3xl">
+        <h1 className="font-playfair text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#254B3D] max-w-3xl leading-tight">
           Đang mắc kẹt trước một lựa chọn?
         </h1>
-        <p className="text-base md:text-lg text-[#182D26]/80 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-sm sm:text-base md:text-lg text-[#182D26]/80 max-w-2xl mx-auto leading-relaxed">
           Cùng Chiếc Lá làm rõ điều quan trọng và chọn một bước nhỏ để thử trước khi quyết định — không áp lực, không vội vã.
         </p>
 
-        <div className="pt-2 flex flex-wrap justify-center gap-3.5">
+        <div className="pt-1 sm:pt-2 w-full sm:w-auto flex flex-col sm:flex-row justify-center gap-3">
           <button
             type="button"
             onClick={onStart}
-            className="min-h-[44px] px-8 py-3 bg-[#254B3D] text-[#F7F5EF] font-medium rounded-full hover:bg-[#182D26] transition shadow-md cursor-pointer"
+            className="w-full sm:w-auto min-h-[46px] px-8 py-3 bg-[#254B3D] text-[#F7F5EF] font-medium rounded-full hover:bg-[#182D26] transition shadow-md cursor-pointer"
           >
             Làm rõ một lựa chọn
           </button>
@@ -48,7 +51,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onStart, onReplayI
             <button
               type="button"
               onClick={onReplayIntro}
-              className="min-h-[44px] px-6 py-3 bg-white border border-[#BBC7BC] text-[#254B3D] font-medium rounded-full hover:bg-[#E8EDE5] transition flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto min-h-[46px] px-6 py-3 bg-white border border-[#BBC7BC] text-[#254B3D] font-medium rounded-full hover:bg-[#E8EDE5] transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Xem video Chiếc Lá</span>

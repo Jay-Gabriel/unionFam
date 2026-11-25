@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LeafIntroOverlay } from '../components/intro/LeafIntroOverlay';
 import { LandingScreen } from '../components/screens/LandingScreen';
 import { DecisionChatScreen } from '../components/screens/DecisionChatScreen';
+import { LeafMascot3D } from '../components/ui/LeafMascot3D';
 
 describe('UnionFam 3D Leaf Sanctuary & Anti-ChatGPT Flow', () => {
   it('renders LeafIntroOverlay and allows skipping smoothly', () => {
@@ -90,5 +91,39 @@ describe('UnionFam 3D Leaf Sanctuary & Anti-ChatGPT Flow', () => {
     fireEvent.click(cardTab);
     expect(cardTab).toHaveAttribute('aria-pressed', 'true');
     expect(chatTab).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('starts LeafIntroOverlay in fast live 3D story mode on mobile viewports without waiting for video', () => {
+    const prevWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: 390 });
+    try {
+      const onClose = vi.fn();
+      render(<LeafIntroOverlay isOpen={true} onClose={onClose} />);
+
+      expect(screen.getByText(/Giữa những ngày nhiều phân vân/i)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /Giữa những ngày nhiều phân vân/i }));
+      expect(screen.getByText(/Chiếc Lá ở đây để dịu dàng chăm sóc bạn/i)).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /Bỏ qua/i }));
+      expect(onClose).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        writable: true,
+        value: prevWidth,
+      });
+    }
+  });
+
+  it('handles touch pointer gestures cleanly on LeafMascot3D', () => {
+    render(<LeafMascot3D mood="welcoming" size="xl" />);
+    const mascotImg = screen.getByRole('img', { name: /Linh vật Chiếc Lá UnionFam/i });
+    const stage = mascotImg.closest('[class*="inline-flex"]') || mascotImg;
+
+    fireEvent.pointerDown(stage, { clientX: 100, clientY: 100, pointerId: 1, pointerType: 'touch' });
+    fireEvent.pointerMove(stage, { clientX: 140, clientY: 110, pointerId: 1, pointerType: 'touch' });
+    fireEvent.pointerUp(stage, { clientX: 140, clientY: 110, pointerId: 1, pointerType: 'touch' });
+
+    expect(mascotImg).toBeInTheDocument();
   });
 });

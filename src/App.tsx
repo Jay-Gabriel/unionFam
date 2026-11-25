@@ -14,7 +14,14 @@ import { IncidentReportModal } from './components/beta/IncidentReportModal';
 import { BetaDashboardModal } from './components/beta/BetaDashboardModal';
 import { LeafIntroOverlay } from './components/intro/LeafIntroOverlay';
 import { onAuthStateChange } from './services/supabaseService';
-import { Music } from 'lucide-react';
+import {
+  Music,
+  Home,
+  CalendarCheck,
+  Compass,
+  ShieldCheck,
+  User,
+} from 'lucide-react';
 
 interface ActiveExperimentSummary {
   action: string;
@@ -154,7 +161,7 @@ export const App: React.FC = () => {
       className={
         route.name === 'decision_detail'
           ? 'h-[100dvh] overflow-hidden bg-[#F7F5EF] text-[#182D26] flex flex-col font-sans'
-          : 'min-h-screen bg-[#F7F5EF] text-[#182D26] flex flex-col font-sans'
+          : 'min-h-[100dvh] bg-[#F7F5EF] text-[#182D26] flex flex-col font-sans'
       }
     >
       {/* Top Calm Navigation Header */}
@@ -172,7 +179,8 @@ export const App: React.FC = () => {
           <span>UnionFam</span>
         </button>
 
-        <div className="flex items-center gap-2.5 sm:gap-4 text-xs font-medium overflow-x-auto whitespace-nowrap">
+        {/* Desktop Nav Links */}
+        <div className="hidden md:flex items-center gap-4 text-xs font-medium whitespace-nowrap">
           <button
             type="button"
             onClick={() => navigateTo('/today')}
@@ -203,7 +211,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowRadioModal(true)}
-            className="px-2.5 sm:px-3 py-1.5 rounded-full border border-[#BBC7BC] bg-white/80 hover:bg-[#E8EDE5] text-[#254B3D] transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+            className="px-3 py-1.5 rounded-full border border-[#BBC7BC] bg-white/80 hover:bg-[#E8EDE5] text-[#254B3D] transition flex items-center gap-1.5 shrink-0 cursor-pointer"
             title="Mở Đài Radio Tâm Trí"
           >
             <Music className="w-3.5 h-3.5" />
@@ -217,6 +225,28 @@ export const App: React.FC = () => {
             Tài khoản
           </button>
         </div>
+
+        {/* Compact Mobile Top Controls */}
+        <div className="flex md:hidden items-center gap-2 text-xs font-medium shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowRadioModal(true)}
+            className="min-h-[36px] px-2.5 py-1.5 rounded-full border border-[#BBC7BC] bg-white/85 text-[#254B3D] flex items-center gap-1 cursor-pointer"
+            aria-label="Mở Đài Radio Tâm Trí"
+          >
+            <Music className="w-3.5 h-3.5" />
+            <span>Âm thanh</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAuthModal(true)}
+            className="min-h-[36px] px-2.5 py-1.5 rounded-full border border-[#BBC7BC] bg-white/85 text-[#254B3D] flex items-center gap-1 cursor-pointer"
+            aria-label="Tài khoản"
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>Tài khoản</span>
+          </button>
+        </div>
       </nav>
 
       {/* Main Routed Content */}
@@ -224,7 +254,7 @@ export const App: React.FC = () => {
         className={
           route.name === 'decision_detail'
             ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
-            : 'flex-1 flex flex-col'
+            : 'flex-1 flex flex-col pb-20 md:pb-0'
         }
       >
         {renderCurrentScreen()}
@@ -232,7 +262,7 @@ export const App: React.FC = () => {
 
       {/* Pristine Calm Footer (omitted on Studio S03 to keep full viewport clean) */}
       {route.name !== 'decision_detail' && (
-        <footer className="py-6 border-t border-[#BBC7BC]/40 text-center text-xs text-[#182D26]/60">
+        <footer className="py-5 pb-24 md:pb-6 border-t border-[#BBC7BC]/40 text-center text-xs text-[#182D26]/60">
           <div className="flex flex-wrap items-center justify-center gap-3 px-4">
             <span>UnionFam · Đồng hành cùng Chiếc Lá</span>
             <span>•</span>
@@ -241,6 +271,53 @@ export const App: React.FC = () => {
             <span>Không áp lực</span>
           </div>
         </footer>
+      )}
+
+      {/* Mobile Bottom Navigation Bar (hidden on S03 chat studio so chat composer sits cleanly at bottom) */}
+      {route.name !== 'decision_detail' && (
+        <nav
+          aria-label="Điều hướng di động"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF8F2]/95 backdrop-blur-md border-t border-[#BBC7BC] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] grid grid-cols-4 gap-1"
+        >
+          <button
+            type="button"
+            onClick={() => navigateTo('/')}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium cursor-pointer transition ${
+              route.name === 'landing' ? 'bg-[#E8EDE5] text-[#254B3D] font-bold' : 'text-[#182D26]/65'
+            }`}
+          >
+            <Home className="w-4 h-4" />
+            <span>Trang chủ</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo('/today')}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium cursor-pointer transition ${
+              route.name === 'today' ? 'bg-[#E8EDE5] text-[#254B3D] font-bold' : 'text-[#182D26]/65'
+            }`}
+          >
+            <CalendarCheck className="w-4 h-4" />
+            <span>Hôm nay</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo('/decisions/current')}
+            className="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium text-[#182D26]/65 cursor-pointer transition hover:bg-[#E8EDE5]/60"
+          >
+            <Compass className="w-4 h-4" />
+            <span>Quyết định</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo('/settings/privacy')}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium cursor-pointer transition ${
+              route.name === 'privacy' ? 'bg-[#E8EDE5] text-[#254B3D] font-bold' : 'text-[#182D26]/65'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Riêng tư</span>
+          </button>
+        </nav>
       )}
 
       {/* Video Intro Overlay (Linh vật Chiếc Lá chăm sóc & thấu hiểu mọi người) */}

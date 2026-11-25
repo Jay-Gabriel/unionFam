@@ -40,6 +40,7 @@ body {
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
 }
 
@@ -108,11 +109,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(22, 33, 24, 0.8);
+  background: rgba(232, 237, 229, 0.65);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(143, 160, 131, 0.4);
+  background: rgba(143, 160, 131, 0.45);
   border-radius: 9999px;
 }
 
@@ -120,13 +121,22 @@ body {
   background: rgba(198, 214, 180, 0.7);
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Tactile 3D Botanical Animations & Surfaces */
 @keyframes leafFloat {
   0%, 100% {
-    transform: translateY(0px) rotate(-1deg);
+    transform: perspective(520px) translateY(0px) rotateY(-12deg) rotateX(4deg) rotateZ(-1.5deg);
   }
   50% {
-    transform: translateY(-7px) rotate(1.5deg);
+    transform: perspective(520px) translateY(-7px) rotateY(12deg) rotateX(-4deg) rotateZ(2deg);
   }
 }
 

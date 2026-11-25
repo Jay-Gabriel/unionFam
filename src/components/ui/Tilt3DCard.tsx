@@ -8,7 +8,8 @@ interface Tilt3DCardProps {
 }
 
 /**
- * Thẻ tương tác chiều sâu 3D siêu mượt 60fps (dùng rAF spring-lerp trực tiếp lên DOM, 0 React re-render khi di chuột).
+ * Thẻ tương tác chiều sâu 3D siêu mượt 60fps trên cả chuột desktop và cảm ứng mobile
+ * (giữ touch-pan-y để không cản trở thao tác cuộn trang dọc trên điện thoại).
  */
 export const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
   children,
@@ -21,6 +22,7 @@ export const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
   const rafRef = useRef<number | null>(null);
   const targetRef = useRef({ rx: 0, ry: 0, gx: 50, gy: 50, active: 0 });
   const currentRef = useRef({ rx: 0, ry: 0, gx: 50, gy: 50, active: 0 });
+  const isPressedRef = useRef(false);
 
   const prefersReducedMotion =
     typeof window !== 'undefined' &&
@@ -78,13 +80,13 @@ export const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const applyTiltAt = (clientX: number, clientY: number) => {
     if (disabled || prefersReducedMotion || !cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
-    const px = (e.clientX - rect.left) / rect.width;
-    const py = (e.clientY - rect.top) / rect.height;
+    const px = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const py = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
 
     targetRef.current = {
       ry: (px - 0.5) * intensity * 2,
@@ -96,18 +98,33 @@ export const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
     ensureRunning();
   };
 
-  const handleMouseLeave = () => {
+  const resetTilt = () => {
+    isPressedRef.current = false;
     targetRef.current = { rx: 0, ry: 0, gx: 50, gy: 50, active: 0 };
     ensureRunning();
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isPressedRef.current = true;
+    applyTiltAt(e.clientX, e.clientY);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' || isPressedRef.current) {
+      applyTiltAt(e.clientX, e.clientY);
+    }
   };
 
   return (
     <div
       ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={resetTilt}
+      onPointerCancel={resetTilt}
+      onPointerLeave={resetTilt}
       style={{ transformStyle: 'preserve-3d' }}
-      className={`relative will-change-transform ${className}`}
+      className={`relative will-change-transform touch-pan-y ${className}`}
     >
       {!disabled && !prefersReducedMotion && (
         <div

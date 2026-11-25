@@ -38,7 +38,7 @@ export const StartScreen: React.FC<{ onSubmit: (data: any) => void }> = ({ onSub
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#182D26] px-6 py-10 max-w-2xl mx-auto flex flex-col gap-6">
+    <div className="w-full bg-[#F7F5EF] text-[#182D26] px-4 sm:px-6 py-5 sm:py-10 max-w-2xl mx-auto flex flex-col gap-5 sm:gap-6">
       <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#E8EDE5]/60 border border-[#BBC7BC] rounded-3xl p-5">
         <LeafMascot3D mood="caring" size="md" />
         <div className="text-center sm:text-left">
@@ -82,7 +82,7 @@ export const StartScreen: React.FC<{ onSubmit: (data: any) => void }> = ({ onSub
           value={problemText}
           onChange={(e) => setProblemText(e.target.value)}
           placeholder="Điều gì đang khiến bạn phân vân?"
-          className="w-full p-3.5 rounded-2xl border border-[#BBC7BC] bg-white focus:outline-[#254B3D] text-sm shadow-xs"
+          className="w-full p-3.5 rounded-2xl border border-[#BBC7BC] bg-white focus:outline-[#254B3D] text-[16px] sm:text-sm shadow-xs"
         />
       </div>
 
