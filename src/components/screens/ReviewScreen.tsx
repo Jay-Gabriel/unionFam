@@ -1,20 +1,37 @@
 import React, { useState } from 'react';
+import { Tilt3DCard } from '../ui/Tilt3DCard';
 
-export const ReviewScreen: React.FC<{ onFinishReview: (data: any) => void }> = ({ onFinishReview }) => {
+export const ReviewScreen: React.FC<{ onFinishReview: (data: any) => void }> = ({
+  onFinishReview,
+}) => {
   const [facts, setFacts] = useState('');
   const [learning, setLearning] = useState('');
-  const [nextAction, setNextAction] = useState<'continue_cycle' | 'new_experiment' | 'pause' | 'close'>('continue_cycle');
+  const [nextAction, setNextAction] = useState<
+    'continue_cycle' | 'new_experiment' | 'pause' | 'close'
+  >('continue_cycle');
 
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#182D26] px-6 py-10 max-w-2xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-[#254B3D]">Nhìn lại bước thử</h2>
-        <p className="text-sm text-[#182D26]/70 mt-1">
-          Dừng lại và lắng nghe trải nghiệm thực tế của chính bạn.
-        </p>
-      </div>
+      <Tilt3DCard
+        intensity={4}
+        className="p-5 rounded-3xl bg-[#E8EDE5]/70 border border-[#BBC7BC] flex items-center gap-4"
+      >
+        <div className="w-14 h-14 rounded-2xl bg-white border border-[#BBC7BC] flex items-center justify-center shrink-0">
+          <img
+            src="/assets/3d/icon-3d-reflect.png"
+            alt="Nhìn lại bước thử 3D"
+            className="w-10 h-10 object-contain leaf-float"
+          />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-[#254B3D]">Nhìn lại bước thử</h2>
+          <p className="text-sm text-[#182D26]/75 mt-1">
+            Dừng lại và lắng nghe trải nghiệm thực tế của chính bạn.
+          </p>
+        </div>
+      </Tilt3DCard>
 
-      <div className="p-6 bg-white rounded-2xl border border-[#BBC7BC] space-y-4">
+      <div className="p-6 bg-white rounded-2xl border border-[#BBC7BC] space-y-4 shadow-xs">
         <div>
           <label className="text-xs font-semibold text-[#182D26]/70">1. Điều gì đã xảy ra?</label>
           <textarea
@@ -27,7 +44,9 @@ export const ReviewScreen: React.FC<{ onFinishReview: (data: any) => void }> = (
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-[#182D26]/70">2. Bạn hiểu thêm điều gì?</label>
+          <label className="text-xs font-semibold text-[#182D26]/70">
+            2. Bạn hiểu thêm điều gì?
+          </label>
           <textarea
             rows={3}
             value={learning}
@@ -38,7 +57,9 @@ export const ReviewScreen: React.FC<{ onFinishReview: (data: any) => void }> = (
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-[#182D26]/70">3. Bạn muốn làm gì tiếp theo?</label>
+          <label className="text-xs font-semibold text-[#182D26]/70">
+            3. Bạn muốn làm gì tiếp theo?
+          </label>
           <select
             value={nextAction}
             onChange={(e) => setNextAction(e.target.value as any)}
@@ -55,7 +76,7 @@ export const ReviewScreen: React.FC<{ onFinishReview: (data: any) => void }> = (
       <button
         type="button"
         onClick={() => onFinishReview({ facts, learning, nextAction })}
-        className="w-full min-h-[44px] py-3.5 bg-[#254B3D] text-[#F7F5EF] font-medium rounded-full shadow-sm"
+        className="w-full min-h-[44px] py-3.5 bg-[#254B3D] hover:bg-[#182D26] text-[#F7F5EF] font-medium rounded-full shadow-sm cursor-pointer"
       >
         Lưu nhìn lại
       </button>

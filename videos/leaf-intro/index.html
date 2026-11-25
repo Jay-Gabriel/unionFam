@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280, height=720" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'UnionSerif';
+        src: url('assets/fonts/PlayfairDisplay.ttf') format('truetype');
+        font-weight: 400 800;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'UnionSans';
+        src: url('assets/fonts/PlusJakartaSans.ttf') format('truetype');
+        font-weight: 400 700;
+        font-style: normal;
+      }
+
+      :root {
+        --ground: #f7f5ef;
+        --sage-edge: #e8ede5;
+        --ink: #182d26;
+        --moss: #254b3d;
+        --fern: #5f8d64;
+        --pollen: #eed596;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: var(--ground);
+        font-family: 'UnionSans', sans-serif;
+        color: var(--ink);
+      }
+
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 42%, #faf8f2 0%, #f7f5ef 52%, #e8ede5 100%);
+      }
+
+      .sunbeam {
+        position: absolute;
+        width: 760px;
+        height: 760px;
+        left: 260px;
+        top: -120px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(238, 213, 150, 0.34) 0%, rgba(198, 214, 180, 0.14) 48%, transparent 72%);
+        pointer-events: none;
+      }
+
+      .sunbeam-soft {
+        position: absolute;
+        width: 540px;
+        height: 540px;
+        left: 370px;
+        top: 20px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 250, 232, 0.72) 0%, rgba(238, 213, 150, 0.16) 54%, transparent 74%);
+        pointer-events: none;
+      }
+
+      #pollen-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .pollen-mote {
+        position: absolute;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fffdf4 0%, #eed596 65%, rgba(238, 213, 150, 0) 100%);
+      }
+
+      .mascot-stage {
+        position: absolute;
+        left: 480px;
+        top: 118px;
+        width: 320px;
+        height: 320px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ripple-circle {
+        position: absolute;
+        left: 480px;
+        top: 118px;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        border: 2.5px solid rgba(143, 160, 131, 0.52);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .worry-drop {
+        position: absolute;
+        left: 495px;
+        top: 268px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #b8c5cc 0%, #7d8f99 58%, #52636d 100%);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .care-bloom {
+        position: absolute;
+        left: 470px;
+        top: 245px;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 249, 224, 0.92) 0%, rgba(238, 213, 150, 0.65) 45%, rgba(238, 213, 150, 0) 75%);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .orbit-icon {
+        position: absolute;
+        width: 82px;
+        height: 82px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .orbit-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      #icon-clarify {
+        left: 342px;
+        top: 210px;
+      }
+
+      #icon-experiment {
+        left: 856px;
+        top: 210px;
+      }
+
+      #icon-reflect {
+        left: 599px;
+        top: 56px;
+      }
+
+      #icon-sparkles {
+        left: 745px;
+        top: 112px;
+        width: 74px;
+        height: 74px;
+      }
+
+      .caption-slot {
+        position: absolute;
+        left: 120px;
+        right: 120px;
+        top: 472px;
+        text-align: center;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #cap-1 {
+        opacity: 1;
+      }
+
+      .caption-title {
+        font-family: 'UnionSerif', serif;
+        font-size: 40px;
+        font-weight: 700;
+        line-height: 1.26;
+        color: var(--moss);
+        letter-spacing: -0.01em;
+      }
+
+      .caption-sub {
+        margin-top: 12px;
+        font-family: 'UnionSans', sans-serif;
+        font-size: 22px;
+        font-weight: 500;
+        line-height: 1.45;
+        color: #344a40;
+      }
+
+      #brand-lockup {
+        position: absolute;
+        left: 120px;
+        right: 120px;
+        top: 446px;
+        text-align: center;
+        opacity: 0;
+      }
+
+      .brand-wordmark {
+        font-family: 'UnionSerif', serif;
+        font-size: 58px;
+        font-weight: 700;
+        line-height: 1.15;
+        color: var(--moss);
+        letter-spacing: 0.02em;
+      }
+
+      .brand-tagline {
+        margin-top: 10px;
+        font-family: 'UnionSans', sans-serif;
+        font-size: 24px;
+        font-weight: 500;
+        color: #2f463c;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="leaf-intro"
+      data-start="0"
+      data-duration="12"
+      data-width="1280"
+      data-height="720"
+      data-fps="60"
+    >
+      <audio id="bgm" src="assets/ambient.wav" data-start="0" data-duration="12"></audio>
+
+      <!-- Background Glow Layer -->
+      <div id="track-bg" class="clip" data-start="0" data-duration="12" data-track-index="0">
+        <div id="sunbeam-outer" class="sunbeam"></div>
+        <div id="sunbeam-inner" class="sunbeam-soft"></div>
+        <div id="pollen-layer"></div>
+      </div>
+
+      <!-- Listening Ripples Layer -->
+      <div id="track-ripples" class="clip" data-start="0" data-duration="12" data-track-index="1">
+        <div id="ripple-1" class="ripple-circle"></div>
+        <div id="ripple-2" class="ripple-circle"></div>
+        <div id="ripple-3" class="ripple-circle"></div>
+      </div>
+
+      <!-- Care Transformation Layer -->
+      <div id="track-care" class="clip" data-start="0" data-duration="12" data-track-index="2">
+        <div id="care-bloom" class="care-bloom"></div>
+        <div id="worry-drop" class="worry-drop"></div>
+      </div>
+
+      <!-- Orbiting 3D Botanical Assets -->
+      <div id="track-icons" class="clip" data-start="0" data-duration="12" data-track-index="3">
+        <div id="icon-clarify" class="orbit-icon">
+          <img src="assets/3d/icon-3d-clarify.png" alt="" />
+        </div>
+        <div id="icon-experiment" class="orbit-icon">
+          <img src="assets/3d/icon-3d-experiment.png" alt="" />
+        </div>
+        <div id="icon-reflect" class="orbit-icon">
+          <img src="assets/3d/icon-3d-reflect.png" alt="" />
+        </div>
+        <div id="icon-sparkles" class="orbit-icon">
+          <img src="assets/3d/sparkles-3d.png" alt="" />
+        </div>
+      </div>
+
+      <!-- Hero Plump 3D-Shaded Leaf Mascot -->
+      <div id="track-mascot" class="clip" data-start="0" data-duration="12" data-track-index="4">
+        <div class="mascot-stage">
+          <div id="mascot-rig" style="width: 280px; height: 280px;">
+            <svg viewBox="0 0 200 200" width="280" height="280" aria-label="Linh vật Chiếc Lá UnionFam">
+              <defs>
+                <radialGradient id="hfLeafGrad" cx="36%" cy="32%" r="70%">
+                  <stop offset="0%" stop-color="#A9CA94" />
+                  <stop offset="52%" stop-color="#5F8D64" />
+                  <stop offset="100%" stop-color="#254B3D" />
+                </radialGradient>
+                <linearGradient id="hfGlossGrad" x1="20%" y1="12%" x2="78%" y2="75%">
+                  <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.48" />
+                  <stop offset="45%" stop-color="#E8EDE5" stop-opacity="0.14" />
+                  <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+                </linearGradient>
+                <radialGradient id="hfOrbGrad" cx="40%" cy="35%" r="65%">
+                  <stop offset="0%" stop-color="#FFFDF2" />
+                  <stop offset="45%" stop-color="#EED596" />
+                  <stop offset="100%" stop-color="#C4996C" />
+                </radialGradient>
+                <radialGradient id="hfOrbHalo" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#EED596" stop-opacity="0.72" />
+                  <stop offset="100%" stop-color="#EED596" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+
+              <ellipse id="ground-shadow" cx="100" cy="182" rx="46" ry="8" fill="#254B3D" opacity="0.14" />
+
+              <g id="leaf-character">
+                <path d="M99 152 C98 166, 91 174, 82 178" fill="none" stroke="#3A6347" stroke-width="7" stroke-linecap="round" />
+                <path d="M99 152 C98 165, 92 173, 84 177" fill="none" stroke="#8FA083" stroke-width="2.5" stroke-linecap="round" opacity="0.7" />
+
+                <path
+                  d="M100 28 C144 34, 170 72, 162 118 C154 148, 128 160, 100 158 C72 160, 46 148, 38 118 C30 72, 56 34, 100 28 Z"
+                  fill="url(#hfLeafGrad)"
+                />
+                <path
+                  d="M100 32 C128 38, 150 66, 146 100 C126 84, 86 72, 52 90 C48 58, 70 36, 100 32 Z"
+                  fill="url(#hfGlossGrad)"
+                />
+                <path d="M100 42 C100 78, 100 118, 100 153" fill="none" stroke="#C6D6B4" stroke-width="3" stroke-linecap="round" opacity="0.5" />
+                <path
+                  d="M100 76 C84 68, 70 66, 58 70 M100 79 C116 71, 130 69, 142 73 M100 109 C82 102, 66 102, 53 108 M100 112 C118 105, 134 105, 147 111"
+                  fill="none"
+                  stroke="#C6D6B4"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  opacity="0.34"
+                />
+
+                <g id="eye-left">
+                  <ellipse cx="80" cy="93" rx="6.4" ry="7" fill="#182D26" />
+                  <circle cx="82.2" cy="90.4" r="2.3" fill="#FFFFFF" />
+                  <circle cx="78.5" cy="95.2" r="1.1" fill="#FFFFFF" opacity="0.7" />
+                </g>
+                <g id="eye-right">
+                  <ellipse cx="120" cy="93" rx="6.4" ry="7" fill="#182D26" />
+                  <circle cx="122.2" cy="90.4" r="2.3" fill="#FFFFFF" />
+                  <circle cx="118.5" cy="95.2" r="1.1" fill="#FFFFFF" opacity="0.7" />
+                </g>
+
+                <ellipse cx="67" cy="103" rx="7.5" ry="4.4" fill="#E8A598" opacity="0.6" />
+                <ellipse cx="133" cy="103" rx="7.5" ry="4.4" fill="#E8A598" opacity="0.6" />
+                <path d="M89 105 Q100 115 111 105" fill="none" stroke="#182D26" stroke-width="3.2" stroke-linecap="round" />
+              </g>
+
+              <g id="lantern-orb">
+                <circle cx="150" cy="64" r="22" fill="url(#hfOrbHalo)" />
+                <circle cx="150" cy="64" r="8.5" fill="url(#hfOrbGrad)" />
+                <circle cx="147.5" cy="61.5" r="2.4" fill="#FFFFFF" opacity="0.88" />
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Narrative Typography Layer -->
+      <div id="track-captions" class="clip" data-start="0" data-duration="12" data-track-index="5">
+        <div id="cap-1" class="caption-slot">
+          <p class="caption-title">Giữa những ngày phân vân...</p>
+          <p class="caption-sub">Khi bạn cần một khoảng lặng.</p>
+        </div>
+
+        <div id="cap-2" class="caption-slot">
+          <p class="caption-title">Chiếc Lá dịu dàng chăm sóc bạn</p>
+          <p class="caption-sub">Giữ nhịp thở êm, không áp lực.</p>
+        </div>
+
+        <div id="cap-3" class="caption-slot">
+          <p class="caption-title">Lắng nghe và thấu hiểu</p>
+          <p class="caption-sub">Tách tiếng lòng khỏi những ồn ào.</p>
+        </div>
+
+        <div id="brand-lockup">
+          <p class="brand-wordmark">UnionFam</p>
+          <p class="brand-tagline">Cùng Chiếc Lá làm rõ lựa chọn.</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const POLLEN_SPECS = [
+        { x: 180, y: 580, s: 10, dy: -160, dx: 24, d: 0.0 },
+        { x: 260, y: 460, s: 7, dy: -140, dx: -18, d: 0.4 },
+        { x: 340, y: 630, s: 12, dy: -190, dx: 20, d: 0.2 },
+        { x: 420, y: 520, s: 8, dy: -150, dx: 15, d: 0.8 },
+        { x: 510, y: 610, s: 9, dy: -175, dx: -22, d: 0.3 },
+        { x: 610, y: 550, s: 6, dy: -135, dx: 18, d: 1.0 },
+        { x: 700, y: 640, s: 11, dy: -180, dx: -14, d: 0.5 },
+        { x: 780, y: 500, s: 8, dy: -145, dx: 26, d: 0.9 },
+        { x: 860, y: 600, s: 12, dy: -185, dx: -20, d: 0.1 },
+        { x: 940, y: 530, s: 7, dy: -150, dx: 16, d: 0.7 },
+        { x: 1040, y: 620, s: 10, dy: -170, dx: -24, d: 0.6 },
+        { x: 1110, y: 470, s: 8, dy: -130, dx: 12, d: 1.1 },
+        { x: 290, y: 310, s: 7, dy: -110, dx: 14, d: 1.3 },
+        { x: 990, y: 320, s: 9, dy: -120, dx: -16, d: 1.5 },
+      ];
+
+      const pollenLayer = document.getElementById('pollen-layer');
+      const pollenEls = POLLEN_SPECS.map((p) => {
+        const el = document.createElement('div');
+        el.className = 'pollen-mote';
+        el.style.left = p.x + 'px';
+        el.style.top = p.y + 'px';
+        el.style.width = p.s + 'px';
+        el.style.height = p.s + 'px';
+        pollenLayer.appendChild(el);
+        return { el, spec: p };
+      });
+
+      const tl = gsap.timeline({ paused: true });
+
+      // Ambient sunbeam breathing across 12s
+      tl.fromTo(
+        '#sunbeam-outer',
+        { scale: 0.94, opacity: 0.6 },
+        { scale: 1.12, opacity: 0.95, duration: 6, ease: 'sine.inOut', yoyo: true, repeat: 1 },
+        0,
+      );
+      tl.fromTo(
+        '#sunbeam-inner',
+        { scale: 0.96, opacity: 0.65 },
+        { scale: 1.08, opacity: 1, duration: 4, ease: 'sine.inOut', yoyo: true, repeat: 2 },
+        0,
+      );
+
+      // Pollen particles drift gently
+      pollenEls.forEach(({ el, spec }) => {
+        tl.fromTo(
+          el,
+          { y: 0, x: 0, opacity: 0.2 },
+          { y: spec.dy, x: spec.dx, opacity: 0.85, duration: 5.2, ease: 'sine.inOut', yoyo: true, repeat: 1 },
+          spec.d,
+        );
+      });
+
+      // Beat 1 (0.0s - 3.2s): Leaf already present at t=0, settles organically
+      tl.fromTo(
+        '#mascot-rig',
+        { x: 75, y: -28, rotation: 8, scale: 0.93, opacity: 1 },
+        { x: 0, y: 0, rotation: 0, scale: 1, opacity: 1, duration: 1.35, ease: 'power3.out' },
+        0,
+      );
+
+      // Gentle breathing float loop across 1.35s -> 11.8s
+      tl.to(
+        '#leaf-character',
+        {
+          y: -7,
+          scaleY: 1.03,
+          scaleX: 0.985,
+          transformOrigin: '100px 155px',
+          duration: 1.7,
+          ease: 'sine.inOut',
+          yoyo: true,
+          repeat: 5,
+        },
+        1.35,
+      );
+
+      // Natural blinks at 2.0s, 5.4s, 8.7s
+      [2.0, 5.4, 8.7].forEach((blinkAt) => {
+        tl.to(
+          ['#eye-left', '#eye-right'],
+          { scaleY: 0.08, transformOrigin: 'center 93px', duration: 0.08, ease: 'power2.in' },
+          blinkAt,
+        );
+        tl.to(
+          ['#eye-left', '#eye-right'],
+          { scaleY: 1, transformOrigin: 'center 93px', duration: 0.12, ease: 'power2.out' },
+          blinkAt + 0.09,
+        );
+      });
+
+      // Beat 1 caption visible right from t=0, exits at 2.9s
+      tl.fromTo('#cap-1', { y: 0, opacity: 1 }, { y: -12, opacity: 0, duration: 0.4, ease: 'power2.in' }, 2.8);
+
+      // Beat 2 (3.2s - 6.5s): Care & Comfort
+      tl.fromTo(
+        '#worry-drop',
+        { x: -180, y: 18, scale: 0.72, opacity: 0 },
+        { x: 18, y: 0, scale: 1, opacity: 0.92, duration: 0.95, ease: 'power2.out' },
+        3.2,
+      );
+      tl.to('#mascot-rig', { x: -16, y: 6, rotation: -6, duration: 0.8, ease: 'sine.inOut' }, 3.45);
+      tl.to(
+        '#lantern-orb',
+        { x: -64, y: 64, scale: 1.32, transformOrigin: '150px 64px', duration: 0.9, ease: 'power2.inOut' },
+        3.55,
+      );
+      tl.fromTo(
+        '#care-bloom',
+        { scale: 0.4, opacity: 0 },
+        { scale: 1.55, opacity: 0.95, duration: 1.1, ease: 'power2.out' },
+        4.15,
+      );
+      tl.to('#worry-drop', { scale: 0.2, opacity: 0, duration: 0.65, ease: 'power2.in' }, 4.45);
+      tl.to('#care-bloom', { scale: 2.0, opacity: 0, duration: 0.9, ease: 'power2.out' }, 5.25);
+
+      tl.fromTo('#cap-2', { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power3.out' }, 3.2);
+      tl.to('#cap-2', { y: -12, opacity: 0, duration: 0.4, ease: 'power2.in' }, 6.1);
+
+      // Beat 3 (6.5s - 9.5s): Listening ripples & orbiting 3D icons
+      tl.to('#mascot-rig', { x: 0, y: 0, rotation: 3, duration: 0.7, ease: 'power2.out' }, 6.35);
+      tl.to('#lantern-orb', { x: 0, y: 0, scale: 1, duration: 0.7, ease: 'power2.out' }, 6.35);
+
+      [6.5, 7.05, 7.6].forEach((rStart, idx) => {
+        tl.fromTo(
+          `#ripple-${idx + 1}`,
+          { scale: 0.62, opacity: 0.68 },
+          { scale: 1.85, opacity: 0, duration: 1.65, ease: 'power2.out' },
+          rStart,
+        );
+      });
+
+      tl.fromTo('#icon-clarify', { x: -28, y: 20, scale: 0.65, opacity: 0 }, { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.65, ease: 'back.out(1.4)' }, 6.55);
+      tl.fromTo('#icon-reflect', { y: 26, scale: 0.65, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.65, ease: 'back.out(1.4)' }, 6.7);
+      tl.fromTo('#icon-experiment', { x: 28, y: 20, scale: 0.65, opacity: 0 }, { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.65, ease: 'back.out(1.4)' }, 6.85);
+      tl.to(['#icon-clarify', '#icon-experiment', '#icon-reflect'], { y: -10, duration: 0.9, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 7.3);
+
+      tl.fromTo('#cap-3', { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power3.out' }, 6.5);
+      tl.to('#cap-3', { y: -12, opacity: 0, duration: 0.4, ease: 'power2.in' }, 9.1);
+
+      // Beat 4 (9.5s - 12.0s): UnionFam Welcome Lockup
+      tl.to(['#icon-clarify', '#icon-experiment', '#icon-reflect'], { scale: 0.72, opacity: 0, duration: 0.45, ease: 'power2.in' }, 9.15);
+      tl.to('#mascot-rig', { y: -22, rotation: 0, scale: 0.95, duration: 0.75, ease: 'power3.out' }, 9.3);
+      tl.fromTo('#icon-sparkles', { scale: 0.4, rotation: -18, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.65, ease: 'back.out(1.6)' }, 9.45);
+      tl.fromTo('#brand-lockup', { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power3.out' }, 9.35);
+
+      window.__timelines['leaf-intro'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

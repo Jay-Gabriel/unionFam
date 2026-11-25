@@ -5,6 +5,7 @@ export type RouteState =
   | { name: 'decisions' }
   | { name: 'decision_detail'; decisionId: string }
   | { name: 'experiment_setup'; decisionId: string }
+  | { name: 'checkin'; decisionId: string }
   | { name: 'review'; decisionId: string }
   | { name: 'privacy' };
 
@@ -18,6 +19,9 @@ export const parseRoute = (path: string): RouteState => {
 
   const matchExp = clean.match(/^\/decisions\/([^/]+)\/experiment$/);
   if (matchExp) return { name: 'experiment_setup', decisionId: matchExp[1] };
+
+  const matchCheckin = clean.match(/^\/decisions\/([^/]+)\/checkin$/);
+  if (matchCheckin) return { name: 'checkin', decisionId: matchCheckin[1] };
 
   const matchRev = clean.match(/^\/decisions\/([^/]+)\/review$/);
   if (matchRev) return { name: 'review', decisionId: matchRev[1] };

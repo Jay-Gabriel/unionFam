@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
+import { LeafMascot3D } from '../ui/LeafMascot3D';
 
-export const CheckinScreen: React.FC<{ onSubmitCheckin: (data: any) => void }> = ({ onSubmitCheckin }) => {
+export const CheckinScreen: React.FC<{ onSubmitCheckin: (data: any) => void }> = ({
+  onSubmitCheckin,
+}) => {
   const [status, setStatus] = useState<'TRIED' | 'NOT_TRIED' | 'ADJUSTED'>('TRIED');
   const [note, setNote] = useState('');
   const [energy, setEnergy] = useState<number | null>(null);
 
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#182D26] px-6 py-10 max-w-xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-[#254B3D]">Ghi nhận hôm nay</h2>
-        <p className="text-sm text-[#182D26]/70 mt-1">
-          Dành một phút nhìn lại những gì bạn đã trải nghiệm thực tế hôm nay.
-        </p>
+      <div className="flex items-center gap-4 bg-[#E8EDE5]/70 border border-[#BBC7BC] rounded-3xl p-5">
+        <LeafMascot3D mood="caring" size="sm" />
+        <div>
+          <h2 className="text-2xl font-bold text-[#254B3D]">Ghi nhận hôm nay</h2>
+          <p className="text-sm text-[#182D26]/75 mt-1">
+            Dành một phút nhìn lại những gì bạn đã trải nghiệm thực tế hôm nay.
+          </p>
+        </div>
       </div>
 
-      <div className="p-6 bg-white rounded-2xl border border-[#BBC7BC] space-y-5">
+      <div className="p-6 bg-white rounded-2xl border border-[#BBC7BC] space-y-5 shadow-xs">
         <div>
           <label className="text-xs font-semibold text-[#182D26]/70">Hôm nay bạn đã thử chưa?</label>
           <div className="grid grid-cols-3 gap-2 mt-2">
@@ -23,7 +29,7 @@ export const CheckinScreen: React.FC<{ onSubmitCheckin: (data: any) => void }> =
                 key={s}
                 type="button"
                 onClick={() => setStatus(s)}
-                className={`py-2 px-3 rounded-xl border text-sm min-h-[44px] font-medium transition ${
+                className={`py-2 px-3 rounded-xl border text-sm min-h-[44px] font-medium transition cursor-pointer ${
                   status === s
                     ? 'bg-[#254B3D] text-[#F7F5EF] border-[#254B3D]'
                     : 'border-[#BBC7BC] bg-white text-[#182D26]'
@@ -62,7 +68,7 @@ export const CheckinScreen: React.FC<{ onSubmitCheckin: (data: any) => void }> =
                 key={num}
                 type="button"
                 onClick={() => setEnergy(energy === num ? null : num)}
-                className={`min-w-[36px] min-h-[36px] rounded-lg border text-xs font-medium ${
+                className={`min-w-[36px] min-h-[36px] rounded-lg border text-xs font-medium cursor-pointer ${
                   energy === num
                     ? 'bg-[#254B3D] text-white border-[#254B3D]'
                     : 'border-[#BBC7BC] bg-white text-[#182D26]'
@@ -78,7 +84,7 @@ export const CheckinScreen: React.FC<{ onSubmitCheckin: (data: any) => void }> =
       <button
         type="button"
         onClick={() => onSubmitCheckin({ status, note, energy })}
-        className="w-full min-h-[44px] py-3.5 bg-[#254B3D] text-[#F7F5EF] font-medium rounded-full shadow-sm"
+        className="w-full min-h-[44px] py-3.5 bg-[#254B3D] hover:bg-[#182D26] text-[#F7F5EF] font-medium rounded-full shadow-sm cursor-pointer"
       >
         Lưu ghi nhận
       </button>

@@ -27,3 +27,9 @@ yarn-error.log*
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# HyperFrames build artifacts & raw renders
+.hyperframes/
+videos/**/.hyperframes/
+videos/*/renders/
+videos/*/assets/*.wav

@@ -26,8 +26,8 @@
 
 @layer base {
   :root {
-    --background: #263128;
-    --foreground: #EEF2EB;
+    --background: #F7F5EF;
+    --foreground: #182D26;
     --font-script: 'Great Vibes', cursive;
     --font-cinzel: 'Cinzel', serif;
     --font-playfair: 'Playfair Display', serif;
@@ -118,4 +118,102 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(198, 214, 180, 0.7);
+}
+
+/* Tactile 3D Botanical Animations & Surfaces */
+@keyframes leafFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(1.5deg);
+  }
+}
+
+@keyframes leafBreathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.95;
+  }
+}
+
+@keyframes pollenDrift {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(0.9);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate(6px, -10px) scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+@keyframes rippleRing {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.leaf-float {
+  animation: leafFloat 5.2s ease-in-out infinite;
+}
+
+.leaf-breathe {
+  animation: leafBreathe 4.2s ease-in-out infinite;
+}
+
+.pollen-drift {
+  animation: pollenDrift 4.6s ease-in-out infinite;
+}
+
+.ripple-ring {
+  animation: rippleRing 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.fade-slide-up {
+  animation: fadeSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.sanctuary-3d-surface {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 245, 239, 0.94) 100%);
+  box-shadow:
+    0 18px 38px -18px rgba(37, 75, 61, 0.22),
+    0 6px 16px -6px rgba(24, 45, 38, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.leaf-asset-blend {
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 12px 18px rgba(37, 75, 61, 0.16));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaf-float,
+  .leaf-breathe,
+  .pollen-drift,
+  .ripple-ring,
+  .fade-slide-up {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -12,13 +12,30 @@ import { MindfulRadioModal } from './components/radio/MindfulRadioModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { IncidentReportModal } from './components/beta/IncidentReportModal';
 import { BetaDashboardModal } from './components/beta/BetaDashboardModal';
+import { LeafIntroOverlay } from './components/intro/LeafIntroOverlay';
 import { onAuthStateChange } from './services/supabaseService';
-import { Compass, ShieldCheck, Sparkles } from 'lucide-react';
+import { Music } from 'lucide-react';
+
+interface ActiveExperimentSummary {
+  action: string;
+  learningQuestion: string;
+  reviewDate: string;
+}
 
 export const App: React.FC = () => {
   const [route, setRoute] = useState<RouteState>(() =>
-    parseRoute(typeof window !== 'undefined' ? window.location.pathname : '/')
+    parseRoute(typeof window !== 'undefined' ? window.location.pathname : '/'),
   );
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || import.meta.env.MODE === 'test') return false;
+    return (
+      window.location.pathname === '/' &&
+      window.sessionStorage.getItem('unionfam_intro_seen') !== '1'
+    );
+  });
+  const [draftProblem, setDraftProblem] = useState<string>('');
+  const [activeExperiment, setActiveExperiment] = useState<ActiveExperimentSummary | null>(null);
+
   const [showRadioModal, setShowRadioModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
@@ -37,12 +54,20 @@ export const App: React.FC = () => {
     return () => unsub();
   }, []);
 
+  const handleCloseIntro = () => {
+    setShowIntro(false);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('unionfam_intro_seen', '1');
+    }
+  };
+
   const renderCurrentScreen = () => {
     switch (route.name) {
       case 'start':
         return (
           <StartScreen
             onSubmit={(data) => {
+              setDraftProblem(data?.problemText || '');
               navigateTo('/decisions/current');
             }}
           />
@@ -50,6 +75,7 @@ export const App: React.FC = () => {
       case 'decision_detail':
         return (
           <DecisionChatScreen
+            initialProblemText={draftProblem}
             onDesignExperiment={() => {
               navigateTo(`/decisions/${route.decisionId}/experiment`);
             }}
@@ -58,7 +84,15 @@ export const App: React.FC = () => {
       case 'experiment_setup':
         return (
           <ExperimentDesignScreen
-            onStartExperiment={() => {
+            onStartExperiment={(data) => {
+              const days = Number(data?.durationDays || 3);
+              const reviewAt = new Date(Date.now() + days * 86400000).toLocaleDateString('vi-VN');
+              setActiveExperiment({
+                action: data?.action || 'Trao đổi một lần về giới hạn nhận việc sau 18h',
+                learningQuestion:
+                  data?.learningQuestion || 'Quản lý có chấp nhận điều chỉnh việc ngoài giờ không?',
+                reviewDate: reviewAt,
+              });
               navigateTo('/today');
             }}
           />
@@ -66,8 +100,20 @@ export const App: React.FC = () => {
       case 'today':
         return (
           <TodayScreen
+            activeExperiment={activeExperiment}
             onGoCheckin={() => {
-              navigateTo('/decisions/current/experiment');
+              navigateTo('/decisions/current/checkin');
+            }}
+            onGoReview={() => {
+              navigateTo('/decisions/current/review');
+            }}
+          />
+        );
+      case 'checkin':
+        return (
+          <CheckinScreen
+            onSubmitCheckin={() => {
+              navigateTo(`/decisions/${route.decisionId}/review`);
             }}
           />
         );
@@ -84,6 +130,8 @@ export const App: React.FC = () => {
           <PrivacySettingsScreen
             onSavePreferences={() => {}}
             onDeleteAllData={() => {
+              setDraftProblem('');
+              setActiveExperiment(null);
               navigateTo('/');
             }}
           />
@@ -95,6 +143,7 @@ export const App: React.FC = () => {
             onStart={() => {
               navigateTo('/start');
             }}
+            onReplayIntro={() => setShowIntro(true)}
           />
         );
     }
@@ -103,37 +152,61 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#182D26] flex flex-col font-sans">
       {/* Top Calm Navigation Header */}
-      <nav className="w-full border-b border-[#BBC7BC] bg-[#F7F5EF]/90 backdrop-blur-md sticky top-0 z-50 px-6 py-3.5 flex justify-between items-center max-w-6xl mx-auto">
+      <nav className="w-full border-b border-[#BBC7BC] bg-[#F7F5EF]/90 backdrop-blur-md sticky top-0 z-40 px-4 md:px-6 py-3 flex justify-between items-center max-w-6xl mx-auto gap-3">
         <button
+          type="button"
           onClick={() => navigateTo('/')}
-          className="flex items-center gap-2 text-left font-bold text-lg text-[#254B3D] tracking-tight"
+          className="flex items-center gap-2 text-left font-bold text-lg text-[#254B3D] tracking-tight shrink-0 cursor-pointer"
         >
-          <Compass className="w-5 h-5 text-[#254B3D]" />
+          <img
+            src="/assets/3d/leaf-herb-3d.png"
+            alt="UnionFam Chiếc Lá"
+            className="w-7 h-7 object-contain"
+          />
           <span>UnionFam</span>
         </button>
 
-        <div className="flex items-center gap-4 text-xs font-medium">
+        <div className="flex items-center gap-3 md:gap-4 text-xs font-medium overflow-x-auto whitespace-nowrap">
           <button
+            type="button"
             onClick={() => navigateTo('/today')}
-            className={`hover:text-[#254B3D] transition ${route.name === 'today' ? 'text-[#254B3D] font-bold' : 'text-[#182D26]/70'}`}
+            className={`hover:text-[#254B3D] transition shrink-0 cursor-pointer ${
+              route.name === 'today' ? 'text-[#254B3D] font-bold' : 'text-[#182D26]/70'
+            }`}
           >
             Hôm nay
           </button>
           <button
+            type="button"
             onClick={() => navigateTo('/decisions/current')}
-            className={`hover:text-[#254B3D] transition ${route.name === 'decision_detail' ? 'text-[#254B3D] font-bold' : 'text-[#182D26]/70'}`}
+            className={`hover:text-[#254B3D] transition shrink-0 cursor-pointer ${
+              route.name === 'decision_detail' ? 'text-[#254B3D] font-bold' : 'text-[#182D26]/70'
+            }`}
           >
             Quyết định
           </button>
           <button
+            type="button"
             onClick={() => navigateTo('/settings/privacy')}
-            className={`hover:text-[#254B3D] transition ${route.name === 'privacy' ? 'text-[#254B3D] font-bold' : 'text-[#182D26]/70'}`}
+            className={`hover:text-[#254B3D] transition shrink-0 cursor-pointer ${
+              route.name === 'privacy' ? 'text-[#254B3D] font-bold' : 'text-[#182D26]/70'
+            }`}
           >
             Quyền riêng tư
           </button>
           <button
+            type="button"
+            onClick={() => setShowRadioModal(true)}
+            className="px-3 py-1.5 rounded-full border border-[#BBC7BC] bg-white/80 hover:bg-[#E8EDE5] text-[#254B3D] transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+            title="Mở Đài Radio Tâm Trí"
+          >
+            <Music className="w-3.5 h-3.5" />
+            <span>Âm thanh</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setShowAuthModal(true)}
-            className="px-3.5 py-1.5 rounded-full border border-[#BBC7BC] hover:bg-[#E8EDE5] text-[#254B3D] transition"
+            className="px-3.5 py-1.5 rounded-full border border-[#BBC7BC] hover:bg-[#E8EDE5] text-[#254B3D] transition shrink-0 cursor-pointer"
           >
             Tài khoản
           </button>
@@ -141,20 +214,21 @@ export const App: React.FC = () => {
       </nav>
 
       {/* Main Routed Content */}
-      <main className="flex-1 flex flex-col">
-        {renderCurrentScreen()}
-      </main>
+      <main className="flex-1 flex flex-col">{renderCurrentScreen()}</main>
 
       {/* Pristine Calm Footer */}
       <footer className="py-6 border-t border-[#BBC7BC]/40 text-center text-xs text-[#182D26]/60">
-        <div className="flex items-center justify-center gap-3">
-          <span>UnionFam · MVP Hành Trình Quyết Định</span>
+        <div className="flex flex-wrap items-center justify-center gap-3 px-4">
+          <span>UnionFam · Đồng hành cùng Chiếc Lá</span>
           <span>•</span>
           <span>Bảo mật dữ liệu cá nhân</span>
           <span>•</span>
           <span>Không áp lực</span>
         </div>
       </footer>
+
+      {/* Video Intro Overlay (Linh vật Chiếc Lá chăm sóc & thấu hiểu mọi người) */}
+      <LeafIntroOverlay isOpen={showIntro} onClose={handleCloseIntro} />
 
       {/* Modals */}
       <MindfulRadioModal isOpen={showRadioModal} onClose={() => setShowRadioModal(false)} />
